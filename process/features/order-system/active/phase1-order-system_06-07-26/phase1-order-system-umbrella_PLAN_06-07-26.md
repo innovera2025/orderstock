@@ -248,8 +248,8 @@ All paths are inside `process/features/order-system/active/phase1-order-system_0
 |---|---|
 | 0 — Pre-program (plan creation) | 🧪 TESTING (this umbrella + stubs created; validators pending) |
 | 01 — Foundation | ✅ VERIFIED (all 7 inner-loop steps done; EVL independently re-ran all 6 gates green; `.env` created with user approval; 2 known-gaps accepted) |
-| 02 — Schema & Master Data | 🧪 TESTING (R+I+PLAN-SUPPLEMENT+PVL done; Net Gate CONDITIONAL; EXECUTE pending user consent) |
-| 03 — Auth | ⏳ PLANNED |
+| 02 — Schema & Master Data | ✅ VERIFIED (all 7 inner-loop steps done; EVL independently re-ran all 7 gates + Phase-01 regression clean; 4 accepted known-gaps; UPDATE PROCESS complete — context updated, backlog stub registered) |
+| 03 — Auth | ⏳ PLANNED (RESEARCH next) |
 | 04 — Order Entry | ⏳ PLANNED |
 | 05 — Printing | ⏳ PLANNED |
 | 06 — DB Settings & Delivery | ⏳ PLANNED |
@@ -325,22 +325,26 @@ for f in process/features/order-system/active/phase1-order-system_06-07-26/phase
 
 ## Current Execution State
 
-Last updated: 06-07-26 (Phase 02 PVL complete — validate-contract written)
-Completed phases: Phase 0 (Planning), Phase 01 (Foundation — ✅ VERIFIED)
-Current phase: Phase 02 — Schema & Master Data
-Current loop step: EXECUTE (pending user consent — do NOT spawn execute-agent until ENTER EXECUTE MODE)
-Validate-contract status: Phase 01 contract satisfied (inner-pvl: phase-01). Phase 02 contract WRITTEN 06-07-26 (inner-pvl: phase-02; Net Gate CONDITIONAL — 7 fixes folded into plan text + execute-agent instructions E1–E9, 2 known-gaps accepted: Thai-collation-deferred-Phase-06, CRUD-automated-round-trip-backlogged). All 5 auto-selections (AS1–AS5) open for user override before EXECUTE.
-Program Net Gate: Phase 01 VERIFIED; Phase 02 PVL CONDITIONAL (executable on consent). Program continues — Phase 02 EXECUTE next on explicit user consent.
-Latest validator run: 06-07-26 — phase-01 validate-plan-artifact PASS (0 fail / 0 warn); umbrella validator PASS (re-run recommended after this closeout's edits)
+Last updated: 06-07-26 (Phase 02 UPDATE PROCESS complete — ✅ VERIFIED, context updated)
+Completed phases: Phase 0 (Planning), Phase 01 (Foundation — ✅ VERIFIED), Phase 02 (Schema & Master Data — ✅ VERIFIED)
+Current phase: Phase 03 — Auth
+Current loop step: RESEARCH (not started)
+Validate-contract status: Phase 01 contract satisfied (inner-pvl: phase-01). Phase 02 contract satisfied (inner-pvl: phase-02; all 7 gates independently re-confirmed at EVL). Phase 03 contract not yet written (vc-validate-agent writes it after RESEARCH→INNOVATE→PLAN-SUPPLEMENT).
+Program Net Gate: Phase 01 VERIFIED; Phase 02 VERIFIED. Program continues — Phase 03 RESEARCH next.
+Latest validator run: 06-07-26 (UPDATE PROCESS) — `validate-all-context.mjs` and `validate-context-discovery.mjs` green after `database/` group creation; plan-artifact validators re-run for phase-02 + umbrella (see this session's closeout packet for exact results).
 
 Loop step values: RESEARCH | INNOVATE | PLAN-SUPPLEMENT | PVL | EXECUTE | EVL | UPDATE-PROCESS
-Orchestrator rule: read "Current loop step" and "validate-contract status" before spawning any subagent. Phase 02 has completed RESEARCH→INNOVATE→PLAN-SUPPLEMENT→PVL. Next is EXECUTE (Step 5), gated on explicit user consent (ENTER EXECUTE MODE). On consent, spawn vc-execute-agent (opus) per phase-02 plan + validate-contract instructions E1–E9. Sandbox DB only.
+Orchestrator rule: read "Current loop step" and "validate-contract status" before spawning any subagent. Phase 02 is fully closed out (✅ VERIFIED, UPDATE PROCESS done). Phase 03 has not started — next subagent is vc-research-agent for Phase 03 (Auth). Read the phase-02 report + this umbrella + `process/context/database/all-database.md` before starting Phase 03 RESEARCH (User model already exists, extend it — do not rewrite `prisma/schema.prisma`).
 
-Phase 01 carry-forward for Phase 02 RESEARCH:
-- `prisma/schema.prisma` currently holds ONLY the datasource + minimal `HealthCheck` model — Phase 02 EXTENDS it (never rewrites) with the full schema.
-- `src/lib/db.ts` PrismaClient singleton (driver-adapter pattern) is established and must be reused, not recreated.
+Phase 02 carry-forward for Phase 03 RESEARCH:
+- `prisma/schema.prisma` now holds the full 9-model domain (Shop, Product, ProductVariant, OrderSheet, OrderLine, NoteLine, User, AppSetting, HealthCheck) — Phase 03 EXTENDS `User` (adds auth fields if needed; `passwordHash`/`role` already exist), never rewrites.
+- `role` is a String column ("ADMIN"|"STAFF"), NOT a Prisma enum (SQL Server connector limitation) — values are in `src/lib/product-order.ts` (`ROLES`, `ROLE_LABELS`). Reuse these constants; do not invent a new enum or parallel string set.
+- No `User` rows/credentials exist yet (Phase 02 intentionally seeded none, F6) — Phase 03 owns the admin seed.
+- `prisma/seed.ts` is idempotent and EXTENDED by Phase 03 (add the admin-user upsert; do not rewrite existing shop/product seed logic).
+- Next 16 renames `middleware.ts` → `proxy.ts` — reconcile against the db-auth REF's "middleware" wording before writing the Phase 03 checklist (open risk carried from Phase 01/02 context).
+- New `process/context/database/all-database.md` context group exists — read it for the SQL Server enum/cascade/snapshot pitfalls before touching the schema.
 - Sandbox DB is up at `orderstock-sql` (Docker), COMPATIBILITY_LEVEL 150 (default; customer target unconfirmed — known-gap carried).
-- `.env` now exists (DATABASE_URL + MSSQL_SA_PASSWORD) — Phase 02 can rely on it directly instead of inline env vars.
+- `.env` exists (DATABASE_URL + MSSQL_SA_PASSWORD) — Phase 03 can rely on it directly.
 
 Note: The Stable Program Goal above is fixed. This section is the only part that changes — update-process-agent rewrites it after every phase closeout (overwrite, not append — git history is the audit log).
 

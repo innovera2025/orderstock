@@ -95,6 +95,7 @@ For most substantial tasks:
 | File | Read when |
 |---|---|
 | `process/context/all-context.md` | any substantial planning, research, review, or implementation task |
+| `process/context/database/all-database.md` | Database context entrypoint for orderstock — Prisma 7 + SQL Server schema, SQL Server-specific pitfalls (no enums, one-NULL-per-UNIQUE, NoAction cascades), historical-fidelity snapshot pattern, and seed/migration/export commands |
 | `process/context/planning/all-planning.md` | creating or calibrating an implementation plan |
 | `process/context/tests/all-tests.md` | the task involves testing, verification, or test debugging |
 
@@ -102,6 +103,7 @@ For most substantial tasks:
 
 | Group | Entry point | Scope |
 |---|---|---|
+| `database/` | `process/context/database/all-database.md` | Database context entrypoint for orderstock — Prisma 7 + SQL Server schema, SQL Server-specific pitfalls (no enums, one-NULL-per-UNIQUE, NoAction cascades), historical-fidelity snapshot pattern, and seed/migration/export commands |
 | `planning/` | `process/context/planning/all-planning.md` | Planning context entrypoint for orderstock — plan-shape calibration (SIMPLE vs COMPLEX), planning conventions, and example plan references |
 | `tests/` | `process/context/tests/all-tests.md` | Testing entrypoint for orderstock — Vitest 3.2.6 baseline wired and real (Phase 01), Playwright planned for E2E (Phase 05), sandbox SQL Server constraint |
 <!-- /GENERATED:routing -->
@@ -115,13 +117,14 @@ For most substantial tasks:
 | order-form domain questions | `all-context.md` | `process/features/order-system/active/phase1-order-system_06-07-26/form-canonical_REF_06-07-26.md` (canonical transcription; raw scan at repo root) |
 | order-system implementation | `all-context.md` | the umbrella plan + current phase plan in `process/features/order-system/active/phase1-order-system_06-07-26/` |
 | test planning or verification | `all-context.md`, `tests/all-tests.md` | — |
+| database/schema/seed/migration work | `all-context.md`, `database/all-database.md` | `prisma/schema.prisma`, the relevant phase plan for decision rationale |
 | context maintenance | `all-context.md` | run `vc-audit-context` after edits |
 
 ## Current Features
 
 | Feature | Folder | Status |
 |---|---|---|
-| `order-system` | `process/features/order-system/` | Active — phase program `phase1-order-system_06-07-26` (umbrella + 6 phase plans); Phase 01 Foundation ✅ VERIFIED, Phase 02 Schema & Master Data is the current phase |
+| `order-system` | `process/features/order-system/` | Active — phase program `phase1-order-system_06-07-26` (umbrella + 6 phase plans); Phase 01 Foundation ✅ VERIFIED, Phase 02 Schema & Master Data ✅ VERIFIED, Phase 03 Auth is the current phase |
 
 When routing feature-scoped work, pass `Feature: order-system` and the program folder path
 `process/features/order-system/active/phase1-order-system_06-07-26/` in the subagent prompt.
@@ -145,7 +148,7 @@ Do not create a group when:
 
 Move or split one group at a time. Use `all-{group}.md` entrypoints. Run the `vc-audit-context` skill after every context organization change.
 
-**Expected future groups for this project** (create when code exists): `database/` (Prisma schema, migration/script generation for SQL Server), `auth/` (NextAuth config, role-based access), `uxui/` (Thai UI, print layouts).
+**Expected future groups for this project** (create when code exists): `auth/` (NextAuth config, role-based access), `uxui/` (Thai UI, print layouts). `database/` was created at Phase 02 closeout — see `process/context/database/all-database.md`.
 
 ## Naming Convention
 
@@ -169,7 +172,7 @@ When durable project knowledge changes:
 
 ## Repository Structure
 
-**Current state: Phase 01 (Foundation) implemented and VERIFIED.** The app is a real, buildable Next.js project wired to a Docker SQL Server sandbox via Prisma 7. Phases 02-06 are still planned/not implemented.
+**Current state: Phase 01 (Foundation) and Phase 02 (Schema & Master Data) VERIFIED.** The app is a real, buildable Next.js project wired to a Docker SQL Server sandbox via Prisma 7, with the full 9-model schema migrated, seeded, and master-data CRUD (shops/products) wired. Phases 03-06 are still planned/not implemented.
 
 ```
 orderstock/
@@ -183,8 +186,14 @@ orderstock/
   prisma.config.ts            -- JDBC-style URL for the Prisma CLI (migrate/introspect)
   .env / .env.example         -- DATABASE_URL + MSSQL_SA_PASSWORD (.env is gitignored)
   prisma/
-    schema.prisma             -- datasource + HealthCheck model (Phase 01 minimal; Phase 02 extends)
-    migrations/                -- 20260706074539_init_healthcheck
+    schema.prisma             -- full 9-model domain schema (Phase 02) — see database/all-database.md
+    migrations/                -- 3 migrations (init_healthcheck, phase02_full_schema, shop_rosterorder_unique)
+    seed.ts                    -- idempotent master-data seed (shops, products/variants)
+    load-env.ts                -- side-effect env-load import (seed.ts env-loading quirk)
+  scripts/
+    export-schema-sql.ts       -- vendor T-SQL DDL export -> db/create-orderstock-schema.sql
+  db/
+    create-orderstock-schema.sql -- generated vendor DDL export (offline, DDL-only)
   src/
     app/
       layout.tsx               -- Thai <html lang="th"> shell
@@ -193,25 +202,28 @@ orderstock/
       fonts.css                -- explicit @font-face + unicode-range for Sarabun
       globals.css               -- imports fonts.css
       api/health/route.ts       -- DB connectivity health check (SELECT 1)
+      shops/**                  -- shops master-data CRUD (Phase 02)
+      products/**               -- products/variants master-data CRUD (Phase 02)
     lib/
       db.ts                     -- PrismaClient singleton (driver-adapter pattern)
       fonts.ts                  -- Sarabun font-family stack constant
-      __tests__/smoke.test.ts   -- Vitest baseline smoke test
+      product-order.ts          -- PACK_SIZES/PRODUCT_GROUPS/ROLES constants + 20-col printOrder contract
+      variant-validation.ts     -- app-level printOrder-uniqueness validator
+      correction-cascade.ts     -- historical-fidelity snapshot back-fill (CascadeDb adapter pattern)
+      __tests__/                -- smoke, variant-validation, correction-cascade (9 tests total)
   public/fonts/                -- self-hosted Sarabun OFL woff2 (400/600/700, thai+latin)
   process/
-    context/                   -- this context system
+    context/                   -- this context system (incl. database/ group, Phase 02)
     general-plans/             -- plans, reports, references
     features/order-system/     -- phase1-order-system program (umbrella + 6 phase plans)
     development-protocols/     -- RIPER-5 methodology docs
 ```
 
-### Application Structure (Phases 02-06, planned)
+### Application Structure (Phases 03-06, planned)
 
 - `src/app/(auth)/login` — login page (Phase 03)
 - `src/app/orders/**`, `src/app/print/**` — order entry + print layouts (Phases 04-05)
-- `src/app/shops/**`, `src/app/products/**` — master data CRUD (Phase 02)
 - `src/app/settings/db/**` — connection-string settings page (Phase 06)
-- `scripts/export-schema-sql.ts` — SQL creation script export for the customer's vendor (Phase 02)
 
 ## Technology Stack
 
@@ -223,7 +235,9 @@ orderstock/
   - `prisma@7.8.0`, `@prisma/client@7.8.0`, `@prisma/adapter-mssql@7.8.0`, `mssql@^12.2.0`
   - dev: sandbox SQL Server 2022 in Docker (`docker-compose.yml`, `mem_limit: 2g`, compat level 150); production: customer's SQL Server via runtime connection string (Phase 06, not yet built)
 - **CSS:** Tailwind 4 (`@tailwindcss/postcss`) via create-next-app default; print CSS (Phase 05) stays separate plain CSS
-- **Testing:** Vitest 3.2.6 (`pnpm test` → `vitest run`) — baseline smoke test only so far; Playwright planned for E2E (Phase 05)
+- **Testing:** Vitest 3.2.6 (`pnpm test` → `vitest run`) — 9 tests across 3 files (smoke, variant-validation, correction-cascade) as of Phase 02; Playwright planned for E2E (Phase 05)
+- **Validation:** `zod@^4.4.3` — server-action input validation with Thai error messages (added Phase 02, decision 5); enforces `packSize`/`group`/`role` allowed values from `src/lib/product-order.ts` since SQL Server has no Prisma enums (see `database/all-database.md`)
+- **Scripting runtime:** `tsx@^4.23.0` (devDep, added Phase 02) — runs `prisma/seed.ts` and `scripts/export-schema-sql.ts` directly
 - **Package manager:** pnpm 11.5.0 (`pnpm-workspace.yaml` sets `allowBuilds` for native-script packages: `@prisma/client`, `@prisma/engines`, `esbuild`, `prisma`, `sharp`, `unrs-resolver` — pnpm 11.5 blocks build scripts by default)
 - **Auth:** NextAuth **next-auth@5.0.0-beta.31** — planned for Phase 03, **NOT YET INSTALLED**. Confirmed compatible with Next 16.2.x during Phase 01 INNOVATE. Note: Next 16 renames `middleware.ts` → `proxy.ts`; Phase 03 RESEARCH must reconcile this against the db-auth REF's "middleware" wording before writing the auth route-protection file.
 - **UI:** Thai-language UI; self-hosted Sarabun (OFL 1.1) font; print via browser print layout (A4 landscape) matching the scanned form (Phase 05, not yet built)
@@ -259,17 +273,20 @@ orderstock/
 - SQL Server version at the customer is unconfirmed — keep schema/script compatible with mid-range versions (2017+ floor for Prisma; 2016 would be below it).
 - No stock deduction in Phase 1 — do not design inventory-balance features prematurely.
 - Next 16 renames `middleware.ts` → `proxy.ts` — a live open risk for Phase 03 (the db-auth REF still says "middleware"; RESEARCH must reconcile before writing the Phase 03 checklist).
+- **SQL Server has no Prisma enums** — `packSize`/`group`/`role` are `String` columns, not Prisma `enum`s (P1012 connector error otherwise). See `database/all-database.md` for the full pattern; the constants live in `src/lib/product-order.ts`.
+- **`correction-cascade.ts` requires the `CascadeDb` adapter, not a raw `PrismaClient`.** Passing `prisma` directly where a `CascadeDb` is expected silently no-ops (no error, back-fill never runs) — EVL-proven gotcha. Full detail in `database/all-database.md`.
 
 ## Open Questions / Outstanding Work
 
 - SQL Server version at the customer site — unconfirmed (assumed mid-range); confirm before finalizing the schema script
-- Exact shop names and product list — transcribed from a handwritten scan; must be confirmed/corrected with the user before seeding master data (Phase 02, before seeding)
+- Exact shop names and product list — transcribed from a handwritten scan; ~31 uncertain readings seeded with `needsConfirmation=true` (Phase 02). These are now partially resolvable **in-app**: a CRUD edit-save on the flagged shop/product clears `needsConfirmation` and fires `correction-cascade.ts` to back-fill any existing OrderLine/NoteLine snapshots — no longer strictly blocked on a separate confirmation round with the user.
 - Sandbox compatibility level: defaulted to 150 (SQL Server 2019); customer's actual target (140 for 2017 vs 150 for 2019) is unconfirmed — accepted known-gap, re-run compat check once confirmed
 - Conversion factors / any remaining uncertain readings in the canonical form transcription — see `form-canonical_REF_06-07-26.md`
+- Thai collation — deferred to Phase 06 delivery (decision 3); integer ordering (`printOrder`/`rosterOrder`) used everywhere in Phase 1 instead
 
 ## Scan Metadata
 
-- Generated: 2026-07-06 (Phase 01 closeout update)
-- HEAD: 354cc45fe7067062dfb11b46357d1bed40f4a483
-- Mode: delta update (post-Phase-01 EXECUTE+EVL)
+- Generated: 2026-07-06 (Phase 02 closeout update)
+- HEAD: 76f2897 (phase-02 verified closeout artifacts)
+- Mode: delta update (post-Phase-02 EXECUTE+EVL+UPDATE-PROCESS)
 - Package manager: pnpm 11.5.0

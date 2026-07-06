@@ -1,7 +1,8 @@
 ---
-name: all-tests
+name: context:all-tests
 description: Testing entrypoint for orderstock — Vitest 3.2.6 baseline wired and real (Phase 01), Playwright planned for E2E (Phase 05), sandbox SQL Server constraint
 keywords: tests, testing, vitest, playwright, e2e, unit, integration, verification, coverage, sandbox, sql server, health check, build, lint
+related: [context:all-database]
 metadata:
   read_when: the task involves testing, verification, or test debugging
 ---
@@ -35,19 +36,21 @@ This is the `all-tests.md` entrypoint for the `tests/` context group. It follows
 
 ## Current Status
 
-**Real, wired, and passing as of Phase 01 (Foundation).** Vitest 3.2.6 is installed and green; a Docker SQL Server 2022 sandbox provides the DB-dependent gates. Playwright (E2E) is planned for Phase 05 (printing) but not yet installed. Phases 02-06 add their own test coverage as they land — this file's Commands table below is the baseline; update it per-phase as new gates are established.
+**Real, wired, and passing as of Phase 02 (Schema & Master Data).** Vitest 3.2.6 is installed and green with 9 tests across 3 files. A Docker SQL Server 2022 sandbox provides the DB-dependent gates. Playwright (E2E) is planned for Phase 05 (printing) but not yet installed. Phases 03-06 add their own test coverage as they land — this file's Commands table below is the baseline; update it per-phase as new gates are established.
 
 ## Testing Approach
 
 Stack: Next.js 16.2.10 (TypeScript) + Prisma 7 + `@prisma/adapter-mssql` + SQL Server (see `all-context.md`):
 
-- **Unit/integration:** Vitest 3.2.6 — `src/lib/__tests__/*.test.ts`. Phase 01 established one smoke test; later phases add real coverage for form calculation logic (per-column totals, total weight), master-data validation, date conversion (BE↔CE).
+- **Unit/integration:** Vitest 3.2.6 — `src/lib/__tests__/*.test.ts`. 3 files / 9 tests as of Phase 02: `smoke.test.ts` (baseline), `variant-validation.test.ts` (5 tests — printOrder uniqueness over the active non-null set), `correction-cascade.test.ts` (2 tests — propagate-while-unconfirmed / lock-after-confirm branches). Later phases add coverage for form calculation logic (per-column totals, total weight) and date conversion (BE↔CE).
+- **DB-level testing pattern (Phase 02):** pure logic (validators, cascade back-fill decision) is extracted to `src/lib/` and Vitest-unit-tested in isolation via the `CascadeDb` adapter interface (see `database/all-database.md`) — no live DB needed for these units. The actual DB round-trip (CRUD create→edit→soft-delete) is proven via an **agent-probe** against the sandbox, not an automated test, because server actions call `redirect()`/`revalidatePath()` (need Next request context) and Playwright is not installed until Phase 05. A headless CRUD DB-integration harness is backlogged — see `process/features/order-system/backlog/crud-db-integration-harness_NOTE_06-07-26.md`.
 - **E2E (planned, Phase 05):** Playwright — login flow, order entry, print page rendering (combined + per-shop). Not yet installed.
 - **Database:** integration tests run against the disposable sandbox SQL Server (Docker, `orderstock-sql` container) — **never against the customer DB**.
 
 ## Quick Routing
 
-(No deeper test docs yet. Add routing entries here as they are created — e.g. a `database-testing.md` or `e2e-playwright.md` once Phase 05 lands.)
+- use `process/context/database/all-database.md` for the `CascadeDb` adapter test pattern, schema/migration/seed commands, and SQL Server-specific gotchas that affect DB-dependent test gates
+(No other deeper test docs yet. Add routing entries here as they are created — e.g. an `e2e-playwright.md` once Phase 05 lands.)
 
 ## Default Verification Order
 
