@@ -13,7 +13,164 @@ datasource db {
 }
 
 // Minimal model that exercises a migration end-to-end against the sandbox DB.
+// Retained from Phase 01 — later phases EXTEND this file, never rewrite it.
 model HealthCheck {
   id        Int      @id @default(autoincrement())
   checkedAt DateTime @default(now())
+}
+
+// ---------------------------------------------------------------------------
+// Phase 02 — full domain schema (shops, products/variants, order sheets, lines,
+// users, settings). SQL Server rules applied per db-auth REF §3 and PVL fixes:
+//   F1  enum members MUST be ASCII — Thai/display text lives in a UI label map.
+//   F2  ProductVariant.printOrder is Int? and is NOT a DB @unique (SQL Server
+//       allows only ONE NULL per UNIQUE; off-list variants carry printOrder NULL).
+//       Uniqueness is enforced at the app layer over the active non-null set.
+//   F5  weightKg/pipConversion use explicit @db.Decimal(10,3) for deterministic T-SQL.
+//   cascade  every OrderLine/NoteLine relation uses onDelete/onUpdate: NoAction —
+//       SQL Server rejects multiple/cyclic cascade paths.
+// ---------------------------------------------------------------------------
+
+// NOTE (F1 accepted alternative): the SQL Server connector does NOT support Prisma
+// `enum` types, so PackSize / ProductGroup / Role are stored as ASCII `String` columns.
+// The allowed values are enforced at the app layer (zod) and mirrored as TS constants in
+// `src/lib/product-order.ts`. Allowed values:
+//   packSize : "KG_1" (1 กก.) | "HALF_KG" (1/2 กก.) | "NONE" (no size split / flavor variant)
+//   group    : "GOODS" (สินค้า, C3–C18) | "SEASONING" (เครื่องปรุง, C19–C22)
+//   role     : "ADMIN" | "STAFF"  (Phase 03 owns auth + admin seed; no rows seeded here, F6)
+
+// A customer shop / ร้านค้า. Soft-delete via `active` (never hard delete — historical
+// OrderLine/NoteLine FKs must stay resolvable). `rosterOrder` is APPEND-ONLY: once a shop
+// is referenced by any sheet its rosterOrder is immutable; new shops get higher values.
+model Shop {
+  id                Int      @id @default(autoincrement())
+  name              String   @db.NVarChar(200)
+  rosterOrder       Int      @unique // one shop per roster slot; append-only / immutable once referenced
+  needsConfirmation Boolean  @default(false)
+  active            Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  orderLines OrderLine[]
+  noteLines  NoteLine[]
+}
+
+// A base product (e.g. ดีลานนิ่ม). Package-size / flavor splits live in ProductVariant.
+// `isOffList` marks recurring off-list note products (decision 1) — their variants carry
+// printOrder = NULL. Soft-delete via `active`.
+model Product {
+  id                Int      @id @default(autoincrement())
+  name              String   @db.NVarChar(200)
+  group             String   @db.NVarChar(20) // "GOODS" | "SEASONING" (F1 — app-enforced)
+  isOffList         Boolean  @default(false)
+  needsConfirmation Boolean  @default(false)
+  active            Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  variants ProductVariant[]
+}
+
+// A product × pack-size / flavor variant. The 20 in-print-order variants (C3–C22) carry
+// printOrder 1..20; off-list variants carry printOrder = NULL (F2/F3). `name` holds the
+// canonical variant display string used for the OrderLine/NoteLine name snapshots.
+model ProductVariant {
+  id                Int      @id @default(autoincrement())
+  productId         Int
+  name              String   @db.NVarChar(200)
+  packSize          String   @db.NVarChar(20) // "KG_1" | "HALF_KG" | "NONE" (F1 — app-enforced)
+  labelVariant      String?  @db.NVarChar(100)
+  printOrder        Int? // NOT @unique (F2) — app-level uniqueness over active non-null set
+  weightKg          Decimal? @db.Decimal(10, 3)
+  pipConversion     Decimal? @db.Decimal(10, 3)
+  needsConfirmation Boolean  @default(false)
+  active            Boolean  @default(true)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  product    Product     @relation(fields: [productId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  orderLines OrderLine[]
+  noteLines  NoteLine[]
+
+  @@index([printOrder])
+  @@index([productId])
+}
+
+// A daily order sheet. `date` stored CE (F: display BE in Phase 04+). `location` = สถานที่.
+model OrderSheet {
+  id        Int      @id @default(autoincrement())
+  date      DateTime @db.Date
+  location  String?  @db.NVarChar(200)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orderLines OrderLine[]
+  noteLines  NoteLine[]
+
+  @@index([date])
+}
+
+// One (shop × variant) order cell. `qty` is a positive INTEGER piece count (½ กก. is a
+// pack-size LABEL, not 0.5 qty). `shopNameAtEntry`/`variantNameAtEntry` are historical
+// name snapshots written at create time (decision 6) — Phase 05 prints from these, never
+// live names. All relations NoAction (SQL Server multi/cyclic cascade rule).
+model OrderLine {
+  id                 Int      @id @default(autoincrement())
+  sheetId            Int
+  shopId             Int
+  variantId          Int
+  qty                Int
+  shopNameAtEntry    String   @db.NVarChar(200)
+  variantNameAtEntry String   @db.NVarChar(200)
+  createdAt          DateTime @default(now())
+
+  sheet   OrderSheet     @relation(fields: [sheetId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  shop    Shop           @relation(fields: [shopId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  variant ProductVariant @relation(fields: [variantId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([sheetId])
+  @@index([shopId])
+  @@index([variantId])
+}
+
+// A free-text หมายเหตุ remark line (off-list order overflow). `shopId` is NULLABLE for
+// orphan remarks (scan row 20). `productVariantId` is an OPTIONAL FK to a real off-list
+// variant (decision 1); `text` holds the raw remark. Snapshot cols mirror OrderLine.
+// All relations NoAction.
+model NoteLine {
+  id                 Int      @id @default(autoincrement())
+  sheetId            Int
+  shopId             Int?
+  productVariantId   Int?
+  text               String   @db.NVarChar(Max)
+  qty                Int?
+  shopNameAtEntry    String?  @db.NVarChar(200)
+  variantNameAtEntry String?  @db.NVarChar(200)
+  createdAt          DateTime @default(now())
+
+  sheet          OrderSheet      @relation(fields: [sheetId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  shop           Shop?           @relation(fields: [shopId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+  productVariant ProductVariant? @relation(fields: [productVariantId], references: [id], onDelete: NoAction, onUpdate: NoAction)
+
+  @@index([sheetId])
+}
+
+// Application user. Defined here so the vendor export script is complete; auth logic AND
+// the admin seed land in Phase 03. NO User rows are seeded in Phase 02 (F6).
+model User {
+  id           Int      @id @default(autoincrement())
+  username     String   @unique @db.NVarChar(100)
+  passwordHash String   @db.NVarChar(255)
+  role         String   @default("STAFF") @db.NVarChar(20) // "ADMIN" | "STAFF" (F1 — app-enforced)
+  active       Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+// Runtime key/value settings (e.g. the Phase 06 connection string). No secrets written here.
+model AppSetting {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique @db.NVarChar(100)
+  value     String   @db.NVarChar(Max)
+  updatedAt DateTime @updatedAt
 }

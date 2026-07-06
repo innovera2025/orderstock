@@ -19,5 +19,11 @@ export default defineConfig({
   datasource: {
     url: process.env.DATABASE_URL,
   },
+  // Seed wiring (Phase 02, decision 4). NOTE: the PRIMARY documented seed command is the
+  // DIRECT run `pnpm tsx prisma/seed.ts` — Prisma 7 `prisma db seed` is unreliable due to
+  // upstream bugs #27769/#27773. This key is kept for completeness/tooling parity only.
+  migrations: {
+    seed: "tsx prisma/seed.ts",
+  },
 });
 
