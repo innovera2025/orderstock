@@ -19,7 +19,9 @@ export const authConfig = {
     authorized({ auth, request }) {
       const isLoggedIn = !!auth?.user;
       const { pathname } = request.nextUrl;
-      if (pathname.startsWith("/admin")) {
+      // ADMIN-only areas: /admin/** and the Phase 06 /settings/** DB-config page (E4). Server-side
+      // requireAuth("ADMIN") remains the real boundary; this edge gate is defense-in-depth.
+      if (pathname.startsWith("/admin") || pathname.startsWith("/settings")) {
         return isLoggedIn && auth?.user?.role === "ADMIN";
       }
       return isLoggedIn;

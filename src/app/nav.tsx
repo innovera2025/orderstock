@@ -32,6 +32,11 @@ export async function Nav() {
             จัดการผู้ใช้
           </Link>
         )}
+        {role === "ADMIN" && (
+          <Link href="/settings/db" className="text-zinc-600 hover:text-zinc-900">
+            ตั้งค่าฐานข้อมูล
+          </Link>
+        )}
       </nav>
       <div className="flex items-center gap-3">
         <span className="text-zinc-500">
