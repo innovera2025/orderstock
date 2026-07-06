@@ -246,7 +246,7 @@ All paths are inside `process/features/order-system/active/phase1-order-system_0
 | Phase | Status |
 |---|---|
 | 0 — Pre-program (plan creation) | 🧪 TESTING (this umbrella + stubs created; validators pending) |
-| 01 — Foundation | 🧪 TESTING (R+I+PLAN-SUPPLEMENT+PVL done; validate-contract CONDITIONAL; EXECUTE pending user consent) |
+| 01 — Foundation | ✅ VERIFIED (all 7 inner-loop steps done; EVL independently re-ran all 6 gates green; `.env` created with user approval; 2 known-gaps accepted) |
 | 02 — Schema & Master Data | ⏳ PLANNED |
 | 03 — Auth | ⏳ PLANNED |
 | 04 — Order Entry | ⏳ PLANNED |
@@ -324,16 +324,22 @@ for f in process/features/order-system/active/phase1-order-system_06-07-26/phase
 
 ## Current Execution State
 
-Last updated: 06-07-26 (Phase 01 PVL complete)
-Completed phases: Phase 0 (Planning)
-Current phase: Phase 01 — Foundation
-Current loop step: EXECUTE (pending user consent) — RESEARCH ✅, INNOVATE ✅, PLAN-SUPPLEMENT ✅, PVL ✅ done for Phase 01
-Validate-contract status: WRITTEN — Net Gate CONDITIONAL (inner-pvl: phase-01; 4 plan fixes applied, 7 execute-agent instructions, 2 known-gaps accepted)
-Program Net Gate: PENDING (Phase 01 CONDITIONAL — proceed to EXECUTE on user consent)
-Latest validator run: 06-07-26 — phase-01 validate-plan-artifact PASS (0 fail / 0 warn); umbrella validator PASS
+Last updated: 06-07-26 (Phase 01 closed out — UPDATE PROCESS complete)
+Completed phases: Phase 0 (Planning), Phase 01 (Foundation — ✅ VERIFIED)
+Current phase: Phase 02 — Schema & Master Data
+Current loop step: RESEARCH (not started)
+Validate-contract status: Phase 01 contract WRITTEN and satisfied (inner-pvl: phase-01; Net Gate CONDITIONAL → resolved: all 6 gates green independently re-run, `.env` created, 2 known-gaps accepted as program-level residuals). Phase 02 contract: not yet written (PVL step pending).
+Program Net Gate: Phase 01 VERIFIED. Program continues — proceed to Phase 02 RESEARCH.
+Latest validator run: 06-07-26 — phase-01 validate-plan-artifact PASS (0 fail / 0 warn); umbrella validator PASS (re-run recommended after this closeout's edits)
 
 Loop step values: RESEARCH | INNOVATE | PLAN-SUPPLEMENT | PVL | EXECUTE | EVL | UPDATE-PROCESS
-Orchestrator rule: read "Current loop step" and "validate-contract status" before spawning any subagent. Never spawn execute-agent when loop step is RESEARCH, INNOVATE, PLAN-SUPPLEMENT, or PVL. Phase 01 is now at EXECUTE — spawn vc-execute-agent (opus) only after explicit user consent (ENTER EXECUTE MODE).
+Orchestrator rule: read "Current loop step" and "validate-contract status" before spawning any subagent. Never spawn execute-agent when loop step is RESEARCH, INNOVATE, PLAN-SUPPLEMENT, or PVL. Phase 02 is now at RESEARCH — spawn vc-research-agent for Phase 02 next (read `phase-02-schema-master-data_PLAN_06-07-26.md` and the Phase 01 report first).
+
+Phase 01 carry-forward for Phase 02 RESEARCH:
+- `prisma/schema.prisma` currently holds ONLY the datasource + minimal `HealthCheck` model — Phase 02 EXTENDS it (never rewrites) with the full schema.
+- `src/lib/db.ts` PrismaClient singleton (driver-adapter pattern) is established and must be reused, not recreated.
+- Sandbox DB is up at `orderstock-sql` (Docker), COMPATIBILITY_LEVEL 150 (default; customer target unconfirmed — known-gap carried).
+- `.env` now exists (DATABASE_URL + MSSQL_SA_PASSWORD) — Phase 02 can rely on it directly instead of inline env vars.
 
 Note: The Stable Program Goal above is fixed. This section is the only part that changes — update-process-agent rewrites it after every phase closeout (overwrite, not append — git history is the audit log).
 

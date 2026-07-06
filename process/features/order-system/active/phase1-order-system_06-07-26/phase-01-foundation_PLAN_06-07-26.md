@@ -13,7 +13,7 @@ metadata:
 
 **Program:** phase1-order-system
 **Umbrella plan:** process/features/order-system/active/phase1-order-system_06-07-26/phase1-order-system-umbrella_PLAN_06-07-26.md
-**Phase status:** 🧪 TESTING (EXECUTE done 06-07-26; EVL done 06-07-26 — vc-tester independently re-ran all 6 validate-contract gates GREEN, zero mismatch vs execute's claims; cross-checks clean. Still NOT ✅ VERIFIED — ONE open item remains: `.env` file creation blocked by the privacy hook awaiting interactive user approval. Promote to VERIFIED once `.env` is created; the two known-gaps (compat-level, customer SQL version) are accepted and do not block.)
+**Phase status:** ✅ VERIFIED (06-07-26) — EXECUTE done 06-07-26; EVL done 06-07-26 — vc-tester independently re-ran all 6 validate-contract gates GREEN (build/lint/test/migrate/health/font-render), zero mismatch vs execute's claims; cross-checks clean. The sole remaining VERIFIED-blocker — `.env` creation, held by the privacy hook — is now resolved: `.env` was created 06-07-26 with explicit user approval, contents matching the report's specified inline-env values that already proved every gate. Regression checkpoint was correctly skipped (first phase, no prior verified surfaces). The two documented known-gaps (compat-level 140 vs 150 unconfirmed; customer SQL Server version unconfirmed) are accepted program-level residuals and do not block VERIFIED status.
 **Report destination:** process/features/order-system/active/phase1-order-system_06-07-26/phase-01-foundation_REPORT_06-07-26.md (flat in the program task folder)
 
 ---
@@ -176,7 +176,7 @@ Orchestrator reads this before deciding which subagent to spawn next. The canoni
 - [x] 4. PVL — vc-validate-agent: full V1-V7 done; validate-contract written (Net Gate CONDITIONAL) per example-validate-output.md
 - [x] 5. EXECUTE — all 14 checklist items done; all 6 validate-contract gates run GREEN (build/lint/test/migrate/health/font-probe) via inline env. ONE open item: `.env` creation blocked by the privacy hook (needs interactive user approval); contents fully specified in the phase report. Deviations documented in the report (font wiring via explicit @font-face+unicode-range instead of next/font/local; eslint ignores scoped to app source; pnpm allowBuilds).
 - [x] 6. EVL — vc-tester independent re-run: ALL 6 gates PASS (build/lint/test/migrate/health/font) with zero mismatch vs execute's claims; cross-checks clean (9 containers untouched, mem_limit=2GiB applied, .env absent, .gitignore covers .env*+node_modules, git status shows only expected app files); regression checkpoint skipped (first phase). EVL HANDOFF SUMMARY written; verification.json updated with evlReRun block. NOT promoted to VERIFIED — `.env` open item remains (privacy-hook, awaits user approval).
-- [ ] 7. UPDATE PROCESS — phase report written, umbrella state updated, commit done
+- [x] 7. UPDATE PROCESS — archived; context updated; committed (via vc-git-manager, routed by orchestrator)
 
 **Validate-contract written (CONDITIONAL).** EXECUTE is gated on explicit user consent (umbrella hard-stop: "Every phase EXECUTE requires explicit user consent unless a standing /goal grants it").
 
@@ -233,7 +233,7 @@ curl -s localhost:3000/api/health   # Expected: {"ok":true}
 
 **Date**: 06-07-26
 **Complexity**: COMPLEX (one phase of the phase1-order-system program)
-**Status**: 🧪 TESTING (PVL done; EXECUTE pending user consent)
+**Status**: ✅ VERIFIED (06-07-26 — all gates green independently re-run; `.env` created with user approval; two known-gaps accepted, not blocking)
 
 ## Overview
 
