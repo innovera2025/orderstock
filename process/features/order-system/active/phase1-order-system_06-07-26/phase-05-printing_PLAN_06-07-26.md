@@ -185,7 +185,7 @@ pnpm test           # Expected: structure assertions green
 - [x] 4. PVL — vc-validate-agent: DONE — V1–V7 complete; validate-contract CONDITIONAL (0 FAILs, 6 concerns as instructions E1–E7 + 2 documented known-gaps Q30/Q22); written per example-validate-output.md format
 - [x] 5. EXECUTE — all checklist items done; per-section test gates run and green (or gaps documented)
 - [x] 6. EVL — vc-tester independent re-run 06-07-26: all gates green (vitest 41/41, playwright 16/16, build+lint ✓, migrate clean); route-group deviation URL/auth audit PASS; DB unpolluted (0 RENAMED, restore-in-finally verified); follow-up stubs registered; EVL HANDOFF SUMMARY written to phase report; harness/phase-05/verification.json written; status → ✅ VERIFIED
-- [ ] 7. UPDATE PROCESS — phase report written, umbrella state updated, commit done
+- [x] 7. UPDATE PROCESS — phase report written; umbrella state updated (Phase 05 → ✅ VERIFIED, current phase → 06); context docs updated (all-context.md, tests/all-tests.md); validators run; commit routed to orchestrator (this session does not commit)
 
 **Validate-contract required before execute.**
 

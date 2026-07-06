@@ -7,7 +7,7 @@ metadata:
 ---
 # orderstock - All Context
 
-Last updated: 2026-07-06 (Phase 04 closeout — order entry ✅ VERIFIED, current phase → 05 Printing)
+Last updated: 2026-07-06 (Phase 05 closeout — printing ✅ VERIFIED, current phase → 06 DB Settings & Delivery, FINAL phase)
 
 This file is the root context entrypoint for the repo.
 
@@ -107,7 +107,7 @@ For most substantial tasks:
 | `auth/` | `process/context/auth/all-auth.md` | Auth context entrypoint for orderstock — next-auth v5 split-config architecture, requireAuth server-side choke-point contract, session policy, lockout, admin user management, and E2E fixtures |
 | `database/` | `process/context/database/all-database.md` | Database context entrypoint for orderstock — Prisma 7 + SQL Server schema, SQL Server-specific pitfalls (no enums, one-NULL-per-UNIQUE, NoAction cascades), historical-fidelity snapshot pattern, and seed/migration/export commands |
 | `planning/` | `process/context/planning/all-planning.md` | Planning context entrypoint for orderstock — plan-shape calibration (SIMPLE vs COMPLEX), planning conventions, and example plan references |
-| `tests/` | `process/context/tests/all-tests.md` | Testing entrypoint for orderstock — Vitest 3.2.6 (39 tests/10 files) and Playwright E2E (9 tests) both real and wired, sandbox SQL Server constraint |
+| `tests/` | `process/context/tests/all-tests.md` | Testing entrypoint for orderstock — Vitest 3.2.6 (41 tests/10 files) and Playwright E2E (16 tests) both real and wired, sandbox SQL Server constraint |
 <!-- /GENERATED:routing -->
 
 ## Task Routing Table
@@ -127,7 +127,7 @@ For most substantial tasks:
 
 | Feature | Folder | Status |
 |---|---|---|
-| `order-system` | `process/features/order-system/` | Active — phase program `phase1-order-system_06-07-26` (umbrella + 6 phase plans); Phase 01 Foundation ✅ VERIFIED, Phase 02 Schema & Master Data ✅ VERIFIED, Phase 03 Auth ✅ VERIFIED, Phase 04 Order Entry ✅ VERIFIED, Phase 05 Printing is the current phase |
+| `order-system` | `process/features/order-system/` | Active — phase program `phase1-order-system_06-07-26` (umbrella + 6 phase plans); Phases 01-05 (Foundation, Schema & Master Data, Auth, Order Entry, Printing) all ✅ VERIFIED. Phase 06 DB Settings & Delivery is the current (and FINAL) phase |
 
 When routing feature-scoped work, pass `Feature: order-system` and the program folder path
 `process/features/order-system/active/phase1-order-system_06-07-26/` in the subagent prompt.
@@ -175,7 +175,7 @@ When durable project knowledge changes:
 
 ## Repository Structure
 
-**Current state: Phase 01 (Foundation), Phase 02 (Schema & Master Data), Phase 03 (Auth), and Phase 04 (Order Entry) VERIFIED.** The app is a real, buildable Next.js project wired to a Docker SQL Server sandbox via Prisma 7, with the full 9-model schema migrated, seeded, master-data CRUD (shops/products) wired, next-auth v5 credentials login + ADMIN/STAFF role-gating protecting every route, and a daily order-sheet entry grid (create/edit/list by date+location) that recreates the 13/3/69 scan day with matching per-column totals and grand total (446). Phases 05-06 (printing, DB settings/delivery) are still planned/not implemented.
+**Current state: Phases 01-05 (Foundation, Schema & Master Data, Auth, Order Entry, Printing) all VERIFIED.** The app is a real, buildable Next.js project wired to a Docker SQL Server sandbox via Prisma 7, with the full 9-model schema migrated, seeded, master-data CRUD (shops/products) wired, next-auth v5 credentials login + ADMIN/STAFF role-gating protecting every route, a daily order-sheet entry grid (create/edit/list by date+location) that recreates the 13/3/69 scan day with matching per-column totals and grand total (446), and print routes (combined daily + per-shop) that render an A4-landscape mm-faithful form from a snapshot-only fetch. Authenticated app routes live under a `src/app/(main)/` route group so `/print` can render chrome-free. Phase 06 (DB settings/delivery packaging) is the current, FINAL phase — not yet implemented.
 
 ```
 orderstock/
@@ -201,32 +201,44 @@ orderstock/
   e2e/                         -- Playwright specs (Phase 03) — see auth/all-auth.md E2E fixtures section
     auth.setup.ts               -- produces reusable ADMIN/STAFF storage-state fixtures (.auth/*.json, gitignored)
     auth.spec.ts                -- login/role-gate/redirect/enum hybrid gates
+    orders.spec.ts              -- Phase 04: D1/D2 order-sheet round-trip + snapshot-preserve hybrid gates
+    print.spec.ts               -- Phase 05: 7 print gates (colgroup 24/20, 29 rows + 446 totals, @page A4 landscape, snapshot-render + restore-in-finally, per-shop .sheet/break, test-side page.pdf, unauth redirect)
   src/
     auth.ts                    -- Node-runtime next-auth config: Credentials provider + Prisma + bcryptjs (Phase 03)
     auth.config.ts             -- edge-safe split config: JWT session, authorized route/role gate (Phase 03)
     proxy.ts                   -- Next 16 route protection (NOT middleware.ts — silently ignored) (Phase 03)
     next-auth.d.ts             -- module augmentation: role on Session/JWT (Phase 03)
+    styles/
+      print.css                -- Phase 05: @page A4 landscape mm layout, dotted/solid borders, heavy สินค้า/เครื่องปรุง seam, additive (OFF) semantic-fill layer for Q30
     app/
-      layout.tsx               -- Thai <html lang="th"> shell + auth-aware nav (Phase 03)
-      page.tsx                 -- home page: Thai title + DB-status indicator
-      db-status.tsx             -- client component calling /api/health
+      layout.tsx               -- Thai <html lang="th"> shell, root layout (Nav removed here in Phase 05 — see (main)/layout.tsx)
       fonts.css                -- explicit @font-face + unicode-range for Sarabun
       globals.css               -- imports fonts.css
-      nav.tsx                  -- auth-aware nav (current user + logout) (Phase 03)
-      auth-actions.ts          -- logout server action (Phase 03)
       api/health/route.ts       -- DB connectivity health check (SELECT 1)
       api/auth/[...nextauth]/route.ts -- Auth.js v5 route handler (Phase 03)
-      shops/**                  -- shops master-data CRUD (Phase 02; requireAuth-guarded since Phase 03)
-      products/**               -- products/variants master-data CRUD (Phase 02; requireAuth-guarded since Phase 03)
       (auth)/login/**           -- Thai login page + server action (Phase 03)
-      admin/users/**            -- admin user management: list/create/edit-role/reset-password/deactivate (Phase 03)
-      orders/**                 -- daily order-sheet entry: list/create/edit by date+location (Phase 04)
-        order-grid.tsx          -- whole-sheet editable matrix client component (29 roster slots x 20 cols + notes)
-        new-sheet-form.tsx      -- native date input (CE) + read-only BE label + "วันนี้" shortcut
-        actions.ts              -- createOrderSheet (app-level dup check) / saveOrderSheet (snapshot-preserving)
-        page.tsx / [id]/page.tsx -- sheet list / editor
+      (main)/                   -- Phase 05: route GROUP (adds no URL segment) holding every authenticated app route so it renders <Nav/>
+        layout.tsx              -- renders <Nav/>; every route below is unchanged at the URL level
+        page.tsx                -- home page: Thai title + DB-status indicator
+        db-status.tsx           -- client component calling /api/health
+        nav.tsx                 -- auth-aware nav (current user + logout) (Phase 03)
+        auth-actions.ts         -- logout server action (Phase 03)
+        shops/**                -- shops master-data CRUD (Phase 02; requireAuth-guarded since Phase 03)
+        products/**             -- products/variants master-data CRUD (Phase 02; requireAuth-guarded since Phase 03)
+        admin/users/**          -- admin user management: list/create/edit-role/reset-password/deactivate (Phase 03)
+        orders/**               -- daily order-sheet entry: list/create/edit by date+location (Phase 04); [id]/page.tsx extended Phase 05 with พิมพ์รวมทั้งวัน/พิมพ์แยกร้าน print links
+          order-grid.tsx         -- whole-sheet editable matrix client component (29 roster slots x 20 cols + notes)
+          new-sheet-form.tsx     -- native date input (CE) + read-only BE label + "วันนี้" shortcut
+          actions.ts             -- createOrderSheet (app-level dup check) / saveOrderSheet (snapshot-preserving)
+          page.tsx / [id]/page.tsx -- sheet list / editor
+      print/                    -- Phase 05: dedicated NO-NAV route group (chrome-free /print), sibling of (main)/, NOT nested inside it
+        layout.tsx              -- no-nav layout (imports print.css); requireAuth() called explicitly per print page
+        daily/[date]/page.tsx   -- combined-day sheet: all 29 roster slots incl. blank gaps
+        shops/[date]/page.tsx   -- per-shop sheets, one `.sheet{break-after:page}` per shop, `?slots=` filter
+        print-table.tsx         -- pure server render: 24-physical/20-semantic-col table, mm <colgroup>, totals row = LAST tbody row (never tfoot)
+        print-controls.tsx      -- on-screen พิมพ์ button + Thai print-settings hint (hidden in @media print)
     components/
-      sheet-header.tsx          -- reusable logic-free two-tier สินค้า/เครื่องปรุง header (Phase 04; Phase 05 print imports this)
+      sheet-header.tsx          -- reusable two-tier สินค้า/เครื่องปรุง header (Phase 04); EXTENDED additively in Phase 05 (subLabel 3rd tier, per-column className, trailingColSpan — all default-OFF, Phase-04 grid renders byte-identically)
     lib/
       db.ts                     -- PrismaClient singleton (driver-adapter pattern)
       fonts.ts                  -- Sarabun font-family stack constant
@@ -236,12 +248,13 @@ orderstock/
       password.ts               -- bcryptjs hash/verify + timing-safe dummy compare (Phase 03)
       login-attempts.ts         -- LoginAttemptTracker: lockout after N failures (Phase 03)
       auth-guard.ts             -- requireAuth(role?) — the real server-side security boundary (Phase 03) — see auth/all-auth.md
-      totals.ts                 -- computeColumnTotals / computeGrandTotal(orderLines) / computeTotalWeight — single source of truth, client+server both import this (Phase 04)
-      be-date.ts                -- CE<->BE conversion (Intl en-US-u-ca-buddhist) + Thai d/m/yy display helpers (Phase 04)
+      totals.ts                 -- computeColumnTotals / computeGrandTotal(orderLines) / computeTotalWeight — single source of truth, client+server both import this (Phase 04); also imported by Phase 05 print footer
+      be-date.ts                -- CE<->BE conversion (Intl en-US-u-ca-buddhist) + Thai d/m/yy display helpers (Phase 04); reused for Phase 05 printed date headers
       order-save.ts             -- pure mergeSnapshots() snapshot-carry-forward helper, unit-testable without a DB (Phase 04)
-      __tests__/                -- smoke, variant-validation, correction-cascade, password, login-attempts, auth-guard-coverage, secret-leak, totals, be-date, order-save (39 tests total)
+      get-sheet-for-print.ts    -- Phase 05: NEW snapshot-only fetch (shopNameAtEntry/variantNameAtEntry, NEVER live Shop/ProductVariant names) — shared by both print routes; daily returns all 29 slots, per-shop filters in memory
+      __tests__/                -- smoke, variant-validation, correction-cascade, password, login-attempts, auth-guard-coverage (now covers (main)/ + print pages), secret-leak, totals, be-date, order-save (41 tests total)
   test-fixtures/
-    sheet-13-03-69.json         -- canonical 13/3/69 gate fixture (51 cells, 20 column totals, grand 446, 13 NoteLines) — shared by Phase 04 unit gate + Phase 05 print tests
+    sheet-13-03-69.json         -- canonical 13/3/69 gate fixture (51 cells, 20 column totals, grand 446, 13 NoteLines) — shared by Phase 04 unit gate + Phase 05 print e2e tests
   public/fonts/                -- self-hosted Sarabun OFL woff2 (400/600/700, thai+latin)
   process/
     context/                   -- this context system (incl. database/, auth/ groups)
@@ -250,10 +263,11 @@ orderstock/
     development-protocols/     -- RIPER-5 methodology docs
 ```
 
-### Application Structure (Phases 05-06, planned)
+### Application Structure (Phase 06, planned — FINAL phase)
 
-- `src/app/print/**` — print layouts (Phase 05; imports `sheet-header.tsx` + `test-fixtures/sheet-13-03-69.json` from Phase 04, renders from `OrderLine`/`NoteLine` snapshot columns only)
 - `src/app/settings/db/**` — connection-string settings page (Phase 06)
+- `src/lib/connection-string.ts` — ADO.NET → adapter-accepted format conversion + validation (Phase 06)
+- `db/create-login.sql`, `docs/deployment-guide.md` — delivery packaging (Phase 06)
 
 ## Technology Stack
 
@@ -265,7 +279,7 @@ orderstock/
   - `prisma@7.8.0`, `@prisma/client@7.8.0`, `@prisma/adapter-mssql@7.8.0`, `mssql@^12.2.0`
   - dev: sandbox SQL Server 2022 in Docker (`docker-compose.yml`, `mem_limit: 2g`, compat level 150); production: customer's SQL Server via runtime connection string (Phase 06, not yet built)
 - **CSS:** Tailwind 4 (`@tailwindcss/postcss`) via create-next-app default; print CSS (Phase 05) stays separate plain CSS
-- **Testing:** Vitest 3.2.6 (`pnpm test` → `vitest run`) — 39 tests across 10 files (smoke, variant-validation, correction-cascade, password, login-attempts, auth-guard-coverage, secret-leak, totals, be-date, order-save) as of Phase 04. Playwright `@playwright/test@1.61.1` — installed Phase 03; 9 E2E tests across `e2e/auth.spec.ts` + `e2e/orders.spec.ts` + `e2e/auth.setup.ts` fixtures. See `tests/all-tests.md`.
+- **Testing:** Vitest 3.2.6 (`pnpm test` → `vitest run`) — 41 tests across 10 files (smoke, variant-validation, correction-cascade, password, login-attempts, auth-guard-coverage, secret-leak, totals, be-date, order-save) as of Phase 05. Playwright `@playwright/test@1.61.1` — installed Phase 03; 16 E2E tests across `e2e/auth.spec.ts` + `e2e/orders.spec.ts` + `e2e/print.spec.ts` + `e2e/auth.setup.ts` fixtures. See `tests/all-tests.md`.
 - **Validation:** `zod@^4.4.3` — server-action input validation with Thai error messages (added Phase 02, decision 5); enforces `packSize`/`group`/`role` allowed values from `src/lib/product-order.ts` since SQL Server has no Prisma enums (see `database/all-database.md`)
 - **Scripting runtime:** `tsx@^4.23.0` (devDep, added Phase 02) — runs `prisma/seed.ts` and `scripts/export-schema-sql.ts` directly
 - **Package manager:** pnpm 11.5.0 (`pnpm-workspace.yaml` sets `allowBuilds` for native-script packages: `@prisma/client`, `@prisma/engines`, `esbuild`, `prisma`, `sharp`, `unrs-resolver` — pnpm 11.5 blocks build scripts by default)
@@ -284,6 +298,8 @@ orderstock/
 - `prisma/schema.prisma` and `src/app/layout.tsx` are SHARED files extended (never rewritten) across phases — see the umbrella plan's Blast Radius + `phase-blast-radius-registry.md`.
 - **Single-source totals module, imported by both client and server (`src/lib/totals.ts`, Phase 04):** the live on-screen footer in `order-grid.tsx` AND the server-side save-time verification in `actions.ts` import the SAME `computeColumnTotals`/`computeGrandTotal` functions — never reimplement the arithmetic in a second place. `computeGrandTotal(orderLines: OrderLineCell[])` type-excludes `NoteLine` quantities (no `includeNotes` flag) — note quantities are never part of the printed grand total.
 - **BE date helper (`src/lib/be-date.ts`, Phase 04):** CE↔BE conversion via Intl `en-US-u-ca-buddhist` (not `th-TH-u-ca-buddhist` — `en-US` returns ASCII digits directly, matching the paper form's display convention; `th-TH` would return Thai digits requiring extra transliteration). Store CE in the DB always; display BE via this helper, never compute BE year arithmetic ad hoc elsewhere.
+- **`(main)` route group is structural, not CSS-based nav exclusion (Phase 05):** every authenticated app route (orders, products, shops, admin, db-status, root page) lives under `src/app/(main)/`, whose `layout.tsx` renders `<Nav/>`; `src/app/print/**` is a SIBLING route group with its own no-nav `layout.tsx`. A Next.js route group adds NO URL segment — `/orders`, `/admin/users`, etc. are unchanged; only the file location and which layout wraps the page changed. Use this pattern (a route group), not `@media print` CSS hiding, whenever a route segment needs a genuinely different layout shell. `proxy.ts` and `requireAuth()` are untouched by route-group moves — they are not layout-dependent.
+- **Print architecture (Phase 05):** print pages fetch through one NEW shared helper, `src/lib/get-sheet-for-print.ts` — snapshot-only (`shopNameAtEntry`/`variantNameAtEntry`), never the live `/orders/[id]` fetch, so a renamed shop still prints under its original name (historical-fidelity contract, `database/all-database.md`). The mm print CSS contract lives in `src/styles/print.css`: `@page { size: A4 landscape; margin: 8mm }`, `<colgroup>` mm widths emitted by the route (not the CSS file), totals row = LAST `tbody` row (never `tfoot`, which Chromium repeats per page). Shading is border-first: solid/dotted borders + a heavy สินค้า/เครื่องปรุง column-group seam are the shipped default; semantic fill colors are a pure-CSS ADDITIVE layer, present in `print.css` but commented out/OFF until the customer confirms Q30.
 
 ## Environment and Configuration
 
@@ -321,7 +337,7 @@ orderstock/
 
 ## Scan Metadata
 
-- Generated: 2026-07-06 (Phase 04 closeout update)
-- HEAD: 2d6e55e (docs: phase-04 verified closeout artifacts)
-- Mode: delta update (post-Phase-04 EXECUTE+EVL+UPDATE-PROCESS)
+- Generated: 2026-07-06 (Phase 05 closeout update)
+- HEAD: 6131ec0 (docs: phase-05 verified closeout artifacts)
+- Mode: delta update (post-Phase-05 EXECUTE+EVL+UPDATE-PROCESS)
 - Package manager: pnpm 11.5.0
