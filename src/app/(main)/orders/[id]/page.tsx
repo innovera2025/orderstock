@@ -1,7 +1,8 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { OrderGrid, type GridColumn, type GridRow } from "../order-grid";
-import { ceToBeDisplay } from "@/lib/be-date";
+import { ceToBeDisplay, toDateInputValue } from "@/lib/be-date";
 
 export const dynamic = "force-dynamic";
 
@@ -76,6 +77,22 @@ export default async function OrderSheetPage({
         <p className="text-xs text-zinc-500">
           แก้ไขล่าสุด: {ceToBeDisplay(normalizeDbDate(sheet.updatedAt))} ({sheet.updatedAt.toLocaleTimeString("th-TH")})
         </p>
+        <div className="mt-2 flex gap-3 text-sm">
+          <Link
+            href={`/print/daily/${toDateInputValue(normalizeDbDate(sheet.date))}${sheet.location ? `?location=${encodeURIComponent(sheet.location)}` : ""}`}
+            target="_blank"
+            className="text-blue-700 hover:underline"
+          >
+            พิมพ์รวมทั้งวัน
+          </Link>
+          <Link
+            href={`/print/shops/${toDateInputValue(normalizeDbDate(sheet.date))}${sheet.location ? `?location=${encodeURIComponent(sheet.location)}` : ""}`}
+            target="_blank"
+            className="text-blue-700 hover:underline"
+          >
+            พิมพ์แยกร้าน
+          </Link>
+        </div>
       </div>
 
       <OrderGrid

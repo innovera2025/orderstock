@@ -1,0 +1,199 @@
+/* Phase 05 print stylesheet. Reproduces the scanned A4-landscape order form at TRUE millimetre
+ * dimensions (print REF §1/§4). Column widths live here (E2: the print route emits the <colgroup>,
+ * this file owns the mm widths + all print styling). Sarabun is inherited from the global body
+ * font (globals.css / fonts.css) — Chromium shapes Thai tone marks correctly with HarfBuzz.
+ *
+ * Design rule (decision 1): BORDER / weight-emphasis only, so the form survives the print dialog's
+ * "Background graphics" toggle being OFF. Semantic fills (header cream / totals salmon / footer
+ * green) are prepared as an ADDITIVE layer at the bottom of this file, COMMENTED OUT until the
+ * customer answers Q30 — flipping them on is purely additive and changes no structure.
+ *
+ * TABLE WIDTH: the per-column mm widths below sum to 252.6mm (≤ the ~281mm usable width at 8mm
+ * margins). This is the faithful ≈251mm form with its deliberate ~10% blank right margin — the
+ * scan is the spec; do NOT stretch to full width.
+ */
+
+/* A4 landscape; 8mm margins clear typical printer hardware non-printable edges (~4-6mm). */
+@page {
+  size: A4 landscape;
+  margin: 8mm;
+}
+
+/* On-screen preview matches paper: a 297mm-wide canvas so screen ≈ printout. */
+.print-canvas {
+  width: 297mm;
+  margin: 0 auto;
+  padding: 8mm;
+  box-sizing: border-box;
+}
+
+.print-toolbar {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  margin-bottom: 6mm;
+}
+
+.print-sheet {
+  color: #000;
+}
+
+.print-sheet .sheet-title {
+  font-size: 12pt;
+  font-weight: 700;
+  margin-bottom: 2mm;
+}
+
+.print-sheet table {
+  table-layout: fixed;
+  border-collapse: collapse;
+  width: 252.6mm;
+  border: 2px solid #000; /* outer ~2pt solid */
+  font-size: 7.5pt;
+  line-height: 1.1;
+}
+
+/* mm column widths (E2 — the <colgroup> in the route references these classes). */
+.print-sheet col.c-seq {
+  width: 7.1mm;
+}
+.print-sheet col.c-shop {
+  width: 28.8mm;
+}
+.print-sheet col.c-goods {
+  width: 9.8mm;
+}
+.print-sheet col.c-seasoning {
+  width: 6.8mm;
+}
+.print-sheet col.c-note {
+  width: 23.8mm;
+}
+.print-sheet col.c-noteqty {
+  width: 8.9mm;
+}
+
+/* Interior separators: dotted ~0.5pt (the source is a spreadsheet with dotted gridlines). */
+.print-sheet th,
+.print-sheet td {
+  border: 0.5pt dotted #555;
+  padding: 0.4mm 0.6mm;
+  text-align: center;
+  vertical-align: middle;
+  overflow: hidden;
+  height: 5mm; /* 29 body rows × 5mm = 145mm (single-page fit) */
+}
+
+/* Header band + totals band: ~1.5pt solid rules. */
+.print-sheet thead th {
+  border-top: 1px solid #000;
+  border-bottom: 1.5pt solid #000;
+  font-weight: 600;
+}
+
+.print-sheet .totals-row td {
+  border-top: 1.5pt solid #000;
+  border-bottom: 1.5pt solid #000;
+  font-weight: 700;
+}
+
+/* Heavy solid vertical divider at the สินค้า / เครื่องปรุง (C18/C19) boundary — the first
+ * เครื่องปรุง column carries `.seam-left`, and the group header cell inherits it (sheet-header.tsx). */
+.print-sheet .seam-left {
+  border-left: 1.5pt solid #000;
+}
+
+/* Dotted divider inside หมายเหตุ, before the qty strip. */
+.print-sheet .note-qty {
+  border-left: 0.5pt dotted #555;
+}
+
+.print-sheet .shop-cell {
+  text-align: left;
+  white-space: nowrap;
+  padding-left: 1mm;
+}
+
+.print-sheet .note-cell {
+  text-align: left;
+  padding-left: 1mm;
+  white-space: nowrap;
+}
+
+/* Footer block: tally lists + weight totals (labels always in position; weight VALUES blank
+ * until the Q22 factors arrive — never a fabricated 0). */
+.print-footer {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 2mm;
+  font-size: 8pt;
+}
+
+.print-footer .tally-col {
+  min-width: 60mm;
+}
+
+.print-footer .tally-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 4mm;
+  border-bottom: 0.5pt dotted #999;
+}
+
+.print-footer .weight-col {
+  text-align: right;
+  min-width: 60mm;
+}
+
+.print-footer .weight-line {
+  font-weight: 700;
+  margin-bottom: 1mm;
+}
+
+/* One shop per page for the per-shop batch (single print job). */
+.sheet {
+  break-after: page;
+}
+.sheet:last-child {
+  break-after: auto;
+}
+
+@media screen {
+  .print-canvas {
+    background: #fff;
+    box-shadow: 0 0 0 1px #ddd;
+    margin: 1rem auto;
+  }
+}
+
+@media print {
+  /* Hide the on-screen toolbar (print button / hints) when printing. */
+  .print-toolbar {
+    display: none;
+  }
+  .print-canvas {
+    width: auto;
+    padding: 0;
+    margin: 0;
+    box-shadow: none;
+  }
+  /* Repeat the header on overflow + keep rows intact (safety net; the form targets one page). */
+  thead {
+    display: table-header-group;
+    break-inside: avoid;
+  }
+  tr {
+    break-inside: avoid;
+  }
+}
+
+/* ---------------------------------------------------------------------------------------------
+ * ADDITIVE SEMANTIC-FILL LAYER — OFF BY DEFAULT (decision 1; gap-blocked on customer Q30).
+ * Uncomment to flip on header cream / totals salmon / footer green. Requires the user to enable
+ * "Background graphics" in the print dialog; print-color-adjust: exact requests it be honored.
+ * This block is purely additive: it changes NO structure, borders, or column widths.
+ *
+ * .print-sheet thead th { background: #fdf6e3; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+ * .print-sheet .totals-row td { background: #f4c9c0; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+ * .print-footer { background: #e6f0e0; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+ * --------------------------------------------------------------------------------------------- */

@@ -16,13 +16,15 @@ interface ActionModule {
   expected: string[];
 }
 
+// Route-scoped action modules live under the (main) route group (Phase 05: /print excluded from
+// the nav-bearing group). Route groups add NO URL segment, but they ARE real folders on disk.
 const MODULES: ActionModule[] = [
   {
-    file: "src/app/shops/actions.ts",
+    file: "src/app/(main)/shops/actions.ts",
     expected: ["createShop", "updateShop", "softDeleteShop", "restoreShop"],
   },
   {
-    file: "src/app/products/actions.ts",
+    file: "src/app/(main)/products/actions.ts",
     expected: [
       "createProduct",
       "updateProduct",
@@ -33,11 +35,11 @@ const MODULES: ActionModule[] = [
     ],
   },
   {
-    file: "src/app/admin/users/actions.ts",
+    file: "src/app/(main)/admin/users/actions.ts",
     expected: ["createUser", "editRole", "resetPassword", "deactivateUser", "activateUser"],
   },
   {
-    file: "src/app/orders/actions.ts",
+    file: "src/app/(main)/orders/actions.ts",
     expected: ["createOrderSheet", "saveOrderSheet"],
   },
 ];
@@ -69,8 +71,25 @@ describe("requireAuth coverage over all server actions (ELEV-guard)", () => {
     });
   }
 
+  // E6: print PAGES are `export default async function` (NOT the `export async function` action
+  // shape the parser above splits on), so they need their own grep path. Each print page must call
+  // requireAuth() explicitly — proxy.ts gates the route, requireAuth is the real boundary (E1a).
+  const PRINT_PAGES = [
+    "src/app/print/daily/[date]/page.tsx",
+    "src/app/print/shops/[date]/page.tsx",
+  ];
+  for (const file of PRINT_PAGES) {
+    it(`print page ${file} calls requireAuth`, () => {
+      const source = readFileSync(resolve(ROOT, file), "utf8");
+      expect(/export default async function/.test(source), `${file} is a default async page`).toBe(
+        true,
+      );
+      expect(/requireAuth\(/.test(source), `${file} must call requireAuth()`).toBe(true);
+    });
+  }
+
   it("admin actions require the ADMIN role specifically", () => {
-    const source = readFileSync(resolve(ROOT, "src/app/admin/users/actions.ts"), "utf8");
+    const source = readFileSync(resolve(ROOT, "src/app/(main)/admin/users/actions.ts"), "utf8");
     const actions = extractExportedActions(source);
     const notAdminGated = actions
       .filter((a) => !/requireAuth(State)?\(\s*"ADMIN"\s*\)/.test(a.body))
