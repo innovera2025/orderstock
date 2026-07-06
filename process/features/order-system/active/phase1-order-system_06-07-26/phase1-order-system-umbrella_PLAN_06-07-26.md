@@ -214,7 +214,7 @@ During /goal execution of this phase program:
 
 - Prisma 7 driver-adapter pattern (`@prisma/adapter-mssql`) from day one — old `datasourceUrl`/`datasources` tutorials are WRONG for v7. Pin exact Prisma 7.8.x.
 - Pin exact `next-auth@5.0.0-beta.31`; INNOVATE (Phase 01) confirmed it is compatible with **Next 16.2.x**, which is the pinned Next major.
-- **RISK / OPEN (Phase 03 input):** Next 16 renames `middleware.ts` → `proxy.ts`. The db-auth REF §5 auth guidance still says "middleware" — Phase 03 RESEARCH must reconcile the auth route-protection file name (`proxy.ts` under Next 16) before writing the Phase 03 checklist.
+- **RESOLVED (Phase 03 PLAN-SUPPLEMENT):** Next 16 route protection uses **`proxy.ts`** (NOT `middleware.ts`, which is silently ignored). Auth.js v5 also requires `src/app/api/auth/[...nextauth]/route.ts` and env vars `AUTH_SECRET`/`AUTH_TRUST_HOST`. Encoded in the Phase 03 plan; bcryptjs chosen for hashing; login rate-limiting added.
 - **CROSS-PHASE (LOAD-BEARING, Phase 04/05 input):** Phase 02 (decision 6) adds historical name-snapshot columns `shopNameAtEntry`/`variantNameAtEntry` on `OrderLine`/`NoteLine`. Phase 04 MUST write these at line-create time; Phase 05 MUST render from them (never live names). A shared correction-cascade back-fills snapshots only while the referenced entity is still `needsConfirmation=true`.
 - Schema and generated T-SQL must stay compatible with SQL Server 2017+ (2016 is an OPEN QUESTION with the customer — do not assume it works).
 - Thai UI text; English code/identifiers/filenames.
@@ -325,16 +325,16 @@ for f in process/features/order-system/active/phase1-order-system_06-07-26/phase
 
 ## Current Execution State
 
-Last updated: 06-07-26 (Phase 02 UPDATE PROCESS complete — ✅ VERIFIED, context updated)
+Last updated: 06-07-26 (Phase 03 PVL complete — validate-contract CONDITIONAL written; EXECUTE pending user consent)
 Completed phases: Phase 0 (Planning), Phase 01 (Foundation — ✅ VERIFIED), Phase 02 (Schema & Master Data — ✅ VERIFIED)
 Current phase: Phase 03 — Auth
-Current loop step: RESEARCH (not started)
-Validate-contract status: Phase 01 contract satisfied (inner-pvl: phase-01). Phase 02 contract satisfied (inner-pvl: phase-02; all 7 gates independently re-confirmed at EVL). Phase 03 contract not yet written (vc-validate-agent writes it after RESEARCH→INNOVATE→PLAN-SUPPLEMENT).
-Program Net Gate: Phase 01 VERIFIED; Phase 02 VERIFIED. Program continues — Phase 03 RESEARCH next.
+Current loop step: PVL complete → EXECUTE (pending explicit user consent — charter HARD STOP)
+Validate-contract status: Phase 01 contract satisfied (inner-pvl: phase-01). Phase 02 contract satisfied (inner-pvl: phase-02; all 7 gates independently re-confirmed at EVL). Phase 03 inner-PVL contract WRITTEN 06-07-26 (CONDITIONAL; 0 FAILs, 11 concerns folded into execute-agent instructions + 4 accepted known-gaps; full STRIDE scan done).
+Program Net Gate: Phase 01 VERIFIED; Phase 02 VERIFIED; Phase 03 PVL CONDITIONAL. Program continues — Phase 03 EXECUTE next, pending user consent.
 Latest validator run: 06-07-26 (UPDATE PROCESS) — `validate-all-context.mjs` and `validate-context-discovery.mjs` green after `database/` group creation; plan-artifact validators re-run for phase-02 + umbrella (see this session's closeout packet for exact results).
 
 Loop step values: RESEARCH | INNOVATE | PLAN-SUPPLEMENT | PVL | EXECUTE | EVL | UPDATE-PROCESS
-Orchestrator rule: read "Current loop step" and "validate-contract status" before spawning any subagent. Phase 02 is fully closed out (✅ VERIFIED, UPDATE PROCESS done). Phase 03 has not started — next subagent is vc-research-agent for Phase 03 (Auth). Read the phase-02 report + this umbrella + `process/context/database/all-database.md` before starting Phase 03 RESEARCH (User model already exists, extend it — do not rewrite `prisma/schema.prisma`).
+Orchestrator rule: read "Current loop step" and "validate-contract status" before spawning any subagent. Phase 03 has completed RESEARCH→INNOVATE→PLAN-SUPPLEMENT→PVL; the validate-contract is CONDITIONAL and written into `phase-03-auth_PLAN_06-07-26.md`. Next subagent = vc-execute-agent (opus) for Phase 03, gated on explicit user consent (ENTER EXECUTE MODE). Execute per the contract's E1–E13; TDD order: password.ts + login-attempts.ts unit-green BEFORE authorize(); sandbox `orderstock-sql` DB only; deliver seeded admin credential out-of-band; no commit/push without instruction.
 
 Phase 02 carry-forward for Phase 03 RESEARCH:
 - `prisma/schema.prisma` now holds the full 9-model domain (Shop, Product, ProductVariant, OrderSheet, OrderLine, NoteLine, User, AppSetting, HealthCheck) — Phase 03 EXTENDS `User` (adds auth fields if needed; `passwordHash`/`role` already exist), never rewrites.

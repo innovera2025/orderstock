@@ -1,0 +1,30 @@
+{
+  "task": "Phase 03 — Auth: key trust-boundary code paths",
+  "snippets": [
+    {
+      "file": "src/auth.ts",
+      "lines": "17-46",
+      "description": "Credentials authorize(): early lockout check, Prisma lookup with explicit select (no passwordHash leak), dummy-hash timing defense, generic null for missing/inactive/wrong-password, returns only {id,name,role}."
+    },
+    {
+      "file": "src/auth.config.ts",
+      "lines": "18-43",
+      "description": "Edge-safe callbacks: authorized() gates /admin on role===ADMIN; jwt() sources role from DB user; session() carries role+id. No Prisma/bcryptjs import (split-config)."
+    },
+    {
+      "file": "src/lib/auth-guard.ts",
+      "lines": "30-63",
+      "description": "requireAuth(role?) — real server-side boundary: re-reads active+role from DB every call (E4 revocation), throws AuthError (Thai) on unauth/inactive/role-mismatch."
+    },
+    {
+      "file": "src/proxy.ts",
+      "lines": "10-24",
+      "description": "Next 16 route protection (NOT middleware.ts). export default NextAuth(authConfig).auth; matcher excludes /login, /api/auth, /api/health, static/fonts. Recognized by build as 'Proxy (Middleware)'."
+    },
+    {
+      "file": "src/app/admin/users/actions.ts",
+      "lines": "43-176",
+      "description": "Admin actions all requireAuth('ADMIN') (E8); editRole/deactivateUser refuse to demote/deactivate the last active ADMIN (E9)."
+    }
+  ]
+}

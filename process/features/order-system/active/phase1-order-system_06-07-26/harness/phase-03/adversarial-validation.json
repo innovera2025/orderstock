@@ -1,0 +1,14 @@
+{
+  "task": "Phase 03 — Auth STRIDE adversarial validation",
+  "scenarios": [
+    { "scenario": "STAFF → /admin bypass (direct navigation)", "ruled_out": true, "rationale": "proxy.ts authorized() redirects non-ADMIN off /admin (Playwright proves STAFF redirected) AND page + every admin action call requireAuth('ADMIN') re-checking role from DB (E8)." },
+    { "scenario": "Role forgery via client input", "ruled_out": true, "rationale": "Role sourced only from DB at authorize() → signed JWT; never read from client fields; requireAuth re-reads role from DB so a tampered token cannot elevate." },
+    { "scenario": "Deactivated/demoted user with valid 12h JWT keeps access", "ruled_out": true, "rationale": "E4: requireAuth re-reads active+role from DB every mutating call and throws if inactive or role no longer satisfies; authorize() also rejects inactive users at login." },
+    { "scenario": "Username enumeration via error text or timing", "ruled_out": true, "rationale": "Generic identical Thai error for all failure modes (SEC-enum Playwright proof); dummy bcrypt compare (DUMMY_HASH, E7) runs even for missing users so timing does not leak existence." },
+    { "scenario": "Brute-force credential guessing", "ruled_out": true, "rationale": "Username-keyed lockout blocks after 5 failures for 15 min (unit test proves BLOCK + reset + expiry), checked before DB/bcrypt. Residual: deliberate victim lock (LAN, E11)." },
+    { "scenario": "Committed secret leak via git", "ruled_out": true, "rationale": "SEC-secret git-grep empty; .env gitignored (check-ignore confirms); .env.example placeholders only; seed never hardcodes plaintext. Residual: ongoing commit hygiene." },
+    { "scenario": "passwordHash exfiltration to client", "ruled_out": true, "rationale": "authorize() + admin list use explicit Prisma select excluding passwordHash (E6); authorize returns only {id,name,role}." },
+    { "scenario": "Secret/hashing import leaks into edge runtime (proxy.ts)", "ruled_out": true, "rationale": "AUTH-split probe: proxy.ts imports only next-auth + edge-safe auth.config.ts; bcryptjs + Prisma live only in Node-runtime auth.ts; build recognized proxy as 'Proxy (Middleware)'." },
+    { "scenario": "Last ADMIN locked out (whole admin surface self-lockout)", "ruled_out": true, "rationale": "E9: editRole refuses demote and deactivateUser refuses deactivate of the last active ADMIN (counts active ADMINs; Thai error if it would drop to zero)." }
+  ]
+}

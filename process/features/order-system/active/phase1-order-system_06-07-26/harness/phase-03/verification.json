@@ -1,0 +1,51 @@
+{
+  "task": "Phase 03 — Auth verification (E1-E13 gates)",
+  "result": "PASS",
+  "commands": [
+    { "command": "pnpm test", "result": "PASS", "notes": "24/24 unit tests green: DoD#3-hash (4), DoD#3-lockout (5), ELEV-guard requireAuth coverage (4), SEC-secret (2) + Phase 01/02 regression (9)." },
+    { "command": "pnpm build", "result": "PASS", "notes": "Turbopack compile + TypeScript clean (next-auth.d.ts P1 augmentation); proxy recognized as 'Proxy (Middleware)'." },
+    { "command": "pnpm lint", "result": "PASS", "notes": "eslint exit 0, no output." },
+    { "command": "pnpm exec playwright test", "result": "PASS", "notes": "7 passed (setup + 6 hybrid gates): login, rolegate STAFF-blocked + ADMIN-allowed, redirect x2, enum. webServer torn down." },
+    { "command": "pnpm tsx prisma/seed.ts", "result": "PASS", "notes": "Idempotent ADMIN seed from SEED_ADMIN_PASSWORD; re-run leaves credentials unchanged." }
+  ],
+  "manualChecks": [
+    { "check": "AUTH-split agent-probe: no bcryptjs/secret import in edge proxy.ts / auth.config.ts", "result": "PASS", "notes": "proxy.ts imports next-auth + @/auth.config only; auth.config.ts imports a next-auth type only. Only grep matches were in comments." },
+    { "check": "Secret hygiene: AUTH_SECRET + SEED_ADMIN_PASSWORD only in gitignored .env; .env.example has placeholders", "result": "PASS", "notes": "git check-ignore .env confirms ignored; git grep for committed secret returns empty." },
+    { "check": "passwordHash never client-bound (E6)", "result": "PASS", "notes": "authorize() + admin user list use explicit Prisma select excluding passwordHash." },
+    { "check": "Sandbox-only + unrelated containers untouched (E12)", "result": "PASS", "notes": "orderstock-sql Docker only; 9 unrelated containers never stopped/restarted; no customer/remote DB accessed; no git commit/push." }
+  ],
+  "evlReRun": {
+    "by": "vc-tester (EVL step 6 — independent, unconditional re-run)",
+    "date": "2026-07-06",
+    "result": "PASS",
+    "gates": [
+      { "gate": "pnpm test", "claimed": "24/7", "independent": "24 passed / 7 files (incl. auth-guard-coverage 4, secret-leak 2)", "match": true },
+      { "gate": "pnpm lint", "claimed": "clean", "independent": "eslint exit 0, no output", "match": true },
+      { "gate": "pnpm build", "claimed": "Proxy line present", "independent": "Compiled OK; 'ƒ Proxy (Middleware)' present -> src/proxy.ts recognized", "match": true },
+      { "gate": "pnpm exec playwright test", "claimed": "7 passed", "independent": "7 passed (CredentialsSignin logs are the SEC-enum bad-cred test, expected)", "match": true }
+    ],
+    "adversarialProbes": [
+      { "probe": "unauth /shops /products /admin/users / /products/new /shops/new", "result": "all 307 -> /login (no 200 leak)" },
+      { "probe": "public /api/health, /login", "result": "200; health body {\"ok\":true}" },
+      { "probe": "random protected path /totally-random-xyz", "result": "307 -> /login (no exclusion leak)" },
+      { "probe": "POST server action /shops/new unauthenticated", "result": "307 -> /login; no mutation (proxy blocks before action)" },
+      { "probe": "login enumeration", "result": "single generic Thai error string; authorize() returns generic null on all branches; SEC-enum Playwright identical-text test green" }
+    ],
+    "mechanicalGates": [
+      { "gate": "requireAuth coverage", "result": "auth-guard-coverage.test.ts 4/4 green (authoritative); grep confirms shops/products/admin actions all call requireAuth" },
+      { "gate": "secret scan (tracked)", "result": "git grep [REDACTED-SEED-ADMIN-PASSWORD] + [REDACTED-E2E-FIXTURE-PASSWORD] -> empty; APPROVED:.env absent + untracked; .env untracked" }
+    ],
+    "regression": [
+      { "check": "prisma migrate status", "result": "Database schema is up to date" },
+      { "check": "seed idempotency", "result": "admin unchanged; counts stable 20 in-order / 8 off-list variants / 25 shops (=20/8/25); 1 admin" },
+      { "check": "/api/health", "result": "200 {\"ok\":true}" },
+      { "check": "Thai font woff2", "result": "/fonts/Sarabun-400-thai.woff2 -> 200 font/woff2" },
+      { "check": "authenticated access (Phase 01/02 surfaces)", "result": "Playwright admin storage-state authenticated on / and /admin/users (auth-now-required is by-design, not regression)" }
+    ],
+    "crossChecks": [
+      { "check": "unrelated containers", "result": "all 10 up + untouched (never stopped/restarted)" },
+      { "check": "server lifecycle", "result": "started pnpm start for probes; killed after; port 3000 clean, no stray process" },
+      { "check": "git status", "result": "30 entries, all within declared blast radius; .env untracked" }
+    ]
+  }
+}

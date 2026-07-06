@@ -1,0 +1,9 @@
+{
+  "task": "Phase 03 — Auth: next-auth v5 credentials, bcryptjs hashing, ADMIN/STAFF role gating (src/proxy.ts + server-side requireAuth), admin user management, login lockout, seeded admin.",
+  "planPath": "process/features/order-system/active/phase1-order-system_06-07-26/phase-03-auth_PLAN_06-07-26.md",
+  "riskLevel": "high",
+  "riskClasses": ["auth or identity", "permission, secret, or trust-boundary logic"],
+  "mustStopBeforeFinalize": true,
+  "humanApprovalRequired": true,
+  "why": "Introduces the app's authentication + authorization boundary and secret management (AUTH_SECRET, password hashes). A gap here is an elevation/impersonation risk, so a STRIDE-driven evidence pack + independent EVL re-run are required before finalize."
+}
