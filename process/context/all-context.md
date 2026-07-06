@@ -7,7 +7,7 @@ metadata:
 ---
 # orderstock - All Context
 
-Last updated: 2026-07-06
+Last updated: 2026-07-06 (Phase 03 closeout — auth context group added)
 
 This file is the root context entrypoint for the repo.
 
@@ -95,6 +95,7 @@ For most substantial tasks:
 | File | Read when |
 |---|---|
 | `process/context/all-context.md` | any substantial planning, research, review, or implementation task |
+| `process/context/auth/all-auth.md` | implementing or reviewing any authenticated route, server action, session/role logic, or auth-related test |
 | `process/context/database/all-database.md` | Database context entrypoint for orderstock — Prisma 7 + SQL Server schema, SQL Server-specific pitfalls (no enums, one-NULL-per-UNIQUE, NoAction cascades), historical-fidelity snapshot pattern, and seed/migration/export commands |
 | `process/context/planning/all-planning.md` | creating or calibrating an implementation plan |
 | `process/context/tests/all-tests.md` | the task involves testing, verification, or test debugging |
@@ -103,9 +104,10 @@ For most substantial tasks:
 
 | Group | Entry point | Scope |
 |---|---|---|
+| `auth/` | `process/context/auth/all-auth.md` | Auth context entrypoint for orderstock — next-auth v5 split-config architecture, requireAuth server-side choke-point contract, session policy, lockout, admin user management, and E2E fixtures |
 | `database/` | `process/context/database/all-database.md` | Database context entrypoint for orderstock — Prisma 7 + SQL Server schema, SQL Server-specific pitfalls (no enums, one-NULL-per-UNIQUE, NoAction cascades), historical-fidelity snapshot pattern, and seed/migration/export commands |
 | `planning/` | `process/context/planning/all-planning.md` | Planning context entrypoint for orderstock — plan-shape calibration (SIMPLE vs COMPLEX), planning conventions, and example plan references |
-| `tests/` | `process/context/tests/all-tests.md` | Testing entrypoint for orderstock — Vitest 3.2.6 baseline wired and real (Phase 01), Playwright planned for E2E (Phase 05), sandbox SQL Server constraint |
+| `tests/` | `process/context/tests/all-tests.md` | Testing entrypoint for orderstock — Vitest 3.2.6 (24 tests/7 files) and Playwright E2E (7 tests, installed Phase 03) both real and wired, sandbox SQL Server constraint |
 <!-- /GENERATED:routing -->
 
 ## Task Routing Table
@@ -118,13 +120,14 @@ For most substantial tasks:
 | order-system implementation | `all-context.md` | the umbrella plan + current phase plan in `process/features/order-system/active/phase1-order-system_06-07-26/` |
 | test planning or verification | `all-context.md`, `tests/all-tests.md` | — |
 | database/schema/seed/migration work | `all-context.md`, `database/all-database.md` | `prisma/schema.prisma`, the relevant phase plan for decision rationale |
+| auth/session/role/new server action work | `all-context.md`, `auth/all-auth.md` | `src/lib/auth-guard.ts`, `src/auth.ts`/`src/auth.config.ts` |
 | context maintenance | `all-context.md` | run `vc-audit-context` after edits |
 
 ## Current Features
 
 | Feature | Folder | Status |
 |---|---|---|
-| `order-system` | `process/features/order-system/` | Active — phase program `phase1-order-system_06-07-26` (umbrella + 6 phase plans); Phase 01 Foundation ✅ VERIFIED, Phase 02 Schema & Master Data ✅ VERIFIED, Phase 03 Auth is the current phase |
+| `order-system` | `process/features/order-system/` | Active — phase program `phase1-order-system_06-07-26` (umbrella + 6 phase plans); Phase 01 Foundation ✅ VERIFIED, Phase 02 Schema & Master Data ✅ VERIFIED, Phase 03 Auth ✅ VERIFIED, Phase 04 Order Entry is the current phase |
 
 When routing feature-scoped work, pass `Feature: order-system` and the program folder path
 `process/features/order-system/active/phase1-order-system_06-07-26/` in the subagent prompt.
@@ -148,7 +151,7 @@ Do not create a group when:
 
 Move or split one group at a time. Use `all-{group}.md` entrypoints. Run the `vc-audit-context` skill after every context organization change.
 
-**Expected future groups for this project** (create when code exists): `auth/` (NextAuth config, role-based access), `uxui/` (Thai UI, print layouts). `database/` was created at Phase 02 closeout — see `process/context/database/all-database.md`.
+**Expected future groups for this project** (create when code exists): `uxui/` (Thai UI, print layouts). `database/` was created at Phase 02 closeout — see `process/context/database/all-database.md`. `auth/` was created at Phase 03 closeout — see `process/context/auth/all-auth.md`.
 
 ## Naming Convention
 
@@ -172,7 +175,7 @@ When durable project knowledge changes:
 
 ## Repository Structure
 
-**Current state: Phase 01 (Foundation) and Phase 02 (Schema & Master Data) VERIFIED.** The app is a real, buildable Next.js project wired to a Docker SQL Server sandbox via Prisma 7, with the full 9-model schema migrated, seeded, and master-data CRUD (shops/products) wired. Phases 03-06 are still planned/not implemented.
+**Current state: Phase 01 (Foundation), Phase 02 (Schema & Master Data), and Phase 03 (Auth) VERIFIED.** The app is a real, buildable Next.js project wired to a Docker SQL Server sandbox via Prisma 7, with the full 9-model schema migrated, seeded, master-data CRUD (shops/products) wired, and next-auth v5 credentials login + ADMIN/STAFF role-gating protecting every route. Phases 04-06 are still planned/not implemented.
 
 ```
 orderstock/
@@ -184,44 +187,59 @@ orderstock/
   vitest.config.ts
   docker-compose.yml          -- disposable SQL Server 2022 sandbox (dev only)
   prisma.config.ts            -- JDBC-style URL for the Prisma CLI (migrate/introspect)
-  .env / .env.example         -- DATABASE_URL + MSSQL_SA_PASSWORD (.env is gitignored)
+  .env / .env.example         -- DATABASE_URL + MSSQL_SA_PASSWORD + AUTH_SECRET/AUTH_TRUST_HOST/SEED_ADMIN_PASSWORD (.env is gitignored)
+  playwright.config.ts        -- Playwright E2E config (Phase 03) — setup+chromium projects, webServer=pnpm start
   prisma/
     schema.prisma             -- full 9-model domain schema (Phase 02) — see database/all-database.md
     migrations/                -- 3 migrations (init_healthcheck, phase02_full_schema, shop_rosterorder_unique)
-    seed.ts                    -- idempotent master-data seed (shops, products/variants)
+    seed.ts                    -- idempotent master-data + admin-user seed (shops, products/variants, ADMIN)
     load-env.ts                -- side-effect env-load import (seed.ts env-loading quirk)
   scripts/
     export-schema-sql.ts       -- vendor T-SQL DDL export -> db/create-orderstock-schema.sql
   db/
     create-orderstock-schema.sql -- generated vendor DDL export (offline, DDL-only)
+  e2e/                         -- Playwright specs (Phase 03) — see auth/all-auth.md E2E fixtures section
+    auth.setup.ts               -- produces reusable ADMIN/STAFF storage-state fixtures (.auth/*.json, gitignored)
+    auth.spec.ts                -- login/role-gate/redirect/enum hybrid gates
   src/
+    auth.ts                    -- Node-runtime next-auth config: Credentials provider + Prisma + bcryptjs (Phase 03)
+    auth.config.ts             -- edge-safe split config: JWT session, authorized route/role gate (Phase 03)
+    proxy.ts                   -- Next 16 route protection (NOT middleware.ts — silently ignored) (Phase 03)
+    next-auth.d.ts             -- module augmentation: role on Session/JWT (Phase 03)
     app/
-      layout.tsx               -- Thai <html lang="th"> shell
+      layout.tsx               -- Thai <html lang="th"> shell + auth-aware nav (Phase 03)
       page.tsx                 -- home page: Thai title + DB-status indicator
       db-status.tsx             -- client component calling /api/health
       fonts.css                -- explicit @font-face + unicode-range for Sarabun
       globals.css               -- imports fonts.css
+      nav.tsx                  -- auth-aware nav (current user + logout) (Phase 03)
+      auth-actions.ts          -- logout server action (Phase 03)
       api/health/route.ts       -- DB connectivity health check (SELECT 1)
-      shops/**                  -- shops master-data CRUD (Phase 02)
-      products/**               -- products/variants master-data CRUD (Phase 02)
+      api/auth/[...nextauth]/route.ts -- Auth.js v5 route handler (Phase 03)
+      shops/**                  -- shops master-data CRUD (Phase 02; requireAuth-guarded since Phase 03)
+      products/**               -- products/variants master-data CRUD (Phase 02; requireAuth-guarded since Phase 03)
+      (auth)/login/**           -- Thai login page + server action (Phase 03)
+      admin/users/**            -- admin user management: list/create/edit-role/reset-password/deactivate (Phase 03)
     lib/
       db.ts                     -- PrismaClient singleton (driver-adapter pattern)
       fonts.ts                  -- Sarabun font-family stack constant
-      product-order.ts          -- PACK_SIZES/PRODUCT_GROUPS/ROLES constants + 20-col printOrder contract
+      product-order.ts          -- PACK_SIZES/PRODUCT_GROUPS/ROLES/ROLE_LABELS constants + 20-col printOrder contract
       variant-validation.ts     -- app-level printOrder-uniqueness validator
       correction-cascade.ts     -- historical-fidelity snapshot back-fill (CascadeDb adapter pattern)
-      __tests__/                -- smoke, variant-validation, correction-cascade (9 tests total)
+      password.ts               -- bcryptjs hash/verify + timing-safe dummy compare (Phase 03)
+      login-attempts.ts         -- LoginAttemptTracker: lockout after N failures (Phase 03)
+      auth-guard.ts             -- requireAuth(role?) — the real server-side security boundary (Phase 03) — see auth/all-auth.md
+      __tests__/                -- smoke, variant-validation, correction-cascade, password, login-attempts, auth-guard-coverage, secret-leak (24 tests total)
   public/fonts/                -- self-hosted Sarabun OFL woff2 (400/600/700, thai+latin)
   process/
-    context/                   -- this context system (incl. database/ group, Phase 02)
+    context/                   -- this context system (incl. database/, auth/ groups)
     general-plans/             -- plans, reports, references
     features/order-system/     -- phase1-order-system program (umbrella + 6 phase plans)
     development-protocols/     -- RIPER-5 methodology docs
 ```
 
-### Application Structure (Phases 03-06, planned)
+### Application Structure (Phases 04-06, planned)
 
-- `src/app/(auth)/login` — login page (Phase 03)
 - `src/app/orders/**`, `src/app/print/**` — order entry + print layouts (Phases 04-05)
 - `src/app/settings/db/**` — connection-string settings page (Phase 06)
 
@@ -235,11 +253,11 @@ orderstock/
   - `prisma@7.8.0`, `@prisma/client@7.8.0`, `@prisma/adapter-mssql@7.8.0`, `mssql@^12.2.0`
   - dev: sandbox SQL Server 2022 in Docker (`docker-compose.yml`, `mem_limit: 2g`, compat level 150); production: customer's SQL Server via runtime connection string (Phase 06, not yet built)
 - **CSS:** Tailwind 4 (`@tailwindcss/postcss`) via create-next-app default; print CSS (Phase 05) stays separate plain CSS
-- **Testing:** Vitest 3.2.6 (`pnpm test` → `vitest run`) — 9 tests across 3 files (smoke, variant-validation, correction-cascade) as of Phase 02; Playwright planned for E2E (Phase 05)
+- **Testing:** Vitest 3.2.6 (`pnpm test` → `vitest run`) — 24 tests across 7 files (smoke, variant-validation, correction-cascade, password, login-attempts, auth-guard-coverage, secret-leak) as of Phase 03. Playwright `@playwright/test@1.61.1` — installed Phase 03 (first-time E2E setup, not Phase 05 as originally planned); 7 E2E tests in `e2e/auth.spec.ts` + `e2e/auth.setup.ts` fixtures. See `tests/all-tests.md`.
 - **Validation:** `zod@^4.4.3` — server-action input validation with Thai error messages (added Phase 02, decision 5); enforces `packSize`/`group`/`role` allowed values from `src/lib/product-order.ts` since SQL Server has no Prisma enums (see `database/all-database.md`)
 - **Scripting runtime:** `tsx@^4.23.0` (devDep, added Phase 02) — runs `prisma/seed.ts` and `scripts/export-schema-sql.ts` directly
 - **Package manager:** pnpm 11.5.0 (`pnpm-workspace.yaml` sets `allowBuilds` for native-script packages: `@prisma/client`, `@prisma/engines`, `esbuild`, `prisma`, `sharp`, `unrs-resolver` — pnpm 11.5 blocks build scripts by default)
-- **Auth:** NextAuth **next-auth@5.0.0-beta.31** — planned for Phase 03, **NOT YET INSTALLED**. Confirmed compatible with Next 16.2.x during Phase 01 INNOVATE. Note: Next 16 renames `middleware.ts` → `proxy.ts`; Phase 03 RESEARCH must reconcile this against the db-auth REF's "middleware" wording before writing the auth route-protection file.
+- **Auth:** NextAuth **next-auth@5.0.0-beta.31** (Credentials provider, JWT sessions) — installed and VERIFIED Phase 03. Also `bcryptjs@3.0.3` (password hashing, pure-JS, work factor 12). Route protection lives in `src/proxy.ts` (Next 16's replacement for the dead `middleware.ts`), not repo-root `middleware.ts`. See `auth/all-auth.md` for the full architecture and the `requireAuth(role?)` contract new server actions must follow.
 - **UI:** Thai-language UI; self-hosted Sarabun (OFL 1.1) font; print via browser print layout (A4 landscape) matching the scanned form (Phase 05, not yet built)
 
 ## Key Patterns and Conventions
@@ -258,7 +276,9 @@ orderstock/
 - `DATABASE_URL` — JDBC-style `sqlserver://localhost:1433;database=orderstock;user=sa;password=...;encrypt=true;trustServerCertificate=true` — sandbox default; runtime override via the Phase 06 settings page (not yet built)
 - `MSSQL_SA_PASSWORD` — SA password for the Docker sandbox container (also referenced by `docker-compose.yml`)
 - `.env` holds real secrets and is gitignored (`.gitignore` covers `.env*`); `.env.example` holds placeholder values and is committed-safe
-- Auth env vars (`NEXTAUTH_SECRET`, `NEXTAUTH_URL` or next-auth v5 equivalents) — not yet created; lands with Phase 03
+- `AUTH_SECRET` — signs the JWT session (v5 name — NOT `NEXTAUTH_SECRET`). Generate with `openssl rand -base64 32`. Real value only in `.env`.
+- `AUTH_TRUST_HOST=true` — required so Auth.js trusts the host in self-hosted (non-Vercel) deployments.
+- `SEED_ADMIN_PASSWORD` — initial ADMIN password consumed once by `prisma/seed.ts`; if unset, the seed generates one and prints it to stdout for out-of-band delivery. Never commit a real value.
 
 ## Dev Machine Facts (this repo's dev host)
 
@@ -272,9 +292,10 @@ orderstock/
 - Thai Buddhist-era dates appear on the form (e.g. 13/3/69 = 2569 BE = 2026 CE). Store CE in the DB, display BE (decision applies from Phase 04 onward).
 - SQL Server version at the customer is unconfirmed — keep schema/script compatible with mid-range versions (2017+ floor for Prisma; 2016 would be below it).
 - No stock deduction in Phase 1 — do not design inventory-balance features prematurely.
-- Next 16 renames `middleware.ts` → `proxy.ts` — a live open risk for Phase 03 (the db-auth REF still says "middleware"; RESEARCH must reconcile before writing the Phase 03 checklist).
+- Next 16 renames `middleware.ts` → `proxy.ts` — a `middleware.ts` file is silently ignored (no build error). Resolved Phase 03: the app uses `src/proxy.ts` (sibling of `src/app/`, matching the `src/` layout). See `auth/all-auth.md`.
 - **SQL Server has no Prisma enums** — `packSize`/`group`/`role` are `String` columns, not Prisma `enum`s (P1012 connector error otherwise). See `database/all-database.md` for the full pattern; the constants live in `src/lib/product-order.ts`.
 - **`correction-cascade.ts` requires the `CascadeDb` adapter, not a raw `PrismaClient`.** Passing `prisma` directly where a `CascadeDb` is expected silently no-ops (no error, back-fill never runs) — EVL-proven gotcha. Full detail in `database/all-database.md`.
+- **Reports/evidence files must NEVER quote real secret values** (passwords, tokens, connection strings) — write `[REDACTED-*]` placeholders instead. This recurred across Phase 02 and Phase 03 durable-capture sessions; git-manager blocks commits on literal secret matches, so a report containing a real value stalls the process commit. Always redact before writing a phase report, closeout packet, or evidence-pack JSON.
 
 ## Open Questions / Outstanding Work
 
@@ -286,7 +307,7 @@ orderstock/
 
 ## Scan Metadata
 
-- Generated: 2026-07-06 (Phase 02 closeout update)
-- HEAD: 76f2897 (phase-02 verified closeout artifacts)
-- Mode: delta update (post-Phase-02 EXECUTE+EVL+UPDATE-PROCESS)
+- Generated: 2026-07-06 (Phase 03 closeout update)
+- HEAD: c3a85fc (docs: phase-03 verified closeout artifacts)
+- Mode: delta update (post-Phase-03 EXECUTE+EVL+UPDATE-PROCESS)
 - Package manager: pnpm 11.5.0

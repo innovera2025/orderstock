@@ -163,7 +163,7 @@ pnpm test                 # Expected: password unit tests green
 - [x] 4. PVL — vc-validate-agent: full V1-V7 + STRIDE scan DONE (net gate CONDITIONAL); validate-contract written per example-validate-output.md
 - [x] 5. EXECUTE — all checklist items done; per-section test gates green (4 Fully-Automated + 5 Hybrid + AUTH-split probe); high-risk evidence pack written + validated; DRAFT report written. Awaiting orchestrator-owned EVL (step 6).
 - [x] 6. EVL — all gates re-run independently (24/7 unit, lint, build w/ Proxy line, 7 Playwright) + adversarial auth probes + regression all green; no follow-up stubs needed; EVL HANDOFF SUMMARY written to report
-- [ ] 7. UPDATE PROCESS — phase report written, umbrella state updated, commit done
+- [x] 7. UPDATE PROCESS — phase report written, umbrella state updated, context updated (`all-auth.md` group created, `all-context.md`/`all-tests.md` updated); commit routed to orchestrator (not performed by this agent)
 
 **Validate-contract required before execute.**
 

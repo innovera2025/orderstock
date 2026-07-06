@@ -1,15 +1,15 @@
 ---
 name: context:all-tests
-description: Testing entrypoint for orderstock — Vitest 3.2.6 baseline wired and real (Phase 01), Playwright planned for E2E (Phase 05), sandbox SQL Server constraint
-keywords: tests, testing, vitest, playwright, e2e, unit, integration, verification, coverage, sandbox, sql server, health check, build, lint
-related: [context:all-database]
+description: Testing entrypoint for orderstock — Vitest 3.2.6 (24 tests/7 files) and Playwright E2E (7 tests, installed Phase 03) both real and wired, sandbox SQL Server constraint
+keywords: tests, testing, vitest, playwright, e2e, unit, integration, verification, coverage, sandbox, sql server, health check, build, lint, storage state, fixtures
+related: [context:all-database, context:all-auth]
 metadata:
   read_when: the task involves testing, verification, or test debugging
 ---
 
 # orderstock - All Tests
 
-Last updated: 2026-07-06 (Phase 01 closeout)
+Last updated: 2026-07-06 (Phase 03 closeout)
 
 Attach this file first when the task involves testing, verification, or test debugging.
 
@@ -36,21 +36,22 @@ This is the `all-tests.md` entrypoint for the `tests/` context group. It follows
 
 ## Current Status
 
-**Real, wired, and passing as of Phase 02 (Schema & Master Data).** Vitest 3.2.6 is installed and green with 9 tests across 3 files. A Docker SQL Server 2022 sandbox provides the DB-dependent gates. Playwright (E2E) is planned for Phase 05 (printing) but not yet installed. Phases 03-06 add their own test coverage as they land — this file's Commands table below is the baseline; update it per-phase as new gates are established.
+**Real, wired, and passing as of Phase 03 (Auth).** Vitest 3.2.6 is installed and green with 24 tests across 7 files. Playwright `@playwright/test@1.61.1` is installed (first-time E2E setup, Phase 03 — brought forward from the originally-planned Phase 05) and green with 7 tests. A Docker SQL Server 2022 sandbox provides the DB-dependent gates. Phases 04-06 add their own test coverage as they land — this file's Commands table below is the baseline; update it per-phase as new gates are established.
 
 ## Testing Approach
 
 Stack: Next.js 16.2.10 (TypeScript) + Prisma 7 + `@prisma/adapter-mssql` + SQL Server (see `all-context.md`):
 
-- **Unit/integration:** Vitest 3.2.6 — `src/lib/__tests__/*.test.ts`. 3 files / 9 tests as of Phase 02: `smoke.test.ts` (baseline), `variant-validation.test.ts` (5 tests — printOrder uniqueness over the active non-null set), `correction-cascade.test.ts` (2 tests — propagate-while-unconfirmed / lock-after-confirm branches). Later phases add coverage for form calculation logic (per-column totals, total weight) and date conversion (BE↔CE).
-- **DB-level testing pattern (Phase 02):** pure logic (validators, cascade back-fill decision) is extracted to `src/lib/` and Vitest-unit-tested in isolation via the `CascadeDb` adapter interface (see `database/all-database.md`) — no live DB needed for these units. The actual DB round-trip (CRUD create→edit→soft-delete) is proven via an **agent-probe** against the sandbox, not an automated test, because server actions call `redirect()`/`revalidatePath()` (need Next request context) and Playwright is not installed until Phase 05. A headless CRUD DB-integration harness is backlogged — see `process/features/order-system/backlog/crud-db-integration-harness_NOTE_06-07-26.md`.
-- **E2E (planned, Phase 05):** Playwright — login flow, order entry, print page rendering (combined + per-shop). Not yet installed.
+- **Unit/integration:** Vitest 3.2.6 — `src/lib/__tests__/*.test.ts`. 7 files / 24 tests as of Phase 03: `smoke.test.ts` (baseline), `variant-validation.test.ts` (5 — printOrder uniqueness over the active non-null set), `correction-cascade.test.ts` (2 — propagate-while-unconfirmed / lock-after-confirm branches), `password.test.ts` (4 — bcryptjs hash/verify round-trip, wrong password, 72-byte limit), `login-attempts.test.ts` (5 — lockout BLOCK/RESET/EXPIRE), `auth-guard-coverage.test.ts` (4 — grep-style assertion that every shop/product/admin action calls `requireAuth`), `secret-leak.test.ts` (2 — no committed plaintext secret in tracked files). Later phases add coverage for form calculation logic (per-column totals, total weight) and date conversion (BE↔CE).
+- **DB-level testing pattern (Phase 02):** pure logic (validators, cascade back-fill decision) is extracted to `src/lib/` and Vitest-unit-tested in isolation via the `CascadeDb` adapter interface (see `database/all-database.md`) — no live DB needed for these units. The actual DB round-trip (CRUD create→edit→soft-delete) is proven via an **agent-probe** against the sandbox, not an automated test, because server actions call `redirect()`/`revalidatePath()` (need Next request context). A headless CRUD DB-integration harness is still backlogged — see `process/features/order-system/backlog/crud-db-integration-harness_NOTE_06-07-26.md` — now that Playwright is installed, this could alternatively be proven via a Playwright-driven CRUD flow instead of a Vitest harness; re-evaluate before building it.
+- **E2E (Phase 03, installed):** Playwright — `e2e/auth.spec.ts` (7 tests: login success, STAFF blocked / ADMIN allowed on `/admin`, logged-out redirect to `/login`, generic-error-on-bad-credentials for both bad-username and bad-password). `e2e/auth.setup.ts` produces reusable ADMIN + STAFF storage-state fixtures reused by Phases 04-06 (see `auth/all-auth.md` for the reuse pattern). Needs: dev server (Playwright's `webServer: pnpm start` boots/reuses it), sandbox up, and a seeded admin (`pnpm tsx prisma/seed.ts` + `SEED_ADMIN_PASSWORD` in `.env` — Playwright loads `.env` via `process.loadEnvFile()`, Node 22).
 - **Database:** integration tests run against the disposable sandbox SQL Server (Docker, `orderstock-sql` container) — **never against the customer DB**.
 
 ## Quick Routing
 
 - use `process/context/database/all-database.md` for the `CascadeDb` adapter test pattern, schema/migration/seed commands, and SQL Server-specific gotchas that affect DB-dependent test gates
-(No other deeper test docs yet. Add routing entries here as they are created — e.g. an `e2e-playwright.md` once Phase 05 lands.)
+- use `process/context/auth/all-auth.md` for the Playwright ADMIN/STAFF storage-state fixture reuse pattern, `requireAuth` test coverage, and session/lockout test scenarios
+(No other deeper test docs yet. Add routing entries here as new domains land.)
 
 ## Default Verification Order
 
@@ -71,6 +72,8 @@ Unless the task clearly needs a different path:
 | root | Prisma | `npx prisma migrate status` | Yes — needs `.env` + sandbox up |
 | root | Prisma | `npx prisma migrate dev` | Yes |
 | root | manual/curl | `curl -s localhost:3000/api/health` → `{"ok":true}` | Yes — needs `pnpm dev`/`pnpm start` + sandbox up |
+| root | Playwright | `pnpm exec playwright test` | Yes — needs sandbox up + seeded admin (`SEED_ADMIN_PASSWORD` in `.env`); `webServer` auto-starts `pnpm start` |
+| root | Playwright (first run only) | `pnpm exec playwright install chromium` | No — one-time browser download |
 
 ## Prerequisites for Sandbox-Dependent Gates
 
@@ -88,6 +91,7 @@ Unless the task clearly needs a different path:
 
 ## Known Gaps
 
-- No E2E/browser test runner yet (Playwright lands with Phase 05 — printing/visual verification).
-- Only one trivial Vitest smoke test exists; real logic coverage (totals, date conversion, master-data validation) lands with the phases that introduce that logic (Phase 02+).
+- CRUD DB-integration harness for shops/products round-trips is still an agent-probe, not automated (backlog note above) — Playwright is now available and could close this gap; re-evaluate before Phase 05.
+- No audit log for auth events (Phase 1 scope, accepted known-gap — see `auth/all-auth.md`).
+- Real logic coverage for order-entry calculation (totals, date conversion) lands with Phase 04.
 - No CI pipeline configured yet — all gates run locally/manually per phase.

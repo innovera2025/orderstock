@@ -249,8 +249,8 @@ All paths are inside `process/features/order-system/active/phase1-order-system_0
 | 0 — Pre-program (plan creation) | 🧪 TESTING (this umbrella + stubs created; validators pending) |
 | 01 — Foundation | ✅ VERIFIED (all 7 inner-loop steps done; EVL independently re-ran all 6 gates green; `.env` created with user approval; 2 known-gaps accepted) |
 | 02 — Schema & Master Data | ✅ VERIFIED (all 7 inner-loop steps done; EVL independently re-ran all 7 gates + Phase-01 regression clean; 4 accepted known-gaps; UPDATE PROCESS complete — context updated, backlog stub registered) |
-| 03 — Auth | ⏳ PLANNED (RESEARCH next) |
-| 04 — Order Entry | ⏳ PLANNED |
+| 03 — Auth | ✅ VERIFIED (all 7 inner-loop steps done; EVL independently re-ran all gates + adversarial auth probes + Phase 01/02 regression clean; 4 accepted known-gaps; UPDATE PROCESS complete — `auth/` context group created, `all-context.md`/`all-tests.md` updated, no new backlog beyond pre-existing revocation-hardening note) |
+| 04 — Order Entry | ⏳ PLANNED (RESEARCH next) |
 | 05 — Printing | ⏳ PLANNED |
 | 06 — DB Settings & Delivery | ⏳ PLANNED |
 
@@ -314,37 +314,36 @@ for f in process/features/order-system/active/phase1-order-system_06-07-26/phase
 ## Resume and Execution Handoff
 
 - Selected plan file path: `process/features/order-system/active/phase1-order-system_06-07-26/phase1-order-system-umbrella_PLAN_06-07-26.md`
-- Last completed phase: Phase 01 (Foundation — ✅ VERIFIED). Phase 02 has now completed RESEARCH→INNOVATE→PLAN-SUPPLEMENT→PVL.
-- Validate-contract status: Phase 01 satisfied. Phase 02 inner-PVL contract WRITTEN 06-07-26 (CONDITIONAL). Phases 03–06 pending (vc-validate-agent writes per-phase before each EXECUTE).
-- Next step for a fresh agent: Read this umbrella plan and `phase-02-schema-master-data_PLAN_06-07-26.md`; Phase 02 is at EXECUTE (Step 5), gated on explicit user consent.
-- Current phase: Phase 02 (Schema & Master Data).
-- Next action: On explicit user consent (ENTER EXECUTE MODE), spawn vc-execute-agent (opus) for Phase 02 per the validate-contract. Sandbox DB only.
-- Execute-agent start instruction: Follow the Phase 02 validate-contract Execute-agent instructions E1–E9. Sandbox `orderstock-sql` DB only; never touch a customer/remote DB; do not stop/restart the 9 unrelated Docker containers; no git commit/push without user instruction.
+- Last completed phase: Phase 03 (Auth — ✅ VERIFIED).
+- Validate-contract status: Phases 01-03 all satisfied (see Current Execution State above). Phases 04-06 pending (vc-validate-agent writes per-phase before each EXECUTE).
+- Next step for a fresh agent: Read this umbrella plan and `phase-04-order-entry_PLAN_06-07-26.md`; Phase 04 has NOT started — begin at RESEARCH.
+- Current phase: Phase 04 (Order Entry).
+- Next action: Spawn vc-research-agent for Phase 04 RESEARCH (no user consent gate needed for RESEARCH — only EXECUTE requires explicit consent).
+- Execute-agent start instruction (once Phase 04 reaches PVL): sandbox `orderstock-sql` DB only; never touch a customer/remote DB; do not stop/restart the 9 unrelated Docker containers; no git commit/push without user instruction.
 
 ---
 
 ## Current Execution State
 
-Last updated: 06-07-26 (Phase 03 PVL complete — validate-contract CONDITIONAL written; EXECUTE pending user consent)
-Completed phases: Phase 0 (Planning), Phase 01 (Foundation — ✅ VERIFIED), Phase 02 (Schema & Master Data — ✅ VERIFIED)
-Current phase: Phase 03 — Auth
-Current loop step: PVL complete → EXECUTE (pending explicit user consent — charter HARD STOP)
-Validate-contract status: Phase 01 contract satisfied (inner-pvl: phase-01). Phase 02 contract satisfied (inner-pvl: phase-02; all 7 gates independently re-confirmed at EVL). Phase 03 inner-PVL contract WRITTEN 06-07-26 (CONDITIONAL; 0 FAILs, 11 concerns folded into execute-agent instructions + 4 accepted known-gaps; full STRIDE scan done).
-Program Net Gate: Phase 01 VERIFIED; Phase 02 VERIFIED; Phase 03 PVL CONDITIONAL. Program continues — Phase 03 EXECUTE next, pending user consent.
-Latest validator run: 06-07-26 (UPDATE PROCESS) — `validate-all-context.mjs` and `validate-context-discovery.mjs` green after `database/` group creation; plan-artifact validators re-run for phase-02 + umbrella (see this session's closeout packet for exact results).
+Last updated: 06-07-26 (Phase 03 UPDATE PROCESS complete — ✅ VERIFIED; commits 169ed3b + c3a85fc landed; process commit for this UPDATE PROCESS session pending via orchestrator)
+Completed phases: Phase 0 (Planning), Phase 01 (Foundation — ✅ VERIFIED), Phase 02 (Schema & Master Data — ✅ VERIFIED), Phase 03 (Auth — ✅ VERIFIED)
+Current phase: Phase 04 — Order Entry
+Current loop step: RESEARCH (not started)
+Validate-contract status: Phase 01 contract satisfied. Phase 02 contract satisfied (all 7 gates independently re-confirmed at EVL). Phase 03 contract satisfied (CONDITIONAL net gate, 0 FAILs; all E1-E13 gates independently re-confirmed at EVL; full STRIDE scan done). Phase 04 contract not yet written — PVL runs after Phase 04 RESEARCH→INNOVATE→PLAN-SUPPLEMENT.
+Program Net Gate: Phase 01 VERIFIED; Phase 02 VERIFIED; Phase 03 VERIFIED. Program continues — Phase 04 RESEARCH next.
+Latest validator run: 06-07-26 (this UPDATE PROCESS session) — see this session's closeout packet for exact validator results (validate-all-context.mjs, validate-context-discovery.mjs, plan-artifact validators for phase-03 + umbrella) after `auth/` group creation.
 
 Loop step values: RESEARCH | INNOVATE | PLAN-SUPPLEMENT | PVL | EXECUTE | EVL | UPDATE-PROCESS
-Orchestrator rule: read "Current loop step" and "validate-contract status" before spawning any subagent. Phase 03 has completed RESEARCH→INNOVATE→PLAN-SUPPLEMENT→PVL; the validate-contract is CONDITIONAL and written into `phase-03-auth_PLAN_06-07-26.md`. Next subagent = vc-execute-agent (opus) for Phase 03, gated on explicit user consent (ENTER EXECUTE MODE). Execute per the contract's E1–E13; TDD order: password.ts + login-attempts.ts unit-green BEFORE authorize(); sandbox `orderstock-sql` DB only; deliver seeded admin credential out-of-band; no commit/push without instruction.
+Orchestrator rule: read "Current loop step" and "validate-contract status" before spawning any subagent. Phase 04 has NOT started — next subagent = vc-research-agent for Phase 04 (Order Entry). Read `phase-04-order-entry_PLAN_06-07-26.md` (existing stub plan) plus this Current Execution State before spawning.
 
-Phase 02 carry-forward for Phase 03 RESEARCH:
-- `prisma/schema.prisma` now holds the full 9-model domain (Shop, Product, ProductVariant, OrderSheet, OrderLine, NoteLine, User, AppSetting, HealthCheck) — Phase 03 EXTENDS `User` (adds auth fields if needed; `passwordHash`/`role` already exist), never rewrites.
-- `role` is a String column ("ADMIN"|"STAFF"), NOT a Prisma enum (SQL Server connector limitation) — values are in `src/lib/product-order.ts` (`ROLES`, `ROLE_LABELS`). Reuse these constants; do not invent a new enum or parallel string set.
-- No `User` rows/credentials exist yet (Phase 02 intentionally seeded none, F6) — Phase 03 owns the admin seed.
-- `prisma/seed.ts` is idempotent and EXTENDED by Phase 03 (add the admin-user upsert; do not rewrite existing shop/product seed logic).
-- Next 16 renames `middleware.ts` → `proxy.ts` — reconcile against the db-auth REF's "middleware" wording before writing the Phase 03 checklist (open risk carried from Phase 01/02 context).
-- New `process/context/database/all-database.md` context group exists — read it for the SQL Server enum/cascade/snapshot pitfalls before touching the schema.
-- Sandbox DB is up at `orderstock-sql` (Docker), COMPATIBILITY_LEVEL 150 (default; customer target unconfirmed — known-gap carried).
-- `.env` exists (DATABASE_URL + MSSQL_SA_PASSWORD) — Phase 03 can rely on it directly.
+Phase 03 carry-forward for Phase 04 RESEARCH:
+- **Every route is now auth-guarded by `src/proxy.ts`** (Next 16 route protection) — new order-entry pages under `src/app/orders/**` inherit this protection automatically (matcher guards everything except `/login`, `/api/auth/*`, `/api/health`, static assets). No extra proxy config needed for new pages.
+- **But `proxy.ts` is convenience only** — every new server action in Phase 04 (create/edit order sheet, create/edit order line, create/edit note line) MUST call `requireAuth()` (or `requireAuthState()` for state-returning actions) directly, per the contract in `process/context/auth/all-auth.md`. This is the real security boundary; a raw POST bypasses page routing.
+- **Snapshot-columns constraint (LOAD-BEARING, from Phase 02 decision 6):** `OrderLine`/`NoteLine` have historical name-snapshot columns `shopNameAtEntry`/`variantNameAtEntry`. **Phase 04 is the phase that WRITES these** at line-create time (Phase 05 renders from them; never live names). Read `process/context/database/all-database.md` for the correction-cascade back-fill pattern before writing create/edit logic.
+- **`correction-cascade.ts` requires the `CascadeDb` adapter, not a raw `PrismaClient`** — passing `prisma` directly silently no-ops (no error, back-fill never runs). This gotcha is documented in `database/all-database.md` and `all-context.md` Gotchas.
+- **Playwright + ADMIN/STAFF storage-state fixtures are now available for E2E** (`e2e/.auth/admin.json`, `e2e/.auth/staff.json`, produced by `e2e/auth.setup.ts`). Phase 04 order-entry E2E specs should reuse these via `test.use({ storageState: "e2e/.auth/admin.json" })` rather than re-implementing login — see `process/context/auth/all-auth.md` E2E fixtures section.
+- Session/role contract (`session.user.role`) is stable and consumable — `ROLES`/`ROLE_LABELS` live in `src/lib/product-order.ts`.
+- `.env` has `AUTH_SECRET`/`AUTH_TRUST_HOST`/`SEED_ADMIN_PASSWORD` set — Phase 04 E2E can rely on it directly (Playwright loads `.env` via `process.loadEnvFile()`).
 
 Note: The Stable Program Goal above is fixed. This section is the only part that changes — update-process-agent rewrites it after every phase closeout (overwrite, not append — git history is the audit log).
 
