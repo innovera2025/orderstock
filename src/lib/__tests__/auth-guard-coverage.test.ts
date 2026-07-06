@@ -36,6 +36,10 @@ const MODULES: ActionModule[] = [
     file: "src/app/admin/users/actions.ts",
     expected: ["createUser", "editRole", "resetPassword", "deactivateUser", "activateUser"],
   },
+  {
+    file: "src/app/orders/actions.ts",
+    expected: ["createOrderSheet", "saveOrderSheet"],
+  },
 ];
 
 /** Split a module source into { name, body } chunks, one per `export async function`. */

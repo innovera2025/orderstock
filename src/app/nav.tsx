@@ -18,6 +18,9 @@ export async function Nav() {
         <Link href="/" className="font-semibold">
           ออเดอร์สินค้า
         </Link>
+        <Link href="/orders" className="text-zinc-600 hover:text-zinc-900">
+          ใบออเดอร์
+        </Link>
         <Link href="/shops" className="text-zinc-600 hover:text-zinc-900">
           ร้านค้า
         </Link>
