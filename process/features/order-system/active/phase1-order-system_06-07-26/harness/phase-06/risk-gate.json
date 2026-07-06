@@ -1,0 +1,13 @@
+{
+  "task": "Phase 06 — DB Settings & Delivery (runtime connection-string settings page + customer delivery package)",
+  "planPath": "process/features/order-system/active/phase1-order-system_06-07-26/phase-06-db-settings-delivery_PLAN_06-07-26.md",
+  "riskLevel": "high",
+  "riskClasses": [
+    "permission, secret, or trust-boundary logic",
+    "deploy/runtime/container behavior (restart-on-save, NSSM service)",
+    "schema/data delivery (vendor T-SQL + DB/login script)"
+  ],
+  "mustStopBeforeFinalize": true,
+  "humanApprovalRequired": true,
+  "why": "ADMIN-only settings page rewrites .env DATABASE_URL (holds the SQL Server password) and restarts the app; a bad write could lock out auth or clobber AUTH_SECRET. Injection-safe env-write, save-gate ordering, sanitized errors, and ADMIN gating are the trust-boundary controls. Delivery ships secret-bearing scripts + a Thai guide to the customer's DBA/IT."
+}

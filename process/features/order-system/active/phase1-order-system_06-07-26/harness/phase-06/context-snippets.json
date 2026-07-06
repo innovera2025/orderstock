@@ -1,0 +1,47 @@
+{
+  "task": "Phase 06 — DB Settings & Delivery: trust-boundary code surfaces (env-write injection defense, save-gate ordering, info-disclosure sanitization, ADMIN gating, secret-file hygiene)",
+  "snippets": [
+    {
+      "file": "src/lib/env-write.ts",
+      "lines": "24-31",
+      "description": "Injection defense (E1): sanitizeValue truncates the written value at the first CR/LF, discarding any `\\nKEY=value` clobber payload — a legitimate JDBC string has no newline, so this is loss-free.",
+      "content": "function sanitizeValue(value: string): string { return value.split(/[\\r\\n]/)[0] ?? \"\"; }"
+    },
+    {
+      "file": "src/lib/env-write.ts",
+      "lines": "40-46",
+      "description": "Backup-before-write (A2b): copyFileSync(.env → .env.bak) runs BEFORE writeFileSync mutates .env; only the DATABASE_URL line is replaced, all other keys preserved.",
+      "content": "if (existsSync(envPath)) { copyFileSync(envPath, bakPath); } ... rewritten = lines.map(l => l.startsWith('DATABASE_URL=') ? newline : l)"
+    },
+    {
+      "file": "src/app/(main)/settings/db/actions.ts",
+      "lines": "88-104",
+      "description": "Save-gate ordering invariant (E2): writeDatabaseUrl + process.exit are unreachable unless tryConnect() returned ok; process.exit gated behind NODE_ENV!=='test' && ORDERSTOCK_NO_EXIT!=='1'.",
+      "content": "const ok = await tryConnect(url); if (!ok) return { error: CONNECT_FAIL_MESSAGE }; writeDatabaseUrl(url); if (process.env.NODE_ENV !== 'test' && process.env.ORDERSTOCK_NO_EXIT !== '1') process.exit(0);"
+    },
+    {
+      "file": "src/app/(main)/settings/db/actions.ts",
+      "lines": "48-63",
+      "description": "Info-disclosure defense (E3): tryConnect logs the raw error server-side (console.error) only and returns a boolean; the caller returns a FIXED Thai CONNECT_FAIL_MESSAGE — never the URL/host/user/password.",
+      "content": "catch (error) { console.error('[settings/db] test-connection failed:', error); return false; }"
+    },
+    {
+      "file": "src/app/(main)/settings/db/actions.ts",
+      "lines": "82-86",
+      "description": "Elevation defense (E4/E8): every exported settings action calls requireAuthState('ADMIN') first; the page calls requireAuth('ADMIN'). Proven mechanically by auth-guard-coverage.test.ts.",
+      "content": "const denied = await requireAuthState('ADMIN'); if (denied) return denied;"
+    },
+    {
+      "file": "src/auth.config.ts",
+      "lines": "19-24",
+      "description": "Edge defense-in-depth (E4): the authorized callback now ADMIN-gates /settings/** in addition to /admin/**.",
+      "content": "if (pathname.startsWith('/admin') || pathname.startsWith('/settings')) { return isLoggedIn && auth?.user?.role === 'ADMIN'; }"
+    },
+    {
+      "file": ".gitignore",
+      "lines": "40",
+      "description": "Secret-file hygiene (A3): `.env*` matches both .env and .env.bak, so the backup is never committed. Regression-guarded by env-write.test.ts.",
+      "content": ".env*"
+    }
+  ]
+}

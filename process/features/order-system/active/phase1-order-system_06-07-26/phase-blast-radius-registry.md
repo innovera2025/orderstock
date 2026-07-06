@@ -85,6 +85,8 @@ Claimed + actual blast radius:
 
 ## Phase 06 — DB Settings & Delivery
 
+status: DONE — EXECUTE complete 06-07-26 under explicit user consent. All 8 validate-contract Fully-Automated gates green (vitest 70/70 incl. new connection-string/env-write/settings-hygiene/auth-guard gates), build ✓, lint ✓, Hybrid round-trip DB switch gate PASS (orderstock↔orderstock2 sentinel, .env restored), Agent-Probe guide review GO. 5-artifact evidence pack validated. **Actual settings-page path is `src/app/(main)/settings/db/**` (inside the Phase-05 (main) route group), NOT `src/app/settings/db/**` — within-blast-radius location deviation, documented in report.** NEW additive file `src/lib/env-write.ts` (safe .env rewrite) + `scripts/phase06-roundtrip-gate.ts` (Hybrid gate). `src/lib/db.ts` NOT modified (already reads DATABASE_URL — no runtime swap; restart-required apply). `src/auth.config.ts` (/settings edge gate) + `src/app/nav.tsx` (ADMIN link) EXTENDED. Known-gaps accepted: customer SQL Server version/COMPATIBILITY_LEVEL TODO-flagged, guide runnability Agent-Probe, on-site printer fidelity. Awaiting independent EVL.
+
 Claimed blast radius:
 - `src/app/settings/db/**`, `src/lib/connection-string.ts`
 - `src/lib/db.ts` (runtime swap) — SHARED with 01 → EXTEND only

@@ -1,0 +1,39 @@
+{
+  "scenarios": [
+    {
+      "scenario": "env-injection: attacker supplies a DATABASE_URL value containing `\\nAUTH_SECRET=attacker-controlled` to clobber the JWT signing secret via the settings save.",
+      "ruled_out": true,
+      "rationale": "env-write.sanitizeValue truncates the value at the first CR/LF, so the payload after the newline is discarded entirely; the write replaces ONLY the DATABASE_URL line. Proven by env-write.test.ts 'reject a newline KEY=value injection payload' + 'neutralize CRLF injection payloads' (AUTH_SECRET preserved, no INJECTED= line)."
+    },
+    {
+      "scenario": "info disclosure: a failed test-connection echoes the connection string / SA password / host back to the client, leaking secrets to a shoulder-surfer or logs.",
+      "ruled_out": true,
+      "rationale": "tryConnect returns a boolean; the raw error is console.error'd server-side only (mirrors /api/health). The action returns a FIXED CONNECT_FAIL_MESSAGE constant with no interpolation. Proven by settings-secret-hygiene.test.ts (no template-literal error, constant present)."
+    },
+    {
+      "scenario": "elevation: a STAFF user POSTs directly to the saveDbSettings / testConnection server action (bypassing the nav link and proxy.ts page gate) to change the DB connection.",
+      "ruled_out": true,
+      "rationale": "Every settings action calls requireAuthState('ADMIN') as its first statement (re-reads role from the DB via requireAuth, E4 — a demoted user inside their JWT window is rejected). proxy.ts + the authorized edge callback also gate /settings for defense-in-depth. Proven mechanically by auth-guard-coverage.test.ts MODULES + ADMIN_MODULES."
+    },
+    {
+      "scenario": "denial of service / lockout: saving a bad connection string kills the app (process.exit) or locks the admin out with no recovery.",
+      "ruled_out": true,
+      "rationale": "Save-gate ordering invariant (E2): writeDatabaseUrl + process.exit are unreachable unless the live SELECT 1 test-connection succeeded — a bad string never reaches the write, so process.exit never fires on a bad string. If the DB later fails post-save, lockout recovery is a documented manual `.env` edit / `cp .env.bak .env` restore (deployment-guide §11). No in-app authless bypass (rejected trust-boundary hole)."
+    },
+    {
+      "scenario": "secret leakage to VCS: the .env.bak backup created on every save is committed to git, exposing the DB password + AUTH_SECRET.",
+      "ruled_out": true,
+      "rationale": ".gitignore `.env*` matches .env.bak. Regression-guarded by env-write.test.ts A3 assertion. The backup is written adjacent to .env (same gitignored scope)."
+    },
+    {
+      "scenario": "charter violation: a test fixture or save targets the customer's real production SQL Server instead of the sandbox.",
+      "ruled_out": true,
+      "rationale": "The round-trip gate asserts DATABASE_URL matches /localhost/ before proceeding (E5) and uses only orderstock/orderstock2 on localhost:1433. No customer/remote host appears in any fixture, seed, or .env under test."
+    },
+    {
+      "scenario": "paste-prefill parser is load-bearing and a malformed ADO.NET string produces a silently-wrong connection that the admin saves unaware.",
+      "ruled_out": true,
+      "rationale": "parseConnectionString only pre-fills the editable fields; the admin reviews every field and must pass an explicit test-connection before save. The parser never throws (best-effort) and is never the authoritative input (Decision 4)."
+    }
+  ]
+}

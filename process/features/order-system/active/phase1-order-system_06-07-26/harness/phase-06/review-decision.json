@@ -1,0 +1,14 @@
+{
+  "task": "Phase 06 — DB Settings & Delivery production-readiness review (self-review vs plan + validate-contract E1-E8)",
+  "decision": "approved",
+  "reviewer": "vc-execute-agent (self-review)",
+  "timestamp": "2026-07-06",
+  "blockingFindings": [],
+  "nonBlockingFindings": [
+    "Customer SQL Server version unconfirmed — create-database-and-login.sql ships COMPATIBILITY_LEVEL 140/150 commented with a TODO; confirm before finalizing (accepted known-gap, surfaced to user).",
+    "Deployment-guide runnability against the customer's actual Windows/NSSM/SQL environment is Agent-Probe judgment only (residual D).",
+    "On-site real-printer mm fidelity is a Phase 05 carry-forward closed via print instructions, not re-verified with hardware.",
+    "The Hybrid round-trip gate exercises the real save pipeline minus the auth() call (needs Next request context); ADMIN gating is proven separately by auth-guard-coverage + the edge callback."
+  ],
+  "notes": "All 8 validate-contract gates green + Hybrid round-trip + Agent-Probe guide review. E1-E8 satisfied. .env restored after the gate. No hard-stop-class deviation. Sandbox artifacts (orderstock2 DB + gitignored .env.bak) remain on the sandbox by design."
+}

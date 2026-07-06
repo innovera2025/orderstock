@@ -254,7 +254,7 @@ All paths are inside `process/features/order-system/active/phase1-order-system_0
 | 03 — Auth | ✅ VERIFIED (all 7 inner-loop steps done; EVL independently re-ran all gates + adversarial auth probes + Phase 01/02 regression clean; 4 accepted known-gaps; UPDATE PROCESS complete — `auth/` context group created, `all-context.md`/`all-tests.md` updated, no new backlog beyond pre-existing revocation-hardening note) |
 | 04 — Order Entry | ✅ VERIFIED (all 7 inner-loop steps done; EVL independently re-ran all gates + DB probe + Phase 01-03 regression clean; 2 accepted known-gaps backlogged (weight-factors, order-sheet-dup-index); UPDATE PROCESS complete — `database/all-database.md`/`all-context.md`/`tests/all-tests.md` updated, `sheet-header.tsx` + shared fixture confirmed exported for Phase 05) |
 | 05 — Printing | ✅ VERIFIED (all 7 inner-loop steps done; EVL independently re-ran vitest 41/41, playwright 16/16, build+lint clean, migrate status clean, route-group deviation preserves all URLs + auth boundary, DB unpolluted, agent-probe visual GO; 3 known-gaps carried to delivery (Q30 shading, Q22 weight, on-site printer fidelity); UPDATE PROCESS complete — context updated, 2 new backlog stubs registered) |
-| 06 — DB Settings & Delivery | ⏳ PLANNED (RESEARCH next — FINAL phase) |
+| 06 — DB Settings & Delivery | 🧪 TESTING (RESEARCH+INNOVATE+PLAN-SUPPLEMENT+PVL done; validate-contract written — gate CONDITIONAL, 8 STRIDE concerns folded in; EXECUTE next, pending user consent — FINAL phase) |
 
 Status values: ⏳ PLANNED | 🔨 CODE DONE | 🧪 TESTING | ✅ VERIFIED | 🚧 BLOCKED | ✅ COMPLETE
 
@@ -267,7 +267,7 @@ Status values: ⏳ PLANNED | 🔨 CODE DONE | 🧪 TESTING | ✅ VERIFIED | 🚧
 - Phase 03: `src/auth.ts`, `src/auth.config.ts`, `middleware.ts`, `src/app/(auth)/login/**`, `src/app/admin/users/**`, `src/lib/password.ts`, `User` model
 - Phase 04: `src/app/orders/**`, `src/lib/totals.ts`, `src/lib/be-date.ts`, order-sheet + order-line models
 - Phase 05: `src/app/print/daily/[date]/**`, `src/app/print/shops/[date]/**`, `src/app/api/print/**` (fallback), `src/styles/print.css`
-- Phase 06: `src/app/settings/db/**`, `src/lib/connection-string.ts`, `db/create-orderstock-schema.sql`, `db/create-login.sql`, `docs/deployment-guide.md`
+- Phase 06: `src/app/settings/db/**`, `src/lib/connection-string.ts`, `db/create-orderstock-schema.sql`, `db/create-database-and-login.sql`, `docs/deployment-guide.md`
 
 ---
 
@@ -336,13 +336,13 @@ for f in process/features/order-system/active/phase1-order-system_06-07-26/phase
 Last updated: 06-07-26 (Phase 05 UPDATE PROCESS closeout — ✅ VERIFIED; current phase → 06, the FINAL phase)
 Completed phases: Phase 0 (Planning), Phase 01 (Foundation — ✅ VERIFIED), Phase 02 (Schema & Master Data — ✅ VERIFIED), Phase 03 (Auth — ✅ VERIFIED), Phase 04 (Order Entry — ✅ VERIFIED), Phase 05 (Printing — ✅ VERIFIED)
 Current phase: Phase 06 — DB Settings & Delivery (FINAL phase)
-Current loop step: RESEARCH (not started)
-Validate-contract status: Phases 01-05 satisfied. Phase 06 pending (vc-validate-agent writes it before EXECUTE).
-Program Net Gate: Phases 01-05 VERIFIED. Program continues — Phase 06 RESEARCH next (no user consent gate needed for RESEARCH; EXECUTE will require ENTER EXECUTE MODE).
+Current loop step: PVL done (validate-contract written, gate CONDITIONAL) → EXECUTE next (pending user consent — ENTER EXECUTE MODE)
+Validate-contract status: Phases 01-05 satisfied. Phase 06 validate-contract WRITTEN (gate CONDITIONAL — inner-pvl:phase-06, 06-07-26; STRIDE complete, 0 FAILs).
+Program Net Gate: Phases 01-05 VERIFIED. Phase 06 PVL complete — EXECUTE next, requires ENTER EXECUTE MODE (user consent).
 Latest validator run: 06-07-26 (this UPDATE PROCESS session, Phase 05 closeout) — see this session's closeout packet for exact validator results (validate-all-context.mjs, validate-context-discovery.mjs, plan-artifact validators for phase-05 + umbrella).
 
 Loop step values: RESEARCH | INNOVATE | PLAN-SUPPLEMENT | PVL | EXECUTE | EVL | UPDATE-PROCESS
-Orchestrator rule: read "Current loop step" and "validate-contract status" before spawning any subagent. Phase 06 has not started — next subagent = vc-research-agent for Phase 06 RESEARCH.
+Orchestrator rule: read "Current loop step" and "validate-contract status" before spawning any subagent. Phase 06 PVL complete — next subagent = vc-execute-agent (opus) for Phase 06 EXECUTE, after ENTER EXECUTE MODE.
 
 Phase 05 carry-forward for Phase 06 RESEARCH (delivery scope + known-gaps):
 - **Delivery now includes communicating print instructions**: Chrome/Edge browser only, printer Scale setting = 100%, and an on-site test print before the customer relies on the layout. This closes out the Phase 05 on-site-printer-fidelity known-gap as part of delivery, not a separate backlog item.
