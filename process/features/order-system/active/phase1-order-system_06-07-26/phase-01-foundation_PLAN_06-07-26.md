@@ -13,7 +13,7 @@ metadata:
 
 **Program:** phase1-order-system
 **Umbrella plan:** process/features/order-system/active/phase1-order-system_06-07-26/phase1-order-system-umbrella_PLAN_06-07-26.md
-**Phase status:** 🧪 TESTING (RESEARCH+INNOVATE+PLAN-SUPPLEMENT+PVL done; EXECUTE pending user consent)
+**Phase status:** 🧪 TESTING (EXECUTE done 06-07-26; EVL done 06-07-26 — vc-tester independently re-ran all 6 validate-contract gates GREEN, zero mismatch vs execute's claims; cross-checks clean. Still NOT ✅ VERIFIED — ONE open item remains: `.env` file creation blocked by the privacy hook awaiting interactive user approval. Promote to VERIFIED once `.env` is created; the two known-gaps (compat-level, customer SQL version) are accepted and do not block.)
 **Report destination:** process/features/order-system/active/phase1-order-system_06-07-26/phase-01-foundation_REPORT_06-07-26.md (flat in the program task folder)
 
 ---
@@ -55,29 +55,29 @@ Shared-file note: `prisma/schema.prisma` and `src/app/layout.tsx` are extended (
 
 ### Step A — Project scaffold
 
-- [ ] A1. `pnpm create next-app` with App Router + TypeScript + `src/` + Tailwind + **Turbopack ON**; pin **next@16.2.x** (INNOVATE confirmed next-auth@5.0.0-beta.31 compatible with Next 16, and Next 16 avoids the later middleware→proxy.ts migration). **PVL note (E1):** create-next-app installs latest by default — after scaffold, explicitly verify/pin `next@16.2.x` in `package.json`; do not accept a silently-newer major.
-- [ ] A2. Commit baseline `.gitignore` (node_modules, .next, .env, prisma generated client). **PVL note:** `.env` MUST be gitignored (holds the SA password) — verify before any commit.
-- [ ] A3. Add base Thai `<html lang="th">` layout shell in `src/app/layout.tsx`.
+- [x] A1. `pnpm create next-app` with App Router + TypeScript + `src/` + Tailwind + **Turbopack ON**; pin **next@16.2.x** (INNOVATE confirmed next-auth@5.0.0-beta.31 compatible with Next 16, and Next 16 avoids the later middleware→proxy.ts migration). **PVL note (E1):** create-next-app installs latest by default — after scaffold, explicitly verify/pin `next@16.2.x` in `package.json`; do not accept a silently-newer major.
+- [x] A2. Commit baseline `.gitignore` (node_modules, .next, .env, prisma generated client). **PVL note:** `.env` MUST be gitignored (holds the SA password) — verify before any commit.
+- [x] A3. Add base Thai `<html lang="th">` layout shell in `src/app/layout.tsx`.
 
 ### Step B — Prisma 7 + adapter-mssql wiring
 
-- [ ] B1. Add pinned deps: `prisma@7.8.x`, `@prisma/client@7.8.x`, `@prisma/adapter-mssql@7.8.x`, `mssql@^12`. Set `serverExternalPackages: ['mssql','tedious']` in `next.config.ts` (Turbopack+adapter safety net — `pnpm build` doubles as the empirical Turbopack+adapter check).
-- [ ] B2. Write `prisma/schema.prisma` with `provider = "sqlserver"` and one minimal model to exercise a migration.
-- [ ] B3. Write `prisma.config.ts` (or env) holding the JDBC-style `sqlserver://` URL for the Prisma CLI. **PVL note (E3):** host MUST be `localhost:1433` (the Docker sandbox) — never a customer/remote host.
-- [ ] B4. Write `src/lib/db.ts`: module-level singleton `new PrismaClient({ adapter: new PrismaMssql(<sandbox JDBC string or sql.config>) })`. Do NOT create per-request clients. **PVL note (E4):** if the adapter cannot connect after correct config, capture the exact error and fall back to the node-mssql escape hatch (db-auth REF §6) — do NOT silently retry with per-request clients.
+- [x] B1. Add pinned deps: `prisma@7.8.x`, `@prisma/client@7.8.x`, `@prisma/adapter-mssql@7.8.x`, `mssql@^12`. Set `serverExternalPackages: ['mssql','tedious']` in `next.config.ts` (Turbopack+adapter safety net — `pnpm build` doubles as the empirical Turbopack+adapter check).
+- [x] B2. Write `prisma/schema.prisma` with `provider = "sqlserver"` and one minimal model to exercise a migration.
+- [x] B3. Write `prisma.config.ts` (or env) holding the JDBC-style `sqlserver://` URL for the Prisma CLI. **PVL note (E3):** host MUST be `localhost:1433` (the Docker sandbox) — never a customer/remote host.
+- [x] B4. Write `src/lib/db.ts`: module-level singleton `new PrismaClient({ adapter: new PrismaMssql(<sandbox JDBC string or sql.config>) })`. Do NOT create per-request clients. **PVL note (E4):** if the adapter cannot connect after correct config, capture the exact error and fall back to the node-mssql escape hatch (db-auth REF §6) — do NOT silently retry with per-request clients.
 
 ### Step C — Docker sandbox SQL Server
 
-- [ ] C1. Write `docker-compose.yml` for `mcr.microsoft.com/mssql/server:2022-latest`, `platform: linux/amd64`, `ACCEPT_EULA=Y`, strong `MSSQL_SA_PASSWORD`, port 1433, and an explicit `mem_limit: 2g`. **PVL-corrected VM state (verified 06-07-26):** the shared Docker VM is 7.75 GiB and currently runs **9** unrelated containers (quotation-system-app/api/postgres, krs-pos-db, wat-smoke-web/api/db/redis, claw-empire) — NOT the 4 previously documented — but total live usage is only ~773 MiB, leaving ~7 GiB free, so the 2 GB SQL Server fits comfortably. Do NOT stop/restart any of the 9 unrelated containers.
-- [ ] C2. **PVL precheck (E2):** run `docker stats --no-stream` to confirm ≥2 GB headroom, then bring up the container. Check `docker logs` — SQL Server exits silently under memory pressure or on a weak SA password. Create the `orderstock` sandbox DB; `ALTER DATABASE orderstock SET COMPATIBILITY_LEVEL = 150` (or the confirmed customer target 140/150 — see open question E7).
-- [ ] C3. Run `prisma migrate dev` against the sandbox to create the minimal model.
+- [x] C1. Write `docker-compose.yml` for `mcr.microsoft.com/mssql/server:2022-latest`, `platform: linux/amd64`, `ACCEPT_EULA=Y`, strong `MSSQL_SA_PASSWORD`, port 1433, and an explicit `mem_limit: 2g`. **PVL-corrected VM state (verified 06-07-26):** the shared Docker VM is 7.75 GiB and currently runs **9** unrelated containers (quotation-system-app/api/postgres, krs-pos-db, wat-smoke-web/api/db/redis, claw-empire) — NOT the 4 previously documented — but total live usage is only ~773 MiB, leaving ~7 GiB free, so the 2 GB SQL Server fits comfortably. Do NOT stop/restart any of the 9 unrelated containers.
+- [x] C2. **PVL precheck (E2):** run `docker stats --no-stream` to confirm ≥2 GB headroom, then bring up the container. Check `docker logs` — SQL Server exits silently under memory pressure or on a weak SA password. Create the `orderstock` sandbox DB; `ALTER DATABASE orderstock SET COMPATIBILITY_LEVEL = 150` (or the confirmed customer target 140/150 — see open question E7).
+- [x] C3. Run `prisma migrate dev` against the sandbox to create the minimal model.
 
 ### Step D — Font + health check
 
-- [ ] D1. Bundle Sarabun woff2 files under `public/fonts/`; wire `next/font/local` in `src/lib/fonts.ts`; apply in layout with fallback `Sarabun, 'TH Sarabun New', sans-serif`. **PVL note (E5):** obtain Sarabun OFL 1.1 woff2 from the official OFL release (Google Fonts download / the Cadson Demak OFL source) at build time — bundle self-hosted; NEVER depend on the Google CDN or a customer-PC-installed font at runtime.
-- [ ] D2. Write `src/app/api/health/route.ts` returning `{ ok: true }` when `SELECT 1` via `$queryRaw` succeeds, `{ ok: false, error }` (500) otherwise. **PVL note (E6):** the error path must return a sanitized message — never echo the raw connection string, SA password, or full stack to the client.
-- [ ] D3. Add a minimal home page showing app title in Thai + DB status indicator that calls `/api/health`.
-- [ ] D4. **(added at PVL)** Establish the Vitest baseline so later phases inherit a green fully-automated tier: `pnpm add -D vitest`, add a `"test": "vitest run"` script to `package.json`, add `vitest.config.ts`, and write ONE trivial passing smoke test (e.g. `src/lib/__tests__/smoke.test.ts` asserting a pure helper or `1+1===2`). Record the chosen runner in `process/context/tests/all-tests.md` during UPDATE-PROCESS.
+- [x] D1. Bundle Sarabun woff2 files under `public/fonts/`; wire `next/font/local` in `src/lib/fonts.ts`; apply in layout with fallback `Sarabun, 'TH Sarabun New', sans-serif`. **PVL note (E5):** obtain Sarabun OFL 1.1 woff2 from the official OFL release (Google Fonts download / the Cadson Demak OFL source) at build time — bundle self-hosted; NEVER depend on the Google CDN or a customer-PC-installed font at runtime.
+- [x] D2. Write `src/app/api/health/route.ts` returning `{ ok: true }` when `SELECT 1` via `$queryRaw` succeeds, `{ ok: false, error }` (500) otherwise. **PVL note (E6):** the error path must return a sanitized message — never echo the raw connection string, SA password, or full stack to the client.
+- [x] D3. Add a minimal home page showing app title in Thai + DB status indicator that calls `/api/health`.
+- [x] D4. **(added at PVL)** Establish the Vitest baseline so later phases inherit a green fully-automated tier: `pnpm add -D vitest`, add a `"test": "vitest run"` script to `package.json`, add `vitest.config.ts`, and write ONE trivial passing smoke test (e.g. `src/lib/__tests__/smoke.test.ts` asserting a pure helper or `1+1===2`). Record the chosen runner in `process/context/tests/all-tests.md` during UPDATE-PROCESS.
 
 ---
 
@@ -174,8 +174,8 @@ Orchestrator reads this before deciding which subagent to spawn next. The canoni
 - [x] 2. INNOVATE — innovate-agent: DONE — verdict GO, 5-persona predict passed; Decision Summary written (see Decisions section)
 - [x] 3. PLAN-SUPPLEMENT — plan-agent: this plan updated; Inner Loop Refresh Note written
 - [x] 4. PVL — vc-validate-agent: full V1-V7 done; validate-contract written (Net Gate CONDITIONAL) per example-validate-output.md
-- [ ] 5. EXECUTE — all checklist items done; per-section test gates run and green (or gaps documented)
-- [ ] 6. EVL — all EVL gates green; follow-up stubs registered; EVL HANDOFF SUMMARY written
+- [x] 5. EXECUTE — all 14 checklist items done; all 6 validate-contract gates run GREEN (build/lint/test/migrate/health/font-probe) via inline env. ONE open item: `.env` creation blocked by the privacy hook (needs interactive user approval); contents fully specified in the phase report. Deviations documented in the report (font wiring via explicit @font-face+unicode-range instead of next/font/local; eslint ignores scoped to app source; pnpm allowBuilds).
+- [x] 6. EVL — vc-tester independent re-run: ALL 6 gates PASS (build/lint/test/migrate/health/font) with zero mismatch vs execute's claims; cross-checks clean (9 containers untouched, mem_limit=2GiB applied, .env absent, .gitignore covers .env*+node_modules, git status shows only expected app files); regression checkpoint skipped (first phase). EVL HANDOFF SUMMARY written; verification.json updated with evlReRun block. NOT promoted to VERIFIED — `.env` open item remains (privacy-hook, awaits user approval).
 - [ ] 7. UPDATE PROCESS — phase report written, umbrella state updated, commit done
 
 **Validate-contract written (CONDITIONAL).** EXECUTE is gated on explicit user consent (umbrella hard-stop: "Every phase EXECUTE requires explicit user consent unless a standing /goal grants it").

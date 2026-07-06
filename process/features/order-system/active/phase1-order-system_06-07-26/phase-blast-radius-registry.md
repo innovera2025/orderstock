@@ -6,6 +6,8 @@ One registry for the whole program. Append-only. Each phase agent appends/update
 
 ## Phase 01 — Foundation
 
+status: (in progress) — EXECUTE done 06-07-26, 6/6 gates green via inline env; awaiting EVL + `.env` before DONE. All claimed files created/modified (plus additive: `pnpm-workspace.yaml`, `eslint.config.mjs`, `src/app/fonts.css`, `src/app/db-status.tsx`, `README.md`). No cross-phase conflicts.
+
 Claimed blast radius:
 - `package.json`, `pnpm-lock.yaml`, `next.config.ts`, `tsconfig.json`, `.env`, `.env.example`, `.gitignore`
 - `docker-compose.yml`

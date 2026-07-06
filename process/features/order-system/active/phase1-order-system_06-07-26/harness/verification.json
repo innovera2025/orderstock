@@ -1,0 +1,42 @@
+{
+  "phase": "phase-01-foundation",
+  "date": "2026-07-06",
+  "riskGate": "sandbox-only; no customer DB touched; no auth/PII in this phase; LIGHT pack per validate-contract (greenfield scaffold, disposable Docker SQL Server 2022 at localhost:1433)",
+  "dockerLogsClean": "SQL Server reported 'SQL Server is now ready for client connections' ~6s after start; no silent exit; container 'orderstock-sql' Up. The 9 unrelated containers were never stopped/restarted.",
+  "compatLevel": "orderstock DB created at COMPATIBILITY_LEVEL 150 (E7 default; customer target 140/150 unconfirmed — flagged as open question).",
+  "steps": [
+    { "step": "build + typecheck (Turbopack + adapter safe)", "command": "pnpm build", "result": "PASS", "notes": "exit 0; Next.js 16.2.10 Turbopack; route / static, /api/health dynamic; TypeScript finished clean" },
+    { "step": "lint clean", "command": "pnpm lint", "result": "PASS", "notes": "exit 0 after scoping eslint ignores to app source (excluded .claude/.codex/.agents/process harness dirs)" },
+    { "step": "vitest baseline green", "command": "pnpm test", "result": "PASS", "notes": "exit 0; 2 tests pass; TDD red-first confirmed then green" },
+    { "step": "prisma migrate dev applies minimal model to sandbox", "command": "npx prisma migrate dev --name init_healthcheck", "result": "PASS", "notes": "migration 20260706074539_init_healthcheck created + applied; DB in sync" },
+    { "step": "health route returns ok against sandbox", "command": "curl -s localhost:3000/api/health", "result": "PASS", "notes": "{\"ok\":true} HTTP 200; SELECT 1 via $queryRaw through PrismaMssql adapter" },
+    { "step": "Thai title renders in Sarabun (agent-probe)", "command": "curl / + /fonts/*.woff2", "result": "PASS", "notes": "Thai title 'ระบบจัดการออเดอร์สินค้า' in DOM; self-hosted Sarabun thai/latin woff2 served 200 font/woff2; @font-face 'Sarabun' with thai unicode-range (U+0E01-0E5B incl. tone marks) in compiled CSS. Pixel-level human confirmation deferred to EVL." }
+  ],
+  "openItems": [
+    ".env not yet created — blocked by the privacy hook requiring interactive user approval. All gates above were proven with inline DATABASE_URL/MSSQL_SA_PASSWORD env vars. .env contents are fully specified in the phase report; a plain `pnpm dev` / `docker compose up` needs it."
+  ],
+  "evlReRun": {
+    "date": "2026-07-06",
+    "runBy": "vc-tester (EVL step 6 — independent unconditional re-run; execute claims treated as unconfirmed hypotheses)",
+    "verdict": "ALL 6 GATES PASS INDEPENDENTLY — zero mismatch vs execute's claims",
+    "gates": [
+      { "gate": "build", "command": "pnpm build (inline DATABASE_URL)", "result": "PASS", "evidence": "exit 0; Next 16.2.10 Turbopack; / static, /api/health dynamic; TypeScript clean" },
+      { "gate": "lint", "command": "pnpm lint", "result": "PASS", "evidence": "exit 0; no eslint output" },
+      { "gate": "test", "command": "pnpm test", "result": "PASS", "evidence": "exit 0; vitest 3.2.6; 1 file / 2 tests pass" },
+      { "gate": "migrate", "command": "npx prisma migrate status (inline env)", "result": "PASS", "evidence": "exit 0; 'Database schema is up to date!'; 1 migration init_healthcheck applied" },
+      { "gate": "health", "command": "curl -s localhost:3000/api/health (pnpm start, sandbox up)", "result": "PASS", "evidence": "{\"ok\":true} HTTP 200" },
+      { "gate": "font-render", "command": "curl / + curl /fonts/*.woff2", "result": "PASS", "evidence": "root HTTP 200, lang=\"th\", 289 Thai chars incl. title 'ระบบจัดการออเดอร์สินค้า'; Sarabun-400-thai.woff2 & Sarabun-400-latin.woff2 serve 200 font/woff2; 6 @font-face + 8 unicode-range in src/app/fonts.css wired via globals.css @import; pixel-level human confirm still deferred" }
+    ],
+    "crossChecks": {
+      "unrelatedContainers": "9 unrelated containers (quotation-system-app/api/postgres, krs-pos-db, wat-smoke-web/api/db/redis, claw-empire) all Up and untouched; orderstock-sql Up 7 min",
+      "memLimit": "docker inspect HostConfig.Memory = 2147483648 (exactly 2 GiB) — mem_limit applied",
+      "dockerLogs": "clean; orderstock DB started at COMPATIBILITY_LEVEL 150; prisma shadow DBs cycled+dropped cleanly; no silent exit",
+      "envFile": ".env still absent (privacy hook) — not accidentally created",
+      "gitignore": ".gitignore covers .env* (line 40) and /node_modules (line 10)",
+      "gitStatus": "only expected new app files untracked (README, docker-compose.yml, next.config.ts, package.json, prisma/, public/, src/, tsconfig.json, vitest.config.ts, etc.) + plan/registry/report edits; no harness/process damage",
+      "server": "pnpm start server started for probes then killed cleanly (no stray process)"
+    },
+    "regressionCheckpoint": "skipped — Phase 01 is the first phase; no previously-verified surfaces exist",
+    "statusDecision": "Kept 🧪 TESTING (not promoted to ✅ VERIFIED): every gate passes independently, but the open .env item is beyond the two documented known-gaps, so per EVL promotion rule the phase stays TESTING until .env is created with user approval."
+  }
+}
