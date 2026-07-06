@@ -22,6 +22,8 @@ Claimed blast radius:
 
 ## Phase 02 — Schema & Master Data
 
+status: DONE — EXECUTE complete 06-07-26; all 7 validate-contract gates green; schema EXTENDED HealthCheck (not rewritten). No cross-phase conflicts. Additive files beyond the claim: `prisma/load-env.ts` (seed env-load side-effect module, F4), `src/lib/variant-validation.ts` (printOrder validator), `src/lib/correction-cascade.ts` (snapshot back-fill), `src/app/shops/{shop-form,actions}.tsx/.ts` + `[id]/edit`/`new`, `src/app/products/{product-form,add-variant-form,actions}` + `[id]/edit`/`new`, unit tests under `src/lib/__tests__/`, `package.json`+`pnpm-lock.yaml` (tsx, zod devDep/dep), `prisma.config.ts` (migrations.seed key — EXTEND). EVL independent re-run pending.
+
 Claimed blast radius:
 - `prisma/schema.prisma` (full models) — SHARED with 01, 03 → EXTEND only
 - `prisma/migrations/**`, `prisma/seed.ts` — SHARED with 03 (admin seed) → EXTEND only
@@ -43,6 +45,8 @@ Claimed blast radius:
 
 ## Phase 04 — Order Entry
 
+**Cross-phase input (from Phase 02 decision 6):** MUST write historical snapshot columns `shopNameAtEntry`/`variantNameAtEntry` on OrderLine/NoteLine at line-create time.
+
 Claimed blast radius:
 - `src/app/orders/**`
 - `src/lib/totals.ts`, `src/lib/be-date.ts`
@@ -51,6 +55,8 @@ Claimed blast radius:
 ---
 
 ## Phase 05 — Printing
+
+**Cross-phase input (from Phase 02 decision 6):** MUST render from OrderLine/NoteLine snapshot columns, never live Shop/Variant names.
 
 Claimed blast radius:
 - `src/app/print/daily/[date]/**`, `src/app/print/shops/[date]/**`

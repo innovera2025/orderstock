@@ -1,0 +1,109 @@
+{
+  "phase": "phase-02-schema-master-data",
+  "date": "2026-07-06",
+  "riskClass": "schema/data-migration (high-risk)",
+  "riskGate": "SANDBOX ONLY — Docker SQL Server 2022 at localhost:1433 (container 'orderstock-sql'); no customer/remote DB touched; no auth credentials or PII written (User model defined but ZERO rows seeded per F6); vendor SQL export is DDL-only, no credentials.",
+  "mustStopBeforeFinalize": false,
+  "steps": [
+    {
+      "step": "G-migrate — full schema migrates to SQL Server sandbox",
+      "command": "npx prisma migrate dev --name phase02_full_schema",
+      "result": "PASS",
+      "notes": "Applied 20260706091411_phase02_full_schema, exit 0, DB in sync. Proves F1 (no Prisma enums — String columns), F5 (Decimal(10,3)), cascade (7 FK relations ON DELETE NO ACTION ON UPDATE NO ACTION). Verified via grep of migration.sql: 7 NoAction, 2 Decimal(10,3), 2 UNIQUE (username + AppSetting.key only), 0 printOrder unique (F2)."
+    },
+    {
+      "step": "shop_rosterorder_unique migration (hand-authored, deployed)",
+      "command": "npx prisma migrate deploy",
+      "result": "PASS",
+      "notes": "migrate dev is non-interactive-blocked on the constraint-add advisory warning; migration authored by hand (DROP non-unique index, CREATE UNIQUE INDEX Shop_rosterOrder_key) and applied via migrate deploy. migrate status: 3 migrations, schema up to date."
+    },
+    {
+      "step": "G-export — vendor T-SQL DDL script generates offline",
+      "command": "pnpm tsx scripts/export-schema-sql.ts && grep -c 'CREATE TABLE' db/create-orderstock-schema.sql",
+      "result": "PASS",
+      "notes": "9 CREATE TABLE statements (HealthCheck, Shop, Product, ProductVariant, OrderSheet, OrderLine, NoteLine, User, AppSetting). Offline via prisma migrate diff --from-empty --to-schema (Prisma 7 renamed the old --to-schema-datamodel flag). Does NOT create DB/logins (Phase 06)."
+    },
+    {
+      "step": "G-seed — seed loads + is idempotent, env self-loaded, off-list NULL-printOrder upsert",
+      "command": "pnpm tsx prisma/seed.ts (run twice)",
+      "result": "PASS",
+      "notes": "BOUNDARY CASE (second run): counts identical across both runs — {inOrderVariants:20, offListVariants:8, shops:25, flaggedShops:13, flaggedVariants:18}. Env self-loaded via ./load-env side-effect import (F4 — import hoisting workaround). Off-list variants upsert on non-null natural key (productId, packSize, labelVariant), never on NULL printOrder (F3)."
+    },
+    {
+      "step": "G-printorder — printOrder uniqueness over active non-null set (app-level)",
+      "command": "pnpm test",
+      "result": "PASS",
+      "notes": "Vitest unit on isPrintOrderAvailable — 5 tests: duplicate rejected, free accepted, NULL/off-list never conflicts, soft-deleted never conflicts, excludeId self-edit allowed."
+    },
+    {
+      "step": "G-cascade — correction-cascade propagate-then-lock",
+      "command": "pnpm test",
+      "result": "PASS",
+      "notes": "Vitest unit on cascadeShopNameCorrection + cascadeVariantNameCorrection — both branches: needsConfirmation=true propagates, false locks (0 rows)."
+    },
+    {
+      "step": "Full test suite + lint + build",
+      "command": "pnpm test && pnpm lint && pnpm build",
+      "result": "PASS",
+      "notes": "9/9 Vitest tests green; eslint clean; next build compiled, TypeScript passed, all 9 routes present (shops + products CRUD)."
+    },
+    {
+      "step": "G-crud — create->edit->soft-delete round-trip on sandbox (agent-probe)",
+      "command": "agent-driven data round-trip probe (tsx) against sandbox",
+      "result": "PASS",
+      "notes": "BOUNDARY CASE (cascade lock): create shop -> orderLine snapshot written -> edit unconfirmed (cascade propagated, snapshot updated) -> confirm -> edit again (cascade LOCKED, snapshot unchanged, decision 6 proven against real DB) -> printOrder 1 taken / 999 free -> product+variant display name -> soft-delete (FK line still resolves) -> restore -> cleanup. Probe rows removed; seed counts unchanged."
+    },
+    {
+      "step": "G-seedorder — seeded variants match C3-C22 print order (agent-probe)",
+      "command": "agent-driven ordered-variant inspection vs form-canonical REF §3",
+      "result": "PASS",
+      "notes": "20 in-order variants match REF C3-C22 exactly (products/packSizes/labels/printOrder 1..20). Uncertain names flagged needsConfirmation (13 shops, 18 variants). Names NOT asserted correct — pending user confirmation."
+    }
+  ],
+  "boundaryCasesCovered": [
+    "Second seed run (idempotency) — counts stable",
+    "Intentional duplicate-printOrder rejection (isPrintOrderAvailable returns false for taken value)",
+    "Correction-cascade lock after confirm (snapshot not rewritten once needsConfirmation=false)"
+  ],
+  "knownGaps": [
+    "Thai collation deferred to Phase 06 (integer ordering used everywhere; customer collation unknown).",
+    "CRUD automated DB-integration harness backlogged (crud-db-integration-harness_NOTE) — this phase covered by agent-probe, not repeatable automated regression.",
+    "Seeded Thai master-data names transcribed from scan; correctness pending user confirmation (flagged needsConfirmation, not asserted).",
+    "Sandbox compat level 150; customer target (140/2017) unconfirmed — program known-gap."
+  ],
+  "evlConfirmation": {
+    "agent": "vc-tester",
+    "date": "2026-07-06",
+    "loopStep": "6 EVL",
+    "verdict": "ALL 7 GATES RE-CONFIRMED INDEPENDENTLY (unconditional re-run, execute evidence treated as unconfirmed)",
+    "gates": [
+      { "gate": "pnpm test", "result": "PASS", "notes": "9/9 (smoke 2, variant-validation 5, correction-cascade 2)" },
+      { "gate": "pnpm lint", "result": "PASS", "notes": "eslint exit 0, clean" },
+      { "gate": "pnpm build", "result": "PASS", "notes": "next build compiled, TS passed, 9 routes (build regression check)" },
+      { "gate": "npx prisma migrate status", "result": "PASS", "notes": "3 migrations, schema up to date" },
+      { "gate": "G-seed idempotency", "result": "PASS", "notes": "seed re-run; counts stable {inOrder:20, offList:8, shops:25, flaggedShops:13, flaggedVariants:18}; 0 leftover probe rows" },
+      { "gate": "G-seedorder vs REF C3-C22", "result": "PASS", "notes": "20 in-order variants match REF §3 exactly (base+packSize+group+order); C16 (กป) carried as labelVariant, denormalized name='ปูนแดง (กป)'. Off-list=8 printOrder NULL. Shops=25 rosterOrder strictly ascending (1..28, roster gaps preserved). needsConfirmation 13/18 match report." },
+      { "gate": "G-export vendor SQL", "result": "PASS", "notes": "db/create-orderstock-schema.sql exists, 9 CREATE TABLE, no logins/passwords (passwordHash is a column name only; script states it creates no DB/logins)" },
+      { "gate": "G-printorder", "result": "PASS", "notes": "covered by pnpm test (variant-validation 5 tests)" },
+      { "gate": "G-cascade", "result": "PASS", "notes": "unit (pnpm test) + independent live-DB round-trip: unconfirmed edit propagates (1 row), confirmed edit LOCKS (0 rows, snapshot unchanged) — decision 6 proven against sandbox" },
+      { "gate": "G-crud live round-trip", "result": "PASS", "notes": "independent tsx probe: create->snapshot->edit(cascade propagate)->confirm->edit(cascade lock)->soft-delete(FK resolves, active=false)->cleanup; count 25->25 stable" },
+      { "gate": "CRUD read-path (dev server)", "result": "PASS", "notes": "GET /shops 200, /products 200 — seeded Thai names render (เฮียเล็ก, สุนทร, กรีนเฟรชฟู้ดส์, ดีนิ่ม A, แบะแซ, ปูนแดง, น้ำปลา); 'รอยืนยัน' needsConfirmation badge surfaced" }
+    ],
+    "regression": [
+      { "surface": "GET /api/health", "result": "PASS", "notes": "HTTP 200 {\"ok\":true}" },
+      { "surface": "Thai font woff2", "result": "PASS", "notes": "GET /fonts/Sarabun-400-thai.woff2 -> HTTP 200 font/woff2 9880 bytes; 6 self-hosted woff2 in public/fonts/" },
+      { "surface": "HealthCheck model", "result": "PASS", "notes": "unchanged in schema (id + checkedAt); migration 20260706074539_init_healthcheck intact" },
+      { "surface": "pnpm build", "result": "PASS", "notes": "compiles, 9 routes" }
+    ],
+    "deviationAudit": {
+      "D1": "CONFIRMED — packSize/group constrained app-side via z.enum(PACK_SIZES)/z.enum(PRODUCT_GROUPS) in src/app/products/actions.ts; ROLES defined in product-order.ts (role validation is Phase 03, no User rows this phase).",
+      "D2": "CONFIRMED — 20260706161957_shop_rosterorder_unique migration (DROP non-unique index, CREATE UNIQUE INDEX Shop_rosterOrder_key) applied; migrate status up to date; schema shows rosterOrder @unique."
+    },
+    "crossChecks": {
+      "containers": "10 running; orderstock-sql + 9 unrelated all up and untouched",
+      "secrets": "no sandbox SA-password prefix in any tracked source (src/prisma/db/scripts/docker-compose.yml); vendor SQL has no logins/credentials",
+      "gitStatus": "24 changes, all expected Phase-02 artifacts; no stray files; dev server started for probe was killed"
+    },
+    "verifiedStatusDecision": "PROMOTE to VERIFIED — all 7 validate-contract gates re-confirmed independently; regression clean; only documented/accepted known-gaps remain. Caveat: G-crud real-browser UI not exercised (Agent-Probe tier by design, Playwright lands Phase 05); data-layer + HTTP read-path independently confirmed. Seeded Thai names remain needsConfirmation (accepted Entry-Gate path, not a VERIFIED blocker)."
+  }
+}

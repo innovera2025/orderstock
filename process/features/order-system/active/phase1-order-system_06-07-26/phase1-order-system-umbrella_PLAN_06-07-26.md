@@ -215,6 +215,7 @@ During /goal execution of this phase program:
 - Prisma 7 driver-adapter pattern (`@prisma/adapter-mssql`) from day one — old `datasourceUrl`/`datasources` tutorials are WRONG for v7. Pin exact Prisma 7.8.x.
 - Pin exact `next-auth@5.0.0-beta.31`; INNOVATE (Phase 01) confirmed it is compatible with **Next 16.2.x**, which is the pinned Next major.
 - **RISK / OPEN (Phase 03 input):** Next 16 renames `middleware.ts` → `proxy.ts`. The db-auth REF §5 auth guidance still says "middleware" — Phase 03 RESEARCH must reconcile the auth route-protection file name (`proxy.ts` under Next 16) before writing the Phase 03 checklist.
+- **CROSS-PHASE (LOAD-BEARING, Phase 04/05 input):** Phase 02 (decision 6) adds historical name-snapshot columns `shopNameAtEntry`/`variantNameAtEntry` on `OrderLine`/`NoteLine`. Phase 04 MUST write these at line-create time; Phase 05 MUST render from them (never live names). A shared correction-cascade back-fills snapshots only while the referenced entity is still `needsConfirmation=true`.
 - Schema and generated T-SQL must stay compatible with SQL Server 2017+ (2016 is an OPEN QUESTION with the customer — do not assume it works).
 - Thai UI text; English code/identifiers/filenames.
 - Printed output must visually match `Scan2026-07-04_170934.pdf` — the scan is the layout spec (typeset spreadsheet, not handwriting).
@@ -247,7 +248,7 @@ All paths are inside `process/features/order-system/active/phase1-order-system_0
 |---|---|
 | 0 — Pre-program (plan creation) | 🧪 TESTING (this umbrella + stubs created; validators pending) |
 | 01 — Foundation | ✅ VERIFIED (all 7 inner-loop steps done; EVL independently re-ran all 6 gates green; `.env` created with user approval; 2 known-gaps accepted) |
-| 02 — Schema & Master Data | ⏳ PLANNED |
+| 02 — Schema & Master Data | 🧪 TESTING (R+I+PLAN-SUPPLEMENT+PVL done; Net Gate CONDITIONAL; EXECUTE pending user consent) |
 | 03 — Auth | ⏳ PLANNED |
 | 04 — Order Entry | ⏳ PLANNED |
 | 05 — Printing | ⏳ PLANNED |
@@ -313,27 +314,27 @@ for f in process/features/order-system/active/phase1-order-system_06-07-26/phase
 ## Resume and Execution Handoff
 
 - Selected plan file path: `process/features/order-system/active/phase1-order-system_06-07-26/phase1-order-system-umbrella_PLAN_06-07-26.md`
-- Last completed phase: Phase 0 (this umbrella plan = Phase 0 artifact); phase stubs + registry created.
-- Validate-contract status: Phase 01 inner-PVL contract WRITTEN (CONDITIONAL). Remaining phases pending (vc-validate-agent writes per-phase before each EXECUTE).
-- Next step for a fresh agent: Read this umbrella plan, read `phase-01-foundation_PLAN_06-07-26.md`; Phase 01 has completed RESEARCH→INNOVATE→PLAN-SUPPLEMENT→PVL. Next is EXECUTE (Step 5), gated on explicit user consent.
-- Current phase: Phase 01 (Foundation).
-- Next action: On explicit user consent (ENTER EXECUTE MODE), spawn vc-execute-agent (opus) for Phase 01 per the validate-contract. Sandbox DB only.
-- Execute-agent start instruction: Follow the Phase 01 validate-contract Execute-agent instructions E1–E7. Sandbox DB only; never touch a customer/remote DB; do not stop/restart the 9 unrelated Docker containers.
+- Last completed phase: Phase 01 (Foundation — ✅ VERIFIED). Phase 02 has now completed RESEARCH→INNOVATE→PLAN-SUPPLEMENT→PVL.
+- Validate-contract status: Phase 01 satisfied. Phase 02 inner-PVL contract WRITTEN 06-07-26 (CONDITIONAL). Phases 03–06 pending (vc-validate-agent writes per-phase before each EXECUTE).
+- Next step for a fresh agent: Read this umbrella plan and `phase-02-schema-master-data_PLAN_06-07-26.md`; Phase 02 is at EXECUTE (Step 5), gated on explicit user consent.
+- Current phase: Phase 02 (Schema & Master Data).
+- Next action: On explicit user consent (ENTER EXECUTE MODE), spawn vc-execute-agent (opus) for Phase 02 per the validate-contract. Sandbox DB only.
+- Execute-agent start instruction: Follow the Phase 02 validate-contract Execute-agent instructions E1–E9. Sandbox `orderstock-sql` DB only; never touch a customer/remote DB; do not stop/restart the 9 unrelated Docker containers; no git commit/push without user instruction.
 
 ---
 
 ## Current Execution State
 
-Last updated: 06-07-26 (Phase 01 closed out — UPDATE PROCESS complete)
+Last updated: 06-07-26 (Phase 02 PVL complete — validate-contract written)
 Completed phases: Phase 0 (Planning), Phase 01 (Foundation — ✅ VERIFIED)
 Current phase: Phase 02 — Schema & Master Data
-Current loop step: RESEARCH (not started)
-Validate-contract status: Phase 01 contract WRITTEN and satisfied (inner-pvl: phase-01; Net Gate CONDITIONAL → resolved: all 6 gates green independently re-run, `.env` created, 2 known-gaps accepted as program-level residuals). Phase 02 contract: not yet written (PVL step pending).
-Program Net Gate: Phase 01 VERIFIED. Program continues — proceed to Phase 02 RESEARCH.
+Current loop step: EXECUTE (pending user consent — do NOT spawn execute-agent until ENTER EXECUTE MODE)
+Validate-contract status: Phase 01 contract satisfied (inner-pvl: phase-01). Phase 02 contract WRITTEN 06-07-26 (inner-pvl: phase-02; Net Gate CONDITIONAL — 7 fixes folded into plan text + execute-agent instructions E1–E9, 2 known-gaps accepted: Thai-collation-deferred-Phase-06, CRUD-automated-round-trip-backlogged). All 5 auto-selections (AS1–AS5) open for user override before EXECUTE.
+Program Net Gate: Phase 01 VERIFIED; Phase 02 PVL CONDITIONAL (executable on consent). Program continues — Phase 02 EXECUTE next on explicit user consent.
 Latest validator run: 06-07-26 — phase-01 validate-plan-artifact PASS (0 fail / 0 warn); umbrella validator PASS (re-run recommended after this closeout's edits)
 
 Loop step values: RESEARCH | INNOVATE | PLAN-SUPPLEMENT | PVL | EXECUTE | EVL | UPDATE-PROCESS
-Orchestrator rule: read "Current loop step" and "validate-contract status" before spawning any subagent. Never spawn execute-agent when loop step is RESEARCH, INNOVATE, PLAN-SUPPLEMENT, or PVL. Phase 02 is now at RESEARCH — spawn vc-research-agent for Phase 02 next (read `phase-02-schema-master-data_PLAN_06-07-26.md` and the Phase 01 report first).
+Orchestrator rule: read "Current loop step" and "validate-contract status" before spawning any subagent. Phase 02 has completed RESEARCH→INNOVATE→PLAN-SUPPLEMENT→PVL. Next is EXECUTE (Step 5), gated on explicit user consent (ENTER EXECUTE MODE). On consent, spawn vc-execute-agent (opus) per phase-02 plan + validate-contract instructions E1–E9. Sandbox DB only.
 
 Phase 01 carry-forward for Phase 02 RESEARCH:
 - `prisma/schema.prisma` currently holds ONLY the datasource + minimal `HealthCheck` model — Phase 02 EXTENDS it (never rewrites) with the full schema.
