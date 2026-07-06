@@ -1,0 +1,47 @@
+{
+  "phase": "phase-05-printing",
+  "feature": "order-system",
+  "evl_run_date": "2026-07-06",
+  "run_by": "vc-tester (EVL Step 3 independent confirmation sweep)",
+  "mode": "exact validate-contract gates (NOT diff-aware)",
+  "prior_execute_evidence": "treated as unconfirmed; re-run unconditionally",
+  "gates": [
+    { "id": "vitest", "command": "pnpm test", "claimed": "41/41", "observed": "41 passed (10 files)", "status": "PASS" },
+    { "id": "lint", "command": "pnpm lint", "claimed": "clean", "observed": "0 errors 0 warnings", "status": "PASS" },
+    { "id": "build", "command": "pnpm build", "claimed": "clean; URLs unchanged", "observed": "compiled; route table shows all prior URLs unchanged (no (main) segment) + 2 new /print routes", "status": "PASS" },
+    { "id": "playwright", "command": "pnpm exec playwright test", "claimed": "16/16", "observed": "16 passed (9 regression + G1-G8 print)", "status": "PASS" },
+    { "id": "migrate-status", "command": "npx prisma migrate status", "claimed": "n/a", "observed": "3 migrations, schema up to date", "status": "PASS" },
+    { "id": "G1-colgroup", "strategy": "Fully-Automated", "observed": "colgroup=24 physical + 20 semantic data cols", "status": "PASS" },
+    { "id": "G2-rows-totals", "strategy": "Fully-Automated", "observed": "29 rows, 3-tier header, totals-last-tbody, grand 446 from fixture", "status": "PASS" },
+    { "id": "G3-page", "strategy": "Fully-Automated", "observed": "@page A4 landscape rule present", "status": "PASS" },
+    { "id": "G4-snapshot", "strategy": "Fully-Automated", "observed": "rename->print shows old snapshot; RESTORE-in-finally verified (DB has 0 RENAMED shops post-run)", "status": "PASS" },
+    { "id": "G5-per-shop", "strategy": "Fully-Automated", "observed": ".sheet count == selected shops; break-after page", "status": "PASS" },
+    { "id": "G6-print-page-auth", "strategy": "Fully-Automated", "observed": "auth-guard-coverage grep asserts (main)/ modules + print pages call requireAuth", "status": "PASS" },
+    { "id": "G7-pdf", "strategy": "Hybrid", "observed": "test-side page.pdf valid A4-landscape", "status": "PASS" },
+    { "id": "G8-unauth-redirect", "strategy": "Hybrid", "observed": "logged-out /print/daily -> /login", "status": "PASS" },
+    { "id": "G9-visual", "strategy": "Agent-Probe", "observed": "daily-print-a4.png independently reviewed: 3-tier header, 29 rows w/ gaps, totals 99/14/137/21/39/4/82/2..38/10..446 exact, weight labels BLANK, no nav chrome", "status": "GO" }
+  ],
+  "route_group_deviation_audit": {
+    "urls_preserved": "PASS (build route table: /, /admin/users, /orders, /orders/[id], /products, /products/[id]/edit, /products/new, /shops, /shops/[id]/edit, /shops/new, /login, /api/health -- none carry a (main) segment)",
+    "proxy_matcher_guards_all": "PASS (matcher excludes only login/api-auth/api-health/static; /print guarded; /api/health public)",
+    "auth_test_updated_not_dropped": "PASS (auth-guard-coverage.test.ts MODULES paths point to src/app/(main)/..., print pages grepped explicitly; regression D1/D2 + auth spec green)"
+  },
+  "regression": {
+    "orders_D1_D2": "PASS", "auth_role_gating": "PASS", "migrate_status": "clean",
+    "db_pollution": "none (0 RENAMED shops)", "master_data_counts": "shops=25 variants=28 users=2 (stable)",
+    "fonts_woff2": "present (6 Sarabun files)", "health_route": "present; covered indirectly by live-server e2e run"
+  },
+  "cross_checks": {
+    "unrelated_containers_untouched": "PASS (9 non-orderstock containers still Up)",
+    "env_untracked": "PASS (.env gitignored; privacy-hook active)",
+    "secrets_in_tracked_files": "none (secret-leak.test 2/2 green)",
+    "backlog_notes": "print-pdf-fallback_NOTE + print-shading-q30_NOTE present (+ pre-existing weight-factors_NOTE)"
+  },
+  "known_gaps": [
+    "Q30 shading fills (external customer question; additive CSS layer ready, OFF by default)",
+    "Q22 weight-footer values (external customer question; labels render, values BLANK)",
+    "on-site real-printer mm/legibility fidelity (delivery-time item; narrow Thai header truncation flagged) -- documented known-gap, NOT a promotion blocker per plan"
+  ],
+  "verified_decision": "VERIFIED",
+  "rationale": "All validate-contract gates independently re-run and green; route-group deviation preserves every URL and the auth boundary; DB unpolluted; only documented known-gaps remain."
+}

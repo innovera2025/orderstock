@@ -217,6 +217,7 @@ During /goal execution of this phase program:
 - **RESOLVED (Phase 03 PLAN-SUPPLEMENT):** Next 16 route protection uses **`proxy.ts`** (NOT `middleware.ts`, which is silently ignored). Auth.js v5 also requires `src/app/api/auth/[...nextauth]/route.ts` and env vars `AUTH_SECRET`/`AUTH_TRUST_HOST`. Encoded in the Phase 03 plan; bcryptjs chosen for hashing; login rate-limiting added.
 - **CROSS-PHASE (LOAD-BEARING, Phase 04/05 input):** Phase 02 (decision 6) adds historical name-snapshot columns `shopNameAtEntry`/`variantNameAtEntry` on `OrderLine`/`NoteLine`. Phase 04 MUST write these at line-create time AND preserve pre-existing snapshots on re-save (delete-recreate carries them forward); Phase 05 MUST render from them (never live names). A shared correction-cascade back-fills snapshots only while the referenced entity is still `needsConfirmation=true`.
 - **CROSS-PHASE (Phase 05 input):** Phase 04 exports the reusable two-tier `src/components/sheet-header.tsx` header component and the `test-fixtures/sheet-13-03-69.json` gate fixture — Phase 05 print imports both (do not duplicate the header or re-derive the fixture).
+- **PRINT FETCH DRIFT (LOAD-BEARING):** print MUST use a NEW shared `getSheetForPrint(date)` reading snapshot columns — NOT the live `/orders/[id]` fetch (which renders current names). Table width faithful ≈251mm (NOT 281mm). Server-side PDF fallback is DEFERRED to backlog (test-side page.pdf only).
 - Schema and generated T-SQL must stay compatible with SQL Server 2017+ (2016 is an OPEN QUESTION with the customer — do not assume it works).
 - Thai UI text; English code/identifiers/filenames.
 - Printed output must visually match `Scan2026-07-04_170934.pdf` — the scan is the layout spec (typeset spreadsheet, not handwriting).
@@ -326,16 +327,16 @@ for f in process/features/order-system/active/phase1-order-system_06-07-26/phase
 
 ## Current Execution State
 
-Last updated: 06-07-26 (Phase 04 UPDATE PROCESS complete — ✅ VERIFIED; program advances to Phase 05)
+Last updated: 06-07-26 (Phase 05 PVL complete — validate-contract CONDITIONAL after 1 supplement cycle; EXECUTE pending user consent)
 Completed phases: Phase 0 (Planning), Phase 01 (Foundation — ✅ VERIFIED), Phase 02 (Schema & Master Data — ✅ VERIFIED), Phase 03 (Auth — ✅ VERIFIED), Phase 04 (Order Entry — ✅ VERIFIED)
 Current phase: Phase 05 — Printing
-Current loop step: RESEARCH (not started)
-Validate-contract status: Phases 01-04 all satisfied (Phase 04: CONDITIONAL net gate, 0 FAILs, 4 concerns resolved in-plan + 2 accepted residuals; independently re-confirmed at EVL — DB probe matched fixture exactly, 0 empty snapshots, 0 qty≤0). Phase 05 contract pending (vc-validate-agent writes it before EXECUTE).
-Program Net Gate: Phase 01 VERIFIED; Phase 02 VERIFIED; Phase 03 VERIFIED; Phase 04 VERIFIED. Program continues — Phase 05 RESEARCH next.
+Current loop step: PVL COMPLETE (validate-contract CONDITIONAL, supplement cycle 1 closed) → EXECUTE (step 5) PENDING USER CONSENT (ENTER EXECUTE MODE)
+Validate-contract status: Phases 01-04 satisfied. Phase 05 WRITTEN — CONDITIONAL (0 FAILs; 6 concerns folded into plan Step E via PVL-supplement cycle 1; only Q30/Q22 external-customer known-gaps remain). Terminal-eligible (N≥1 fix cycle). EXECUTE gated on user consent.
+Program Net Gate: Phases 01-04 VERIFIED; Phase 05 PVL CONDITIONAL (contract written, cycle 1 closed). Program continues — Phase 05 EXECUTE next, pending user consent (ENTER EXECUTE MODE).
 Latest validator run: 06-07-26 (this UPDATE PROCESS session, Phase 04 closeout) — see this session's closeout packet for exact validator results (validate-all-context.mjs, validate-context-discovery.mjs, plan-artifact validators for phase-04 + umbrella).
 
 Loop step values: RESEARCH | INNOVATE | PLAN-SUPPLEMENT | PVL | EXECUTE | EVL | UPDATE-PROCESS
-Orchestrator rule: read "Current loop step" and "validate-contract status" before spawning any subagent. Phase 04 is ✅ VERIFIED — next subagent = vc-research-agent for Phase 05 RESEARCH.
+Orchestrator rule: read "Current loop step" and "validate-contract status" before spawning any subagent. Phase 05 PVL is COMPLETE (CONDITIONAL) — next subagent = vc-execute-agent (opus) for Phase 05 EXECUTE, ONLY after user consents (ENTER EXECUTE MODE). EXECUTE starts at Step A + honors contract instructions E1a–E8 and plan Step E items E1–E6.
 
 Phase 04 carry-forward for Phase 05 RESEARCH:
 - **Import `src/components/sheet-header.tsx` (reusable two-tier สินค้า/เครื่องปรุง header) — do NOT duplicate it.** Phase 04 built this specifically for Phase 05 print reuse.

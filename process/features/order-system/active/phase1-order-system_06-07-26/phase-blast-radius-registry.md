@@ -66,11 +66,20 @@ Claimed blast radius:
 **Cross-phase input (from Phase 02 decision 6):** MUST render from OrderLine/NoteLine snapshot columns, never live Shop/Variant names.
 **Cross-phase input (from Phase 04):** IMPORT the shared `src/components/sheet-header.tsx` two-tier header + `test-fixtures/sheet-13-03-69.json` fixture — do not duplicate.
 
-Claimed blast radius:
-- `src/app/print/daily/[date]/**`, `src/app/print/shops/[date]/**`
+status: DONE — EXECUTE complete 06-07-26 under explicit user consent (2 accepted known-gaps Q30/Q22). All fully-automated + hybrid gates green: vitest 41/41 (incl. 2 new print-page requireAuth gates), build ✓, lint ✓, playwright 16/16 (9 regression + 7 new print gates G1–G8). Agent-probe visual (G9) recorded GO (faithful; header-cell legibility caveat at narrow mm widths). Server-side PDF DEFERRED to backlog. **DEVIATION (within-blast-radius, documented in report):** introduced a `(main)` route group to structurally exclude the nav from `/print` — moved `page.tsx`,`db-status.tsx`,`orders/`,`shops/`,`products/`,`admin/` into `src/app/(main)/` and removed `<Nav/>` from root `src/app/layout.tsx`. URLs unchanged. This TOUCHES the SHARED `src/app/layout.tsx` (Phases 01/03/04) and relocates prior-phase route folders; extend-only intent preserved (no route logic changed).
+
+Claimed + actual blast radius:
+- `src/app/print/layout.tsx` (no-nav), `src/app/print/daily/[date]/page.tsx`, `src/app/print/shops/[date]/page.tsx`, `src/app/print/print-table.tsx`, `src/app/print/print-controls.tsx`
+- `src/lib/get-sheet-for-print.ts` (NEW shared snapshot fetch)
 - `src/styles/print.css`
-- `src/app/api/print/**` (optional PDF fallback)
-- `next.config.ts` (serverExternalPackages, if fallback adopted) — SHARED with 01 → EXTEND only
+- `src/components/sheet-header.tsx` (EXTEND — additive optional subLabel/className/trailingColSpan; orders grid byte-identical) — SHARED with 04
+- `src/app/(main)/layout.tsx` (NEW route-group nav layout); `src/app/layout.tsx` (remove Nav) — SHARED with 01/03/04 → structural nav relocation
+- MOVED into `src/app/(main)/`: `page.tsx`, `db-status.tsx`, `orders/`, `shops/`, `products/`, `admin/`
+- `src/app/(main)/orders/[id]/page.tsx` (EXTEND — print links)
+- `src/lib/__tests__/auth-guard-coverage.test.ts` (EXTEND — (main) paths + print-page grep) — SHARED with 04
+- `e2e/print.spec.ts` (NEW self-seeding E2E)
+- backlog: `print-pdf-fallback_NOTE`, `print-shading-q30_NOTE` (+ pre-existing `weight-factors_NOTE`)
+- NOT done (deferred): `src/app/api/print/**`, `next.config.ts` serverExternalPackages — server-side PDF fallback to backlog
 
 ---
 
