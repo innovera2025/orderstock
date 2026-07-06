@@ -1,0 +1,19 @@
+// orderstock — Prisma schema (SQL Server)
+// Phase 01: datasource + ONE minimal model to prove the migration pipeline.
+// SHARED with Phases 02 (full schema) and 03 (User fields) — later phases EXTEND, never rewrite.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Prisma 7: the connection URL lives in prisma.config.ts (datasource.url) for the
+// CLI/Migrate, and the runtime client is built with the PrismaMssql adapter (src/lib/db.ts).
+datasource db {
+  provider = "sqlserver"
+}
+
+// Minimal model that exercises a migration end-to-end against the sandbox DB.
+model HealthCheck {
+  id        Int      @id @default(autoincrement())
+  checkedAt DateTime @default(now())
+}

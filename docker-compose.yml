@@ -1,0 +1,25 @@
+# orderstock — disposable Docker SQL Server 2022 sandbox (DEV ONLY).
+# This is the ONLY database touched during development. NEVER point the app at a
+# customer/remote SQL Server before the Phase 06 delivery gate.
+#
+# The x86_64 image runs natively on the Intel dev host. `platform: linux/amd64` is
+# kept for portability (Apple-Silicon hosts run it under Rosetta). mem_limit is
+# explicit because SQL Server exits silently under memory pressure on the shared VM.
+services:
+  sqlserver:
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    platform: linux/amd64
+    container_name: orderstock-sql
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD}"
+      MSSQL_PID: "Developer"
+    ports:
+      - "1433:1433"
+    mem_limit: 2g
+    volumes:
+      - orderstock-sql-data:/var/opt/mssql
+    restart: unless-stopped
+
+volumes:
+  orderstock-sql-data:

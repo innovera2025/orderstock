@@ -1,0 +1,28 @@
+@import "tailwindcss";
+@import "./fonts.css";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+  /* Self-hosted Sarabun (see src/lib/fonts.ts / src/app/fonts.css). */
+  --font-sarabun: "Sarabun", "TH Sarabun New", sans-serif;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sarabun);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sarabun);
+}
