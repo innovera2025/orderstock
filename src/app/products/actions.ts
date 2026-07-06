@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
+import { requireAuth, requireAuthState } from "@/lib/auth-guard";
 import {
   PACK_SIZES,
   PRODUCT_GROUPS,
@@ -51,6 +52,9 @@ export async function createProduct(
   _prev: ProductActionState,
   formData: FormData,
 ): Promise<ProductActionState> {
+  const denied = await requireAuthState();
+  if (denied) return denied;
+
   const parsed = productSchema.safeParse({
     name: formData.get("name"),
     group: formData.get("group"),
@@ -70,6 +74,9 @@ export async function updateProduct(
   _prev: ProductActionState,
   formData: FormData,
 ): Promise<ProductActionState> {
+  const denied = await requireAuthState();
+  if (denied) return denied;
+
   const parsed = productSchema.safeParse({
     name: formData.get("name"),
     group: formData.get("group"),
@@ -100,11 +107,13 @@ export async function updateProduct(
 }
 
 export async function softDeleteProduct(productId: number): Promise<void> {
+  await requireAuth();
   await prisma.product.update({ where: { id: productId }, data: { active: false } });
   revalidatePath("/products");
 }
 
 export async function restoreProduct(productId: number): Promise<void> {
+  await requireAuth();
   await prisma.product.update({ where: { id: productId }, data: { active: true } });
   revalidatePath("/products");
 }
@@ -132,6 +141,9 @@ export async function addVariant(
   _prev: ProductActionState,
   formData: FormData,
 ): Promise<ProductActionState> {
+  const denied = await requireAuthState();
+  if (denied) return denied;
+
   const parsed = variantSchema.safeParse({
     packSize: formData.get("packSize"),
     labelVariant: formData.get("labelVariant"),
@@ -169,6 +181,7 @@ export async function addVariant(
 }
 
 export async function softDeleteVariant(variantId: number, productId: number): Promise<void> {
+  await requireAuth();
   await prisma.productVariant.update({ where: { id: variantId }, data: { active: false } });
   revalidatePath(`/products/${productId}/edit`);
 }

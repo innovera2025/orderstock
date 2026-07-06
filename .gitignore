@@ -52,3 +52,9 @@ next-env.d.ts
 
 # claude hook runtime logs (not durable process artifacts)
 .claude/hooks/.logs/
+
+# Playwright (Phase 03)
+e2e/.auth/
+test-results/
+playwright-report/
+playwright/.cache/

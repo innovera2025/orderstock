@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Nav } from "./nav";
 
 export const metadata: Metadata = {
   title: "ระบบจัดการออเดอร์สินค้า",
@@ -16,7 +17,10 @@ export default function RootLayout({
   // line-breaking and tone-mark shaping.
   return (
     <html lang="th" className="h-full antialiased">
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <Nav />
+        {children}
+      </body>
     </html>
   );
 }

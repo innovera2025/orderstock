@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
+import { requireAuth, requireAuthState } from "@/lib/auth-guard";
 import {
   cascadeShopNameCorrection,
   type CascadeDb,
@@ -48,6 +49,9 @@ export async function createShop(
   _prev: ShopActionState,
   formData: FormData,
 ): Promise<ShopActionState> {
+  const denied = await requireAuthState();
+  if (denied) return denied;
+
   const parsed = shopSchema.safeParse({
     name: formData.get("name"),
     rosterOrder: formData.get("rosterOrder"),
@@ -74,6 +78,9 @@ export async function updateShop(
   _prev: ShopActionState,
   formData: FormData,
 ): Promise<ShopActionState> {
+  const denied = await requireAuthState();
+  if (denied) return denied;
+
   const parsed = shopSchema.safeParse({
     name: formData.get("name"),
     rosterOrder: formData.get("rosterOrder"),
@@ -131,12 +138,14 @@ export async function updateShop(
 }
 
 export async function softDeleteShop(shopId: number): Promise<void> {
+  await requireAuth();
   // SOFT-DELETE only (active=false) — never hard delete; historical FKs must resolve.
   await prisma.shop.update({ where: { id: shopId }, data: { active: false } });
   revalidatePath("/shops");
 }
 
 export async function restoreShop(shopId: number): Promise<void> {
+  await requireAuth();
   await prisma.shop.update({ where: { id: shopId }, data: { active: true } });
   revalidatePath("/shops");
 }

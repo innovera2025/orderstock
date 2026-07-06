@@ -5,6 +5,7 @@
 // side-effect module imported FIRST so env is populated before the db.ts import runs
 // (import hoisting means a plain loadEnvFile() statement here would be too late).
 import "./load-env";
+import { randomBytes } from "node:crypto";
 import { prisma } from "../src/lib/db";
 import {
   PRINT_VARIANTS,
@@ -12,6 +13,42 @@ import {
   type PackSize,
   type ProductGroup,
 } from "../src/lib/product-order";
+import { hashPassword } from "../src/lib/password";
+
+const ADMIN_USERNAME = "admin";
+
+// D1/E10: idempotent ADMIN seed. Reads the initial password from SEED_ADMIN_PASSWORD; if unset,
+// generates a random one and prints it ONCE to stdout for out-of-band delivery. The plaintext is
+// NEVER hardcoded or committed — only the bcrypt hash is persisted. Deliver securely; the admin
+// resets other users' passwords via the /admin/users UI (force-change-on-first-login is an
+// accepted operational known-gap this phase — no schema migration).
+async function seedAdmin(): Promise<void> {
+  const existing = await prisma.user.findUnique({ where: { username: ADMIN_USERNAME } });
+  if (existing) {
+    // Idempotent: do NOT reset an existing admin's password on re-run.
+    console.log(`admin user "${ADMIN_USERNAME}" already exists — leaving credentials unchanged.`);
+    return;
+  }
+
+  const envPassword = process.env.SEED_ADMIN_PASSWORD?.trim();
+  const password =
+    envPassword && envPassword.length >= 8
+      ? envPassword
+      : randomBytes(12).toString("base64url").slice(0, 16);
+
+  const passwordHash = await hashPassword(password);
+  await prisma.user.create({
+    data: { username: ADMIN_USERNAME, passwordHash, role: "ADMIN", active: true },
+  });
+
+  if (envPassword && envPassword.length >= 8) {
+    console.log(`Created ADMIN user "${ADMIN_USERNAME}" using SEED_ADMIN_PASSWORD from the environment.`);
+  } else {
+    console.log(
+      `Created ADMIN user "${ADMIN_USERNAME}". INITIAL PASSWORD (deliver out-of-band, then change): ${password}`,
+    );
+  }
+}
 
 // A recurring off-list note product (decision 1) — real Product/Variant rows with
 // printOrder = NULL, upserted on the non-null natural key (productName, packSize,
@@ -156,6 +193,9 @@ async function main(): Promise<void> {
       create: { rosterOrder: s.rosterOrder, name: s.name, needsConfirmation: s.needsConfirmation },
     });
   }
+
+  // 4. Admin user (Phase 03 — idempotent; password sourced from env or generated, never committed).
+  await seedAdmin();
 
   // Report counts (used by the idempotency gate).
   const [inOrderVariants, offListVariants, shopCount, flaggedShops, flaggedVariants] =
