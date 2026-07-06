@@ -13,7 +13,7 @@ metadata:
 
 **Program:** phase1-order-system
 **Umbrella plan:** process/features/order-system/active/phase1-order-system_06-07-26/phase1-order-system-umbrella_PLAN_06-07-26.md
-**Phase status:** ✅ VERIFIED (RESEARCH+INNOVATE+PLAN+PVL+EXECUTE+EVL done 06-07-26; all validate-contract gates independently re-verified by vc-tester; DB integrity confirmed on sandbox; Phase 01-03 regression clean; only 2 pre-accepted known-gaps remain — weight validation + dup-TOCTOU. Next: step 7 UPDATE PROCESS)
+**Phase status:** ✅ VERIFIED (all 7 inner-loop steps done 06-07-26; all validate-contract gates independently re-verified by vc-tester; DB integrity confirmed on sandbox; Phase 01-03 regression clean; only 2 pre-accepted known-gaps remain — weight validation + dup-TOCTOU, both backlogged. UPDATE PROCESS complete — see backlog stubs, `database/all-database.md`, `all-context.md`, `tests/all-tests.md`. Program continues at Phase 05 Printing.)
 **Report destination:** process/features/order-system/active/phase1-order-system_06-07-26/phase-04-order-entry_REPORT_06-07-26.md (flat in the program task folder)
 
 ---
@@ -190,7 +190,7 @@ pnpm exec playwright test   # Hybrid: recreate the 13/3/69 sheet in the UI, save
 - [x] 4. PVL — vc-validate-agent: full V1-V7 done 06-07-26; validate-contract written (net gate CONDITIONAL, 0 FAILs; 4 concerns resolved in-plan + 2 accepted residuals); arithmetic independently verified; snapshot + auth-guard gates added
 - [x] 5. EXECUTE — DONE 06-07-26: all A/B/C/D checklist items implemented; per-section TDD gates red-first→green; pnpm test 39/39, pnpm build ✓, pnpm lint ✓, playwright 9/9 (incl. D1 446 + D2 snapshot-preserve, Phase-03 auth regression clean). Report drafted. 2 accepted known-gaps (weight, dup-TOCTOU) unchanged. Awaiting EVL.
 - [x] 6. EVL — DONE 06-07-26 (vc-tester independent re-run): ALL validate-contract gates independently green (pnpm test 39/39, build ✓, lint ✓, playwright 9/9); DB probe confirms sheet 13/3/69 grand 446 + column totals match fixture + 0 empty snapshots + 0 qty≤0; Phase 01-03 regression clean (migrate up-to-date, seed idempotent, health 200, /orders→307); 3 deviations audited & confirmed accurate; verification.json evlConfirmation block written; EVL HANDOFF SUMMARY appended to report. Classification CLEAN.
-- [ ] 7. UPDATE PROCESS — phase report written, umbrella state updated, commit done
+- [x] 7. UPDATE PROCESS — phase report reconciled; umbrella state updated (Phase 04 ✅ VERIFIED, current phase → 05); backlog stubs written (weight-factors, order-sheet-dup-index); `database/all-database.md`, `all-context.md`, `tests/all-tests.md` updated; validators run. Commit routed by orchestrator (not this agent).
 
 **Validate-contract written — EXECUTE gated on explicit user consent (charter hard stop).**
 

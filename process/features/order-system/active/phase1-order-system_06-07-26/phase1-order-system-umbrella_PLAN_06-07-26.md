@@ -251,8 +251,8 @@ All paths are inside `process/features/order-system/active/phase1-order-system_0
 | 01 — Foundation | ✅ VERIFIED (all 7 inner-loop steps done; EVL independently re-ran all 6 gates green; `.env` created with user approval; 2 known-gaps accepted) |
 | 02 — Schema & Master Data | ✅ VERIFIED (all 7 inner-loop steps done; EVL independently re-ran all 7 gates + Phase-01 regression clean; 4 accepted known-gaps; UPDATE PROCESS complete — context updated, backlog stub registered) |
 | 03 — Auth | ✅ VERIFIED (all 7 inner-loop steps done; EVL independently re-ran all gates + adversarial auth probes + Phase 01/02 regression clean; 4 accepted known-gaps; UPDATE PROCESS complete — `auth/` context group created, `all-context.md`/`all-tests.md` updated, no new backlog beyond pre-existing revocation-hardening note) |
-| 04 — Order Entry | ⏳ PLANNED (RESEARCH next) |
-| 05 — Printing | ⏳ PLANNED |
+| 04 — Order Entry | ✅ VERIFIED (all 7 inner-loop steps done; EVL independently re-ran all gates + DB probe + Phase 01-03 regression clean; 2 accepted known-gaps backlogged (weight-factors, order-sheet-dup-index); UPDATE PROCESS complete — `database/all-database.md`/`all-context.md`/`tests/all-tests.md` updated, `sheet-header.tsx` + shared fixture confirmed exported for Phase 05) |
+| 05 — Printing | ⏳ PLANNED (RESEARCH next) |
 | 06 — DB Settings & Delivery | ⏳ PLANNED |
 
 Status values: ⏳ PLANNED | 🔨 CODE DONE | 🧪 TESTING | ✅ VERIFIED | 🚧 BLOCKED | ✅ COMPLETE
@@ -317,34 +317,35 @@ for f in process/features/order-system/active/phase1-order-system_06-07-26/phase
 - Selected plan file path: `process/features/order-system/active/phase1-order-system_06-07-26/phase1-order-system-umbrella_PLAN_06-07-26.md`
 - Last completed phase: Phase 03 (Auth — ✅ VERIFIED).
 - Validate-contract status: Phases 01-03 all satisfied (see Current Execution State above). Phases 04-06 pending (vc-validate-agent writes per-phase before each EXECUTE).
-- Next step for a fresh agent: Read this umbrella plan and `phase-04-order-entry_PLAN_06-07-26.md`; Phase 04 has NOT started — begin at RESEARCH.
-- Current phase: Phase 04 (Order Entry).
-- Next action: Spawn vc-research-agent for Phase 04 RESEARCH (no user consent gate needed for RESEARCH — only EXECUTE requires explicit consent).
-- Execute-agent start instruction (once Phase 04 reaches PVL): sandbox `orderstock-sql` DB only; never touch a customer/remote DB; do not stop/restart the 9 unrelated Docker containers; no git commit/push without user instruction.
+- Next step for a fresh agent: Read this umbrella plan and `phase-05-printing_PLAN_06-07-26.md`; Phase 05 has NOT started — begin at RESEARCH.
+- Current phase: Phase 05 (Printing).
+- Next action: Spawn vc-research-agent for Phase 05 RESEARCH (no user consent gate needed for RESEARCH — only EXECUTE requires explicit consent).
+- Execute-agent start instruction (once Phase 05 reaches PVL): sandbox `orderstock-sql` DB only; never touch a customer/remote DB; do not stop/restart the 9 unrelated Docker containers; no git commit/push without user instruction.
 
 ---
 
 ## Current Execution State
 
-Last updated: 06-07-26 (Phase 04 PVL complete — validate-contract written, net gate CONDITIONAL, 0 FAILs; EXECUTE pending explicit user consent)
-Completed phases: Phase 0 (Planning), Phase 01 (Foundation — ✅ VERIFIED), Phase 02 (Schema & Master Data — ✅ VERIFIED), Phase 03 (Auth — ✅ VERIFIED)
-Current phase: Phase 04 — Order Entry
-Current loop step: PVL DONE → EXECUTE (pending explicit user consent — charter hard stop)
-Validate-contract status: Phase 01 contract satisfied. Phase 02 contract satisfied (all 7 gates independently re-confirmed at EVL). Phase 03 contract satisfied (CONDITIONAL net gate, 0 FAILs; all E1-E13 gates independently re-confirmed at EVL; full STRIDE scan done). Phase 04 contract WRITTEN (CONDITIONAL, 0 FAILs; 4 concerns resolved in-plan + 2 accepted residuals; arithmetic 446 independently verified). EXECUTE gated on user consent.
-Program Net Gate: Phase 01 VERIFIED; Phase 02 VERIFIED; Phase 03 VERIFIED; Phase 04 PVL CONDITIONAL (contract written). Program continues — Phase 04 EXECUTE next (pending consent).
-Latest validator run: 06-07-26 (this UPDATE PROCESS session) — see this session's closeout packet for exact validator results (validate-all-context.mjs, validate-context-discovery.mjs, plan-artifact validators for phase-03 + umbrella) after `auth/` group creation.
+Last updated: 06-07-26 (Phase 04 UPDATE PROCESS complete — ✅ VERIFIED; program advances to Phase 05)
+Completed phases: Phase 0 (Planning), Phase 01 (Foundation — ✅ VERIFIED), Phase 02 (Schema & Master Data — ✅ VERIFIED), Phase 03 (Auth — ✅ VERIFIED), Phase 04 (Order Entry — ✅ VERIFIED)
+Current phase: Phase 05 — Printing
+Current loop step: RESEARCH (not started)
+Validate-contract status: Phases 01-04 all satisfied (Phase 04: CONDITIONAL net gate, 0 FAILs, 4 concerns resolved in-plan + 2 accepted residuals; independently re-confirmed at EVL — DB probe matched fixture exactly, 0 empty snapshots, 0 qty≤0). Phase 05 contract pending (vc-validate-agent writes it before EXECUTE).
+Program Net Gate: Phase 01 VERIFIED; Phase 02 VERIFIED; Phase 03 VERIFIED; Phase 04 VERIFIED. Program continues — Phase 05 RESEARCH next.
+Latest validator run: 06-07-26 (this UPDATE PROCESS session, Phase 04 closeout) — see this session's closeout packet for exact validator results (validate-all-context.mjs, validate-context-discovery.mjs, plan-artifact validators for phase-04 + umbrella).
 
 Loop step values: RESEARCH | INNOVATE | PLAN-SUPPLEMENT | PVL | EXECUTE | EVL | UPDATE-PROCESS
-Orchestrator rule: read "Current loop step" and "validate-contract status" before spawning any subagent. Phase 04 PVL is DONE — next subagent = vc-execute-agent (opus) for Phase 04, but ONLY after explicit user consent (ENTER EXECUTE MODE). Read `phase-04-order-entry_PLAN_06-07-26.md` ## Validate Contract before spawning.
+Orchestrator rule: read "Current loop step" and "validate-contract status" before spawning any subagent. Phase 04 is ✅ VERIFIED — next subagent = vc-research-agent for Phase 05 RESEARCH.
 
-Phase 03 carry-forward for Phase 04 RESEARCH:
-- **Every route is now auth-guarded by `src/proxy.ts`** (Next 16 route protection) — new order-entry pages under `src/app/orders/**` inherit this protection automatically (matcher guards everything except `/login`, `/api/auth/*`, `/api/health`, static assets). No extra proxy config needed for new pages.
-- **But `proxy.ts` is convenience only** — every new server action in Phase 04 (create/edit order sheet, create/edit order line, create/edit note line) MUST call `requireAuth()` (or `requireAuthState()` for state-returning actions) directly, per the contract in `process/context/auth/all-auth.md`. This is the real security boundary; a raw POST bypasses page routing.
-- **Snapshot-columns constraint (LOAD-BEARING, from Phase 02 decision 6):** `OrderLine`/`NoteLine` have historical name-snapshot columns `shopNameAtEntry`/`variantNameAtEntry`. **Phase 04 is the phase that WRITES these** at line-create time (Phase 05 renders from them; never live names). Read `process/context/database/all-database.md` for the correction-cascade back-fill pattern before writing create/edit logic.
-- **`correction-cascade.ts` requires the `CascadeDb` adapter, not a raw `PrismaClient`** — passing `prisma` directly silently no-ops (no error, back-fill never runs). This gotcha is documented in `database/all-database.md` and `all-context.md` Gotchas.
-- **Playwright + ADMIN/STAFF storage-state fixtures are now available for E2E** (`e2e/.auth/admin.json`, `e2e/.auth/staff.json`, produced by `e2e/auth.setup.ts`). Phase 04 order-entry E2E specs should reuse these via `test.use({ storageState: "e2e/.auth/admin.json" })` rather than re-implementing login — see `process/context/auth/all-auth.md` E2E fixtures section.
-- Session/role contract (`session.user.role`) is stable and consumable — `ROLES`/`ROLE_LABELS` live in `src/lib/product-order.ts`.
-- `.env` has `AUTH_SECRET`/`AUTH_TRUST_HOST`/`SEED_ADMIN_PASSWORD` set — Phase 04 E2E can rely on it directly (Playwright loads `.env` via `process.loadEnvFile()`).
+Phase 04 carry-forward for Phase 05 RESEARCH:
+- **Import `src/components/sheet-header.tsx` (reusable two-tier สินค้า/เครื่องปรุง header) — do NOT duplicate it.** Phase 04 built this specifically for Phase 05 print reuse.
+- **Reuse `test-fixtures/sheet-13-03-69.json` for print snapshot tests** — the canonical 13/3/69 gate fixture (51 cells, 20 column totals, grand 446, 13 NoteLines incl. orphan r20) is shared, not re-derived.
+- **Print MUST render from snapshot columns (`shopNameAtEntry`/`variantNameAtEntry`), never live `Shop`/`ProductVariant` names** — per Phase 02 decision 6 and the historical-fidelity snapshot pattern (`database/all-database.md`).
+- **Totals come from `src/lib/totals.ts`** (`computeColumnTotals` / `computeGrandTotal(orderLines: OrderLineCell[])` — type-level excludes `NoteLine` qty, no `includeNotes` flag) — the printed footer must reproduce the same 446/column-totals contract, reusing this module, not reimplementing the arithmetic.
+- **BE date display via `src/lib/be-date.ts`** (Intl `en-US-u-ca-buddhist`, `formatToParts` strips the " BE" suffix, ASCII digits per the paper form) — reuse for printed date headers.
+- **Playwright is installed with ADMIN/STAFF storage-state auth fixtures** (`e2e/.auth/admin.json`, `e2e/.auth/staff.json`) — Phase 05 print E2E/snapshot tests should reuse these rather than re-implementing login.
+- Every order/print server action must still call `requireAuth()`/`requireAuthState()` directly — `proxy.ts` route-matching is convenience only, not the security boundary (`auth/all-auth.md`).
+- Two accepted known-gaps carried forward as backlog notes (do not re-litigate in Phase 05 unless print needs weight): `process/features/order-system/backlog/weight-factors_NOTE_06-07-26.md`, `process/features/order-system/backlog/order-sheet-dup-index_NOTE_06-07-26.md`.
 
 Note: The Stable Program Goal above is fixed. This section is the only part that changes — update-process-agent rewrites it after every phase closeout (overwrite, not append — git history is the audit log).
 

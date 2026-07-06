@@ -6,6 +6,8 @@ related: [context:all-tests]
 date: 06-07-26
 ---
 
+Last updated: 06-07-26 (Phase 04 closeout — order-entry write-path pattern added)
+
 # Database Context
 
 This file is the canonical database context entrypoint for orderstock.
@@ -182,6 +184,53 @@ doc references the old flag name, it is stale.
 
 ---
 
+## Order-Entry Write Path (Phase 04, LOAD-BEARING for Phase 05)
+
+`src/app/orders/actions.ts` `saveOrderSheet` is the reference implementation for writing
+`OrderLine`/`NoteLine` under SQL Server's `NoAction` cascade constraint. Any future write path
+touching these two tables must follow the same pattern.
+
+**Snapshot-preserving save pattern (read-before-delete):**
+
+1. **Inside the `$transaction`, READ existing `OrderLine`/`NoteLine` rows for the sheet FIRST** and
+   capture their `shopNameAtEntry`/`variantNameAtEntry` snapshot text.
+2. **Explicitly `deleteMany` the child `OrderLine`/`NoteLine` rows** — never rely on cascade. Every FK
+   on these tables is `onDelete: NoAction` (see SQL Server Connector Pitfalls above), so deleting the
+   parent `OrderSheet` while children exist would be rejected outright; children must be deleted
+   first, explicitly, every time.
+3. **Re-insert, carrying forward captured snapshot text** for cells that already existed (matched by
+   `shopId`+`variantId`); write a FRESH snapshot only for genuinely new cells. A naive re-derive from
+   current live `Shop`/`ProductVariant` names would silently break the historical-fidelity guarantee
+   (see the snapshot pattern above) — this is why carry-forward is load-bearing, not cosmetic.
+4. **Keep the SAME `OrderSheet` row** (update `updatedAt`/`lastUpdated`) — do not delete+recreate the
+   sheet itself, only its child lines.
+
+The carry-forward-vs-fresh decision is extracted into a pure, DB-free helper —
+`src/lib/order-save.ts` `mergeSnapshots(existingLines, incomingCells, liveNames)` — so it is
+unit-testable without a live database (mirrors the Phase 02 `CascadeDb` extract-pure-logic pattern).
+`order-save.test.ts` proves the naive re-derive-from-live-names behavior FAILS this gate while the
+carry-forward implementation passes it.
+
+**Duplicate-check-in-transaction pattern:** `OrderSheet` has no DB-level unique constraint on
+`(date, location)` (see decision 3, Phase 04 INNOVATE — deliberate, no schema migration). Instead,
+`createOrderSheet` does an app-level check-then-create for an existing sheet on the same
+date+location **inside the same `$transaction`**; on conflict it redirects to the existing sheet
+rather than creating a duplicate. This is safe under normal sequential usage but not against truly
+concurrent saves (accepted residual — see
+`process/features/order-system/backlog/order-sheet-dup-index_NOTE_06-07-26.md` for the deferred
+filtered-unique-index hardening).
+
+**Note auto-resolve (both FK and raw text always stored):** free-text `NoteLine` entries are matched
+against off-list product-variant names by exact text match. On a match, `productVariantId` is set
+**AND** the raw text is always kept (never nulled out on match) — so a note is never FK-only or
+lossy. On no match, the note remains text-only (unlinked). This mirrors the same carry-forward
+principle: never discard information the paper form actually captured.
+
+**qty>0 invariant (blank = no line):** every `OrderLine`/`NoteLine` `qty` is a positive `Int`; a
+blank grid cell means the line is OMITTED entirely, never persisted as `qty = 0`. Any code reading
+or writing these tables must preserve this invariant — a `qty` of `0` should never appear in the DB
+for either table.
+
 ## Known Gaps
 
 - **Thai collation** — deferred to Phase 06 delivery; integer ordering (`printOrder`/`rosterOrder`)
@@ -191,4 +240,13 @@ doc references the old flag name, it is stale.
   is written to stay compatible with the 2017+ floor Prisma requires.
 - **CRUD automated DB-integration harness** — backlogged
   (`process/features/order-system/backlog/crud-db-integration-harness_NOTE_06-07-26.md`); the Phase
-  02 CRUD round-trip was proven via agent-probe, not an automated regression test.
+  02 CRUD round-trip was proven via agent-probe, not an automated regression test. Phase 04's
+  OrderSheet round-trip is now proven via Playwright (D1/D2 hybrid gates), partially closing this
+  gap for order sheets specifically.
+- **Total-weight validation** — backlogged
+  (`process/features/order-system/backlog/weight-factors_NOTE_06-07-26.md`); `weightKg`/
+  `pipConversion` are `null` on all seeded variants until the customer confirms conversion factors
+  (Q22).
+- **OrderSheet duplicate-sheet TOCTOU** — backlogged
+  (`process/features/order-system/backlog/order-sheet-dup-index_NOTE_06-07-26.md`); accepted
+  residual, no DB unique constraint on `(date, location)`.

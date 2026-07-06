@@ -7,7 +7,7 @@ metadata:
 ---
 # orderstock - All Context
 
-Last updated: 2026-07-06 (Phase 03 closeout — auth context group added)
+Last updated: 2026-07-06 (Phase 04 closeout — order entry ✅ VERIFIED, current phase → 05 Printing)
 
 This file is the root context entrypoint for the repo.
 
@@ -107,7 +107,7 @@ For most substantial tasks:
 | `auth/` | `process/context/auth/all-auth.md` | Auth context entrypoint for orderstock — next-auth v5 split-config architecture, requireAuth server-side choke-point contract, session policy, lockout, admin user management, and E2E fixtures |
 | `database/` | `process/context/database/all-database.md` | Database context entrypoint for orderstock — Prisma 7 + SQL Server schema, SQL Server-specific pitfalls (no enums, one-NULL-per-UNIQUE, NoAction cascades), historical-fidelity snapshot pattern, and seed/migration/export commands |
 | `planning/` | `process/context/planning/all-planning.md` | Planning context entrypoint for orderstock — plan-shape calibration (SIMPLE vs COMPLEX), planning conventions, and example plan references |
-| `tests/` | `process/context/tests/all-tests.md` | Testing entrypoint for orderstock — Vitest 3.2.6 (24 tests/7 files) and Playwright E2E (7 tests, installed Phase 03) both real and wired, sandbox SQL Server constraint |
+| `tests/` | `process/context/tests/all-tests.md` | Testing entrypoint for orderstock — Vitest 3.2.6 (39 tests/10 files) and Playwright E2E (9 tests) both real and wired, sandbox SQL Server constraint |
 <!-- /GENERATED:routing -->
 
 ## Task Routing Table
@@ -127,7 +127,7 @@ For most substantial tasks:
 
 | Feature | Folder | Status |
 |---|---|---|
-| `order-system` | `process/features/order-system/` | Active — phase program `phase1-order-system_06-07-26` (umbrella + 6 phase plans); Phase 01 Foundation ✅ VERIFIED, Phase 02 Schema & Master Data ✅ VERIFIED, Phase 03 Auth ✅ VERIFIED, Phase 04 Order Entry is the current phase |
+| `order-system` | `process/features/order-system/` | Active — phase program `phase1-order-system_06-07-26` (umbrella + 6 phase plans); Phase 01 Foundation ✅ VERIFIED, Phase 02 Schema & Master Data ✅ VERIFIED, Phase 03 Auth ✅ VERIFIED, Phase 04 Order Entry ✅ VERIFIED, Phase 05 Printing is the current phase |
 
 When routing feature-scoped work, pass `Feature: order-system` and the program folder path
 `process/features/order-system/active/phase1-order-system_06-07-26/` in the subagent prompt.
@@ -175,7 +175,7 @@ When durable project knowledge changes:
 
 ## Repository Structure
 
-**Current state: Phase 01 (Foundation), Phase 02 (Schema & Master Data), and Phase 03 (Auth) VERIFIED.** The app is a real, buildable Next.js project wired to a Docker SQL Server sandbox via Prisma 7, with the full 9-model schema migrated, seeded, master-data CRUD (shops/products) wired, and next-auth v5 credentials login + ADMIN/STAFF role-gating protecting every route. Phases 04-06 are still planned/not implemented.
+**Current state: Phase 01 (Foundation), Phase 02 (Schema & Master Data), Phase 03 (Auth), and Phase 04 (Order Entry) VERIFIED.** The app is a real, buildable Next.js project wired to a Docker SQL Server sandbox via Prisma 7, with the full 9-model schema migrated, seeded, master-data CRUD (shops/products) wired, next-auth v5 credentials login + ADMIN/STAFF role-gating protecting every route, and a daily order-sheet entry grid (create/edit/list by date+location) that recreates the 13/3/69 scan day with matching per-column totals and grand total (446). Phases 05-06 (printing, DB settings/delivery) are still planned/not implemented.
 
 ```
 orderstock/
@@ -220,6 +220,13 @@ orderstock/
       products/**               -- products/variants master-data CRUD (Phase 02; requireAuth-guarded since Phase 03)
       (auth)/login/**           -- Thai login page + server action (Phase 03)
       admin/users/**            -- admin user management: list/create/edit-role/reset-password/deactivate (Phase 03)
+      orders/**                 -- daily order-sheet entry: list/create/edit by date+location (Phase 04)
+        order-grid.tsx          -- whole-sheet editable matrix client component (29 roster slots x 20 cols + notes)
+        new-sheet-form.tsx      -- native date input (CE) + read-only BE label + "วันนี้" shortcut
+        actions.ts              -- createOrderSheet (app-level dup check) / saveOrderSheet (snapshot-preserving)
+        page.tsx / [id]/page.tsx -- sheet list / editor
+    components/
+      sheet-header.tsx          -- reusable logic-free two-tier สินค้า/เครื่องปรุง header (Phase 04; Phase 05 print imports this)
     lib/
       db.ts                     -- PrismaClient singleton (driver-adapter pattern)
       fonts.ts                  -- Sarabun font-family stack constant
@@ -229,7 +236,12 @@ orderstock/
       password.ts               -- bcryptjs hash/verify + timing-safe dummy compare (Phase 03)
       login-attempts.ts         -- LoginAttemptTracker: lockout after N failures (Phase 03)
       auth-guard.ts             -- requireAuth(role?) — the real server-side security boundary (Phase 03) — see auth/all-auth.md
-      __tests__/                -- smoke, variant-validation, correction-cascade, password, login-attempts, auth-guard-coverage, secret-leak (24 tests total)
+      totals.ts                 -- computeColumnTotals / computeGrandTotal(orderLines) / computeTotalWeight — single source of truth, client+server both import this (Phase 04)
+      be-date.ts                -- CE<->BE conversion (Intl en-US-u-ca-buddhist) + Thai d/m/yy display helpers (Phase 04)
+      order-save.ts             -- pure mergeSnapshots() snapshot-carry-forward helper, unit-testable without a DB (Phase 04)
+      __tests__/                -- smoke, variant-validation, correction-cascade, password, login-attempts, auth-guard-coverage, secret-leak, totals, be-date, order-save (39 tests total)
+  test-fixtures/
+    sheet-13-03-69.json         -- canonical 13/3/69 gate fixture (51 cells, 20 column totals, grand 446, 13 NoteLines) — shared by Phase 04 unit gate + Phase 05 print tests
   public/fonts/                -- self-hosted Sarabun OFL woff2 (400/600/700, thai+latin)
   process/
     context/                   -- this context system (incl. database/, auth/ groups)
@@ -238,9 +250,9 @@ orderstock/
     development-protocols/     -- RIPER-5 methodology docs
 ```
 
-### Application Structure (Phases 04-06, planned)
+### Application Structure (Phases 05-06, planned)
 
-- `src/app/orders/**`, `src/app/print/**` — order entry + print layouts (Phases 04-05)
+- `src/app/print/**` — print layouts (Phase 05; imports `sheet-header.tsx` + `test-fixtures/sheet-13-03-69.json` from Phase 04, renders from `OrderLine`/`NoteLine` snapshot columns only)
 - `src/app/settings/db/**` — connection-string settings page (Phase 06)
 
 ## Technology Stack
@@ -253,7 +265,7 @@ orderstock/
   - `prisma@7.8.0`, `@prisma/client@7.8.0`, `@prisma/adapter-mssql@7.8.0`, `mssql@^12.2.0`
   - dev: sandbox SQL Server 2022 in Docker (`docker-compose.yml`, `mem_limit: 2g`, compat level 150); production: customer's SQL Server via runtime connection string (Phase 06, not yet built)
 - **CSS:** Tailwind 4 (`@tailwindcss/postcss`) via create-next-app default; print CSS (Phase 05) stays separate plain CSS
-- **Testing:** Vitest 3.2.6 (`pnpm test` → `vitest run`) — 24 tests across 7 files (smoke, variant-validation, correction-cascade, password, login-attempts, auth-guard-coverage, secret-leak) as of Phase 03. Playwright `@playwright/test@1.61.1` — installed Phase 03 (first-time E2E setup, not Phase 05 as originally planned); 7 E2E tests in `e2e/auth.spec.ts` + `e2e/auth.setup.ts` fixtures. See `tests/all-tests.md`.
+- **Testing:** Vitest 3.2.6 (`pnpm test` → `vitest run`) — 39 tests across 10 files (smoke, variant-validation, correction-cascade, password, login-attempts, auth-guard-coverage, secret-leak, totals, be-date, order-save) as of Phase 04. Playwright `@playwright/test@1.61.1` — installed Phase 03; 9 E2E tests across `e2e/auth.spec.ts` + `e2e/orders.spec.ts` + `e2e/auth.setup.ts` fixtures. See `tests/all-tests.md`.
 - **Validation:** `zod@^4.4.3` — server-action input validation with Thai error messages (added Phase 02, decision 5); enforces `packSize`/`group`/`role` allowed values from `src/lib/product-order.ts` since SQL Server has no Prisma enums (see `database/all-database.md`)
 - **Scripting runtime:** `tsx@^4.23.0` (devDep, added Phase 02) — runs `prisma/seed.ts` and `scripts/export-schema-sql.ts` directly
 - **Package manager:** pnpm 11.5.0 (`pnpm-workspace.yaml` sets `allowBuilds` for native-script packages: `@prisma/client`, `@prisma/engines`, `esbuild`, `prisma`, `sharp`, `unrs-resolver` — pnpm 11.5 blocks build scripts by default)
@@ -270,6 +282,8 @@ orderstock/
 - Printed output must visually match `Scan2026-07-04_170934.pdf` — treat the scan as the layout spec (Phase 05).
 - DB connection must be configurable at runtime (settings page with connection string), not hard-coded in env only (Phase 06).
 - `prisma/schema.prisma` and `src/app/layout.tsx` are SHARED files extended (never rewritten) across phases — see the umbrella plan's Blast Radius + `phase-blast-radius-registry.md`.
+- **Single-source totals module, imported by both client and server (`src/lib/totals.ts`, Phase 04):** the live on-screen footer in `order-grid.tsx` AND the server-side save-time verification in `actions.ts` import the SAME `computeColumnTotals`/`computeGrandTotal` functions — never reimplement the arithmetic in a second place. `computeGrandTotal(orderLines: OrderLineCell[])` type-excludes `NoteLine` quantities (no `includeNotes` flag) — note quantities are never part of the printed grand total.
+- **BE date helper (`src/lib/be-date.ts`, Phase 04):** CE↔BE conversion via Intl `en-US-u-ca-buddhist` (not `th-TH-u-ca-buddhist` — `en-US` returns ASCII digits directly, matching the paper form's display convention; `th-TH` would return Thai digits requiring extra transliteration). Store CE in the DB always; display BE via this helper, never compute BE year arithmetic ad hoc elsewhere.
 
 ## Environment and Configuration
 
@@ -307,7 +321,7 @@ orderstock/
 
 ## Scan Metadata
 
-- Generated: 2026-07-06 (Phase 03 closeout update)
-- HEAD: c3a85fc (docs: phase-03 verified closeout artifacts)
-- Mode: delta update (post-Phase-03 EXECUTE+EVL+UPDATE-PROCESS)
+- Generated: 2026-07-06 (Phase 04 closeout update)
+- HEAD: 2d6e55e (docs: phase-04 verified closeout artifacts)
+- Mode: delta update (post-Phase-04 EXECUTE+EVL+UPDATE-PROCESS)
 - Package manager: pnpm 11.5.0
