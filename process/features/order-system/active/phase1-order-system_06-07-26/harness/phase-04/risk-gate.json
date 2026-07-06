@@ -1,0 +1,9 @@
+{
+  "phase": "phase-04-order-entry",
+  "riskClass": "schema/data-mutation (destructive write — sandbox-confined)",
+  "workDescription": "Order-sheet whole-form save: delete-and-recreate OrderLine/NoteLine inside a transaction with snapshot carry-forward; app-level duplicate check; note auto-resolve.",
+  "approver": "vc-execute-agent (per Phase-04 validate-contract High-risk pack: 'Required: no')",
+  "mustStopBeforeFinalize": false,
+  "rationale": "Destructive writes are confined to the disposable Docker sandbox (orderstock-sql). No auth/identity flow change (consumes existing Phase-03 requireAuth boundary, does not modify it). No billing/secrets/public-API/deploy surface. Full 5-artifact pack NOT required per contract; this record + verification.json are the recorded evidence.",
+  "date": "2026-07-06"
+}

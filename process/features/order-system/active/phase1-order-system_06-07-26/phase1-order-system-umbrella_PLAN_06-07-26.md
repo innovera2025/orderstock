@@ -215,7 +215,8 @@ During /goal execution of this phase program:
 - Prisma 7 driver-adapter pattern (`@prisma/adapter-mssql`) from day one — old `datasourceUrl`/`datasources` tutorials are WRONG for v7. Pin exact Prisma 7.8.x.
 - Pin exact `next-auth@5.0.0-beta.31`; INNOVATE (Phase 01) confirmed it is compatible with **Next 16.2.x**, which is the pinned Next major.
 - **RESOLVED (Phase 03 PLAN-SUPPLEMENT):** Next 16 route protection uses **`proxy.ts`** (NOT `middleware.ts`, which is silently ignored). Auth.js v5 also requires `src/app/api/auth/[...nextauth]/route.ts` and env vars `AUTH_SECRET`/`AUTH_TRUST_HOST`. Encoded in the Phase 03 plan; bcryptjs chosen for hashing; login rate-limiting added.
-- **CROSS-PHASE (LOAD-BEARING, Phase 04/05 input):** Phase 02 (decision 6) adds historical name-snapshot columns `shopNameAtEntry`/`variantNameAtEntry` on `OrderLine`/`NoteLine`. Phase 04 MUST write these at line-create time; Phase 05 MUST render from them (never live names). A shared correction-cascade back-fills snapshots only while the referenced entity is still `needsConfirmation=true`.
+- **CROSS-PHASE (LOAD-BEARING, Phase 04/05 input):** Phase 02 (decision 6) adds historical name-snapshot columns `shopNameAtEntry`/`variantNameAtEntry` on `OrderLine`/`NoteLine`. Phase 04 MUST write these at line-create time AND preserve pre-existing snapshots on re-save (delete-recreate carries them forward); Phase 05 MUST render from them (never live names). A shared correction-cascade back-fills snapshots only while the referenced entity is still `needsConfirmation=true`.
+- **CROSS-PHASE (Phase 05 input):** Phase 04 exports the reusable two-tier `src/components/sheet-header.tsx` header component and the `test-fixtures/sheet-13-03-69.json` gate fixture — Phase 05 print imports both (do not duplicate the header or re-derive the fixture).
 - Schema and generated T-SQL must stay compatible with SQL Server 2017+ (2016 is an OPEN QUESTION with the customer — do not assume it works).
 - Thai UI text; English code/identifiers/filenames.
 - Printed output must visually match `Scan2026-07-04_170934.pdf` — the scan is the layout spec (typeset spreadsheet, not handwriting).
@@ -325,16 +326,16 @@ for f in process/features/order-system/active/phase1-order-system_06-07-26/phase
 
 ## Current Execution State
 
-Last updated: 06-07-26 (Phase 03 UPDATE PROCESS complete — ✅ VERIFIED; commits 169ed3b + c3a85fc landed; process commit for this UPDATE PROCESS session pending via orchestrator)
+Last updated: 06-07-26 (Phase 04 PVL complete — validate-contract written, net gate CONDITIONAL, 0 FAILs; EXECUTE pending explicit user consent)
 Completed phases: Phase 0 (Planning), Phase 01 (Foundation — ✅ VERIFIED), Phase 02 (Schema & Master Data — ✅ VERIFIED), Phase 03 (Auth — ✅ VERIFIED)
 Current phase: Phase 04 — Order Entry
-Current loop step: RESEARCH (not started)
-Validate-contract status: Phase 01 contract satisfied. Phase 02 contract satisfied (all 7 gates independently re-confirmed at EVL). Phase 03 contract satisfied (CONDITIONAL net gate, 0 FAILs; all E1-E13 gates independently re-confirmed at EVL; full STRIDE scan done). Phase 04 contract not yet written — PVL runs after Phase 04 RESEARCH→INNOVATE→PLAN-SUPPLEMENT.
-Program Net Gate: Phase 01 VERIFIED; Phase 02 VERIFIED; Phase 03 VERIFIED. Program continues — Phase 04 RESEARCH next.
+Current loop step: PVL DONE → EXECUTE (pending explicit user consent — charter hard stop)
+Validate-contract status: Phase 01 contract satisfied. Phase 02 contract satisfied (all 7 gates independently re-confirmed at EVL). Phase 03 contract satisfied (CONDITIONAL net gate, 0 FAILs; all E1-E13 gates independently re-confirmed at EVL; full STRIDE scan done). Phase 04 contract WRITTEN (CONDITIONAL, 0 FAILs; 4 concerns resolved in-plan + 2 accepted residuals; arithmetic 446 independently verified). EXECUTE gated on user consent.
+Program Net Gate: Phase 01 VERIFIED; Phase 02 VERIFIED; Phase 03 VERIFIED; Phase 04 PVL CONDITIONAL (contract written). Program continues — Phase 04 EXECUTE next (pending consent).
 Latest validator run: 06-07-26 (this UPDATE PROCESS session) — see this session's closeout packet for exact validator results (validate-all-context.mjs, validate-context-discovery.mjs, plan-artifact validators for phase-03 + umbrella) after `auth/` group creation.
 
 Loop step values: RESEARCH | INNOVATE | PLAN-SUPPLEMENT | PVL | EXECUTE | EVL | UPDATE-PROCESS
-Orchestrator rule: read "Current loop step" and "validate-contract status" before spawning any subagent. Phase 04 has NOT started — next subagent = vc-research-agent for Phase 04 (Order Entry). Read `phase-04-order-entry_PLAN_06-07-26.md` (existing stub plan) plus this Current Execution State before spawning.
+Orchestrator rule: read "Current loop step" and "validate-contract status" before spawning any subagent. Phase 04 PVL is DONE — next subagent = vc-execute-agent (opus) for Phase 04, but ONLY after explicit user consent (ENTER EXECUTE MODE). Read `phase-04-order-entry_PLAN_06-07-26.md` ## Validate Contract before spawning.
 
 Phase 03 carry-forward for Phase 04 RESEARCH:
 - **Every route is now auth-guarded by `src/proxy.ts`** (Next 16 route protection) — new order-entry pages under `src/app/orders/**` inherit this protection automatically (matcher guards everything except `/login`, `/api/auth/*`, `/api/health`, static assets). No extra proxy config needed for new pages.

@@ -47,9 +47,16 @@ Claimed blast radius:
 
 **Cross-phase input (from Phase 02 decision 6):** MUST write historical snapshot columns `shopNameAtEntry`/`variantNameAtEntry` on OrderLine/NoteLine at line-create time.
 
+status: DONE (EXECUTE) — 06-07-26 under explicit user consent. All files below created/modified; no cross-phase conflicts (only `src/app/layout.tsx`→`nav.tsx` nav-link EXTEND). pnpm test 39/39, build ✓, lint ✓, playwright 9/9. Known-gaps accepted: weight un-validatable until Q22; duplicate-sheet TOCTOU accepted for LAN. E4 registry drift resolved: `src/components/sheet-header.tsx` + `test-fixtures/sheet-13-03-69.json` claimed below. Awaiting independent EVL.
+
 Claimed blast radius:
 - `src/app/orders/**`
-- `src/lib/totals.ts`, `src/lib/be-date.ts`
+- `src/lib/totals.ts`, `src/lib/be-date.ts`, `src/lib/order-save.ts` (PVL-added pure snapshot-merge helper)
+- `src/components/sheet-header.tsx` (reusable two-tier header — **Phase 05 imports this**)
+- `test-fixtures/sheet-13-03-69.json` (canonical gate fixture — **shared with Phase 05 print tests**)
+- `src/lib/__tests__/{totals,be-date,order-save}.test.ts` (new unit gates)
+- `src/lib/__tests__/auth-guard-coverage.test.ts` (EXTEND MODULES with orders) — SHARED
+- `e2e/orders.spec.ts` (new E2E — reuses `e2e/.auth/staff.json`)
 - `src/app/layout.tsx` (nav link) — SHARED with 01, 03 → EXTEND only
 
 ---
@@ -57,6 +64,7 @@ Claimed blast radius:
 ## Phase 05 — Printing
 
 **Cross-phase input (from Phase 02 decision 6):** MUST render from OrderLine/NoteLine snapshot columns, never live Shop/Variant names.
+**Cross-phase input (from Phase 04):** IMPORT the shared `src/components/sheet-header.tsx` two-tier header + `test-fixtures/sheet-13-03-69.json` fixture — do not duplicate.
 
 Claimed blast radius:
 - `src/app/print/daily/[date]/**`, `src/app/print/shops/[date]/**`

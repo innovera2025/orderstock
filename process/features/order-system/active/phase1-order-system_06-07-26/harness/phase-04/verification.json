@@ -1,0 +1,91 @@
+{
+  "phase": "phase-04-order-entry",
+  "date": "2026-07-06",
+  "steps": [
+    {
+      "step": "Totals engine — 13/3/69 fixture: all 20 column totals + grand 446 + NoteLine qty excluded (A3)",
+      "command": "pnpm test totals.test.ts",
+      "result": "PASS",
+      "notes": "6/6. Red-first confirmed (module-missing failure before impl). Grand==446; column sum==446; notes qty (1+20) provably excluded (type-level)."
+    },
+    {
+      "step": "CE<->BE date conversion 13/3/2026 -> 13/3/69 (B1)",
+      "command": "pnpm test be-date.test.ts",
+      "result": "PASS",
+      "notes": "5/5. Red-first confirmed. Intl en-US-u-ca-buddhist via formatToParts (strips ' BE' era suffix)."
+    },
+    {
+      "step": "Snapshot carry-forward mergeSnapshots — naive re-derive FAILS (C1b)",
+      "command": "pnpm test order-save.test.ts",
+      "result": "PASS",
+      "notes": "3/3. Pre-existing cell keeps OldName; brand-new cell gets fresh live name; empty-string fallback."
+    },
+    {
+      "step": "Every order action calls requireAuth (ELEV-guard, C4)",
+      "command": "pnpm test auth-guard-coverage.test.ts",
+      "result": "PASS",
+      "notes": "5/5. orders/actions.ts added to MODULES; createOrderSheet + saveOrderSheet both call requireAuthState."
+    },
+    {
+      "step": "Full unit suite (regression: Phase 01-03 + Phase 04)",
+      "command": "pnpm test",
+      "result": "PASS",
+      "notes": "39/39 across 10 files (was 24; +15: totals 6, be-date 5, order-save 3, auth-guard +1)."
+    },
+    {
+      "step": "Production build + typecheck",
+      "command": "pnpm build",
+      "result": "PASS",
+      "notes": "Compiled successfully; /orders and /orders/[id] routes generated."
+    },
+    {
+      "step": "Lint",
+      "command": "pnpm lint",
+      "result": "PASS",
+      "notes": "eslint clean, no warnings/errors."
+    },
+    {
+      "step": "D1 hybrid — enter 13/3/69 through the UI, save, reload, totals persist 446",
+      "command": "pnpm exec playwright test orders.spec.ts",
+      "result": "PASS",
+      "notes": "Live grand-total 446 pre-save; post-reload 446; per-column footer 4->137, 8->82, 2->99. Reuses e2e/.auth/staff.json."
+    },
+    {
+      "step": "D2 hybrid — rename confirmed shop, re-save, snapshot preserved (boundary/lock branch)",
+      "command": "pnpm exec playwright test orders.spec.ts",
+      "result": "PASS",
+      "notes": "After rename+resave, orderLine.shopNameAtEntry == original name while shop.name == renamed. Distinguishes carry-forward from naive re-derive (deviation: used confirmed-lock shop, the distinguishing branch). Sandbox shop name restored after test."
+    },
+    {
+      "step": "Full E2E regression (Phase-03 auth specs + Phase-04 orders)",
+      "command": "pnpm exec playwright test",
+      "result": "PASS",
+      "notes": "9/9 green. Phase-03 login/role-gate/enum specs unaffected."
+    }
+  ],
+  "knownGaps": [
+    "Total weight ships (computeTotalWeight) but is NOT validated vs 4,670 kg / 163 pip — per-variant weightKg/pipConversion null until customer Q22. Backlog: weight-factors_NOTE.",
+    "Duplicate-sheet TOCTOU under truly concurrent saves — no DB unique on date+location (decision 3); accepted residual (LAN-internal, low concurrency)."
+  ],
+  "evlConfirmation": {
+    "by": "vc-tester (independent EVL re-run)",
+    "date": "2026-07-06",
+    "note": "Unconditional re-run of the exact validate-contract gates (NOT diff-aware). Prior execute evidence treated as unconfirmed hypothesis and re-verified.",
+    "gates": [
+      { "gate": "pnpm test (full unit suite)", "result": "PASS", "notes": "39/39 across 10 files. Read test code: totals.test.ts asserts all 20 columns (loop 1-20) + grand 446 + column-sum 446 + note-exclusion (noteQtySum 21 provably not in 446). order-save.test.ts genuinely fails a naive re-derive (asserts OldShop survives a rename)." },
+      { "gate": "pnpm build", "result": "PASS", "notes": "/orders + /orders/[id] routes present." },
+      { "gate": "pnpm lint", "result": "PASS", "notes": "eslint clean." },
+      { "gate": "pnpm exec playwright test", "result": "PASS", "notes": "9/9. D1 fixture round-trip 446 + D2 confirmed-shop rename->resave snapshot preservation. CredentialsSignin log lines are the intentional SEC-enum bad-credential test, not failures." },
+      { "gate": "DB probe (sandbox orderstock-sql)", "result": "PASS", "notes": "13/3/69 sheet id=5: 51 OrderLines, grand total 446, column totals {2:99,3:14,4:137,5:21,6:39,7:4,8:82,9:2,17:38,18:10} match fixture exactly. Zero empty shopNameAtEntry/variantNameAtEntry. Zero qty<=0 lines. D1 spec entered grid only (no NoteLines) so orphan-note not exercised — consistent with D1 grid-only 446 scope." },
+      { "gate": "prisma migrate status", "result": "PASS", "notes": "Up to date, 3 migrations." },
+      { "gate": "seed idempotency", "result": "PASS", "notes": "Counts stable before/after re-seed: shops 25, products 22, variants 28, users 2." },
+      { "gate": "health + route regression", "result": "PASS", "notes": "GET /api/health 200 {\"ok\":true}; /orders unauth -> 307 redirect (Phase-03 gating intact); /login 200." }
+    ],
+    "deviationAudit": [
+      { "deviation": "D2 uses confirmed-lock shop (not contract's unconfirmed)", "verdict": "JUSTIFIED — test-strengthening. Confirmed branch is the only end-to-end case distinguishing carry-forward from naive re-derive; unconfirmed branch covered by C1b pure unit. Verified in e2e/orders.spec.ts (asserts snapshot==original while live==renamed)." },
+      { "deviation": "note match indicator server-side only, no UI badge", "verdict": "CONFIRMED as documented. actions.ts saveOrderSheet exact off-list text match sets productVariantId AND keeps raw text (lines 157/160/164). Follow-up UI badge recommended, not gated." },
+      { "deviation": "Intl en-US-u-ca-buddhist instead of th-TH", "verdict": "CONFIRMED correct. be-date.ts uses en-US-u-ca-buddhist; be-date.test.ts asserts yearBE 2569 + '69'. ASCII digits per form." }
+    ],
+    "classification": "CLEAN"
+  }
+}
