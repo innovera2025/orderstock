@@ -254,7 +254,9 @@ All paths are inside `process/features/order-system/active/phase1-order-system_0
 | 03 — Auth | ✅ VERIFIED (all 7 inner-loop steps done; EVL independently re-ran all gates + adversarial auth probes + Phase 01/02 regression clean; 4 accepted known-gaps; UPDATE PROCESS complete — `auth/` context group created, `all-context.md`/`all-tests.md` updated, no new backlog beyond pre-existing revocation-hardening note) |
 | 04 — Order Entry | ✅ VERIFIED (all 7 inner-loop steps done; EVL independently re-ran all gates + DB probe + Phase 01-03 regression clean; 2 accepted known-gaps backlogged (weight-factors, order-sheet-dup-index); UPDATE PROCESS complete — `database/all-database.md`/`all-context.md`/`tests/all-tests.md` updated, `sheet-header.tsx` + shared fixture confirmed exported for Phase 05) |
 | 05 — Printing | ✅ VERIFIED (all 7 inner-loop steps done; EVL independently re-ran vitest 41/41, playwright 16/16, build+lint clean, migrate status clean, route-group deviation preserves all URLs + auth boundary, DB unpolluted, agent-probe visual GO; 3 known-gaps carried to delivery (Q30 shading, Q22 weight, on-site printer fidelity); UPDATE PROCESS complete — context updated, 2 new backlog stubs registered) |
-| 06 — DB Settings & Delivery | 🧪 TESTING (RESEARCH+INNOVATE+PLAN-SUPPLEMENT+PVL done; validate-contract written — gate CONDITIONAL, 8 STRIDE concerns folded in; EXECUTE next, pending user consent — FINAL phase) |
+| 06 — DB Settings & Delivery | ✅ VERIFIED (all 7 inner-loop steps done; EVL ran 2 rounds — round 1 caught a build FAIL + a runtime-auth coverage gap, fix cycle resolved both, round 2 independently re-confirmed all gates green; 3 accepted known-gaps carried to delivery (customer SQL Server version/compat, on-site printer fidelity, Q30/Q22 customer-input items); UPDATE PROCESS complete — program folder archived to completed/, context updated) |
+
+**ALL 6 PHASES VERIFIED — PROGRAM COMPLETE (07-07-26).**
 
 Status values: ⏳ PLANNED | 🔨 CODE DONE | 🧪 TESTING | ✅ VERIFIED | 🚧 BLOCKED | ✅ COMPLETE
 
@@ -315,13 +317,12 @@ for f in process/features/order-system/active/phase1-order-system_06-07-26/phase
 
 ## Resume and Execution Handoff
 
-- Selected plan file path: `process/features/order-system/active/phase1-order-system_06-07-26/phase1-order-system-umbrella_PLAN_06-07-26.md`
-- Last completed phase: Phase 05 (Printing — ✅ VERIFIED).
-- Validate-contract status: Phases 01-05 all satisfied (see Current Execution State above). Phase 06 pending (vc-validate-agent writes it before EXECUTE).
-- Next step for a fresh agent: Read this umbrella plan and `phase-06-db-settings-delivery_PLAN_06-07-26.md`; Phase 06 has NOT started — begin at RESEARCH. This is the FINAL phase of the program.
-- Current phase: Phase 06 (DB Settings & Delivery).
-- Next action: Spawn vc-research-agent for Phase 06 RESEARCH (no user consent gate needed for RESEARCH — only EXECUTE requires explicit consent).
-- Execute-agent start instruction (once Phase 06 reaches PVL): sandbox `orderstock-sql` DB only during dev; the Phase 06 exit gate itself requires switching to a SECOND DB via the settings page (still not the customer's real DB — see Hard Safety Constraints); do not stop/restart the 9 unrelated Docker containers; no git commit/push without user instruction.
+- Selected plan file path (now archived): `process/features/order-system/completed/phase1-order-system_06-07-26/phase1-order-system-umbrella_PLAN_06-07-26.md`
+- Last completed phase: Phase 06 (DB Settings & Delivery — ✅ VERIFIED, FINAL phase). **PROGRAM COMPLETE.**
+- Validate-contract status: Phases 01-06 all satisfied (see Current Execution State above).
+- Next step for a fresh agent: this program is complete. If new order-system work is requested, check `process/features/order-system/backlog/` for deferred items first, or scope a new follow-up feature/plan for anything beyond the original Program Goal Charter.
+- Current phase: none — program complete.
+- Next action: none for this program. See backlog notes for deferred customer-input items.
 - Phase 05 carry-forward for Phase 06 RESEARCH:
   - Delivery scope now includes communicating print instructions to the customer (Chrome/Edge only, printer Scale setting = 100%, run an on-site test print before relying on the layout) — the on-site printer-fidelity known-gap from Phase 05 travels here as the closing verification step, not a separate backlog item.
   - Known-gaps traveling to delivery: Q30 shading (CSS layer ready, OFF by default — flip if customer confirms), Q22 weight factors (labels render, values blank), customer SQL Server version/compat unconfirmed (2016 would be below the Prisma 7 / compat-150 floor — confirm before finalizing scripts), on-site real-printer mm fidelity (agent-probe only so far).
@@ -333,27 +334,35 @@ for f in process/features/order-system/active/phase1-order-system_06-07-26/phase
 
 ## Current Execution State
 
-Last updated: 06-07-26 (Phase 05 UPDATE PROCESS closeout — ✅ VERIFIED; current phase → 06, the FINAL phase)
-Completed phases: Phase 0 (Planning), Phase 01 (Foundation — ✅ VERIFIED), Phase 02 (Schema & Master Data — ✅ VERIFIED), Phase 03 (Auth — ✅ VERIFIED), Phase 04 (Order Entry — ✅ VERIFIED), Phase 05 (Printing — ✅ VERIFIED)
-Current phase: Phase 06 — DB Settings & Delivery (FINAL phase)
-Current loop step: PVL done (validate-contract written, gate CONDITIONAL) → EXECUTE next (pending user consent — ENTER EXECUTE MODE)
-Validate-contract status: Phases 01-05 satisfied. Phase 06 validate-contract WRITTEN (gate CONDITIONAL — inner-pvl:phase-06, 06-07-26; STRIDE complete, 0 FAILs).
-Program Net Gate: Phases 01-05 VERIFIED. Phase 06 PVL complete — EXECUTE next, requires ENTER EXECUTE MODE (user consent).
-Latest validator run: 06-07-26 (this UPDATE PROCESS session, Phase 05 closeout) — see this session's closeout packet for exact validator results (validate-all-context.mjs, validate-context-discovery.mjs, plan-artifact validators for phase-05 + umbrella).
+Last updated: 07-07-26 (Phase 06 UPDATE PROCESS closeout — ✅ VERIFIED; **PROGRAM COMPLETE — all 6 phases VERIFIED**)
+Completed phases: Phase 0 (Planning), Phase 01 (Foundation — ✅ VERIFIED), Phase 02 (Schema & Master Data — ✅ VERIFIED), Phase 03 (Auth — ✅ VERIFIED), Phase 04 (Order Entry — ✅ VERIFIED), Phase 05 (Printing — ✅ VERIFIED), Phase 06 (DB Settings & Delivery — ✅ VERIFIED, FINAL phase)
+Current phase: none — program complete.
+Current loop step: n/a — all 7 inner-loop steps done for all 6 phases.
+Validate-contract status: Phases 01-06 all satisfied (validate-contracts recorded in each phase plan).
+Program Net Gate: **PROGRAM COMPLETE** — all 6 phase exit gates passed with recorded evidence; regression clean through Phase 06; the 13/3/69 scan day recreates with matching totals (446); print output matches the scan; runtime DB switch (sandbox → orderstock2) proven via Hybrid round-trip gate.
+Latest validator run: 07-07-26 (this UPDATE PROCESS session, program closeout) — see this session's closeout packet for exact validator results (validate-all-context.mjs, validate-context-discovery.mjs, plan-artifact validators for phase-06 + umbrella, run against the moved `completed/` paths).
 
 Loop step values: RESEARCH | INNOVATE | PLAN-SUPPLEMENT | PVL | EXECUTE | EVL | UPDATE-PROCESS
-Orchestrator rule: read "Current loop step" and "validate-contract status" before spawning any subagent. Phase 06 PVL complete — next subagent = vc-execute-agent (opus) for Phase 06 EXECUTE, after ENTER EXECUTE MODE.
 
-Phase 05 carry-forward for Phase 06 RESEARCH (delivery scope + known-gaps):
-- **Delivery now includes communicating print instructions**: Chrome/Edge browser only, printer Scale setting = 100%, and an on-site test print before the customer relies on the layout. This closes out the Phase 05 on-site-printer-fidelity known-gap as part of delivery, not a separate backlog item.
-- **Known-gaps traveling to delivery (do not re-litigate unless Phase 06 scope needs them):** Q30 shading (`process/features/order-system/backlog/print-shading-q30_NOTE_06-07-26.md` — CSS layer ready, OFF by default), Q22 weight factors (`process/features/order-system/backlog/weight-factors_NOTE_06-07-26.md` — labels render, values blank), customer SQL Server version/compat unconfirmed (2016 would be below the Prisma 7 / compat-150 floor — confirm before finalizing delivery scripts), on-site real-printer mm fidelity (agent-probe only so far — see delivery instructions above).
-- **Connection-string settings page must accept `@prisma/adapter-mssql`'s actual accepted formats** — JDBC-style `sqlserver://...` string or an `sql.config`-shaped object (see `db-auth-feasibility_REF_06-07-26.md` §1). Customers/DBAs typically hand over an ADO.NET string, so plan an ADO.NET → accepted-format conversion step.
-- **Vendor SQL script already exists** (`db/create-orderstock-schema.sql` via `scripts/export-schema-sql.ts`, from Phase 02) — Phase 06 regenerates it against the final schema and hand-authors companion DB-creation/login/permissions scripts alongside it, not a from-scratch design.
-- **Runtime connection-string switching decision needed before EXECUTE**: singleton swap in place (`src/lib/db.ts`, constructor-level only — Prisma 7 has no live-URL-swap API) vs. requiring an app restart after settings save. Decide and document in the Phase 06 plan.
-- Every order/print server action must still call `requireAuth()`/`requireAuthState()` directly — `proxy.ts` route-matching is convenience only, not the security boundary (`auth/all-auth.md`).
-- Reusable test-isolation pattern from Phase 05: self-seed via Prisma on a dedicated date/location + restore-in-`finally` — reuse this shape for any Phase 06 spec that mutates shared settings/connection state.
+### Program Closing Summary
 
-Note: The Stable Program Goal above is fixed. This section is the only part that changes — update-process-agent rewrites it after every phase closeout (overwrite, not append — git history is the audit log).
+**What the program delivered:** a real, buildable Next.js 16 + Prisma 7 + SQL Server app that lets Thai-speaking staff log in (ADMIN/STAFF role-gated), manage shop/product master data, record a daily order sheet matching the paper form's 29-shop x 20-variant grid with live totals and Buddhist-era dates, print combined-day and per-shop A4-landscape sheets that visually match the reference scan, and — as the final delivery gate — switch the app's target SQL Server at runtime via an ADMIN-only settings page (individual fields → safe `.env` rewrite → restart-to-apply), packaged with a vendor T-SQL schema script, a hand-authored DB-creation/login script, and a Thai deployment guide.
+
+**Remaining customer-input known-gaps (all backlogged, none blocking delivery):**
+- `process/features/order-system/backlog/weight-factors_NOTE_06-07-26.md` — per-variant weight/pip conversion factors (Q22)
+- `process/features/order-system/backlog/order-sheet-dup-index_NOTE_06-07-26.md` — optional DB-level duplicate-sheet index hardening
+- `process/features/order-system/backlog/order-notes-ui-followups_NOTE_06-07-26.md` — minor note-match UI/e2e follow-ups
+- `process/features/order-system/backlog/print-shading-q30_NOTE_06-07-26.md` — semantic print-fill colors (Q30), CSS layer ready but OFF
+- `process/features/order-system/backlog/print-pdf-fallback_NOTE_06-07-26.md` — deferred server-side PDF export route
+- `process/features/order-system/backlog/crud-db-integration-harness_NOTE_06-07-26.md` — headless CRUD DB-integration harness for shops/products (order sheets already closed via Phase 04 hybrid gates)
+- Customer SQL Server version/compatibility level unconfirmed — TODO-flagged in `db/create-database-and-login.sql`; confirm before finalizing delivery scripts
+- On-site real-printer mm fidelity — agent-probe only so far; deployment guide instructs an on-site test print (Chrome/Edge, Scale 100%) before relying on the layout
+
+**Program learnings (what worked):** the 7-step inner loop (R→I→P→PVL→E→EVL→UP) caught real issues across all 6 phases before they reached "done" status — Prisma 7's removal of the `datasourceUrl` constructor API, Next 16's silent `middleware.ts`→`proxy.ts` rename, SQL Server's connector constraints (no enums, one-NULL-per-UNIQUE, `NoAction`-only cascades), a snapshot-preservation bug in the order-save write path, and a stale-green `pnpm build` claim at Phase 06 EVL (caught by independent re-run, not trusted from the execute-agent's own report). Independent EVL re-confirmation (not just trusting the execute-agent's self-report) was the single highest-value gate across the program — it caught the Phase 06 build regression that the execute-agent had missed.
+
+Program status: **COMPLETE for the scoped Phase 1 foundation goal** (record + print daily order sheets on SQL Server, with runtime DB switching and delivery packaging). Stock deduction/inventory balance and any broader expansion work are explicitly out of scope for this program (see Program Goal Charter) and belong in a new follow-up feature if pursued later — this feature folder should not be kept artificially "in progress" for that adjacent future work.
+
+Note: The Stable Program Goal above is fixed. This section is the only part that changes — update-process-agent rewrites it after every phase closeout (overwrite, not append — git history is the audit log). This is the FINAL update for this program.
 
 ---
 

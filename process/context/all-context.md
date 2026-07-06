@@ -7,7 +7,7 @@ metadata:
 ---
 # orderstock - All Context
 
-Last updated: 2026-07-06 (Phase 05 closeout — printing ✅ VERIFIED, current phase → 06 DB Settings & Delivery, FINAL phase)
+Last updated: 2026-07-07 (Phase 06 closeout — DB Settings & Delivery ✅ VERIFIED; **phase1-order-system PROGRAM COMPLETE, all 6 phases VERIFIED**, folder archived to `completed/`)
 
 This file is the root context entrypoint for the repo.
 
@@ -116,8 +116,8 @@ For most substantial tasks:
 |---|---|---|
 | general repo research | `all-context.md` | — (see Repository Structure below for the real Phase 01 tree) |
 | implementation planning | `all-context.md`, `planning/all-planning.md` | the active plan in `process/general-plans/active/` |
-| order-form domain questions | `all-context.md` | `process/features/order-system/active/phase1-order-system_06-07-26/form-canonical_REF_06-07-26.md` (canonical transcription; raw scan at repo root) |
-| order-system implementation | `all-context.md` | the umbrella plan + current phase plan in `process/features/order-system/active/phase1-order-system_06-07-26/` |
+| order-form domain questions | `all-context.md` | `process/features/order-system/completed/phase1-order-system_06-07-26/form-canonical_REF_06-07-26.md` (canonical transcription; raw scan at repo root) |
+| order-system implementation (program complete — reference only) | `all-context.md` | the umbrella plan + phase plans in `process/features/order-system/completed/phase1-order-system_06-07-26/`; check `process/features/order-system/backlog/` first for any new order-system request |
 | test planning or verification | `all-context.md`, `tests/all-tests.md` | — |
 | database/schema/seed/migration work | `all-context.md`, `database/all-database.md` | `prisma/schema.prisma`, the relevant phase plan for decision rationale |
 | auth/session/role/new server action work | `all-context.md`, `auth/all-auth.md` | `src/lib/auth-guard.ts`, `src/auth.ts`/`src/auth.config.ts` |
@@ -127,10 +127,13 @@ For most substantial tasks:
 
 | Feature | Folder | Status |
 |---|---|---|
-| `order-system` | `process/features/order-system/` | Active — phase program `phase1-order-system_06-07-26` (umbrella + 6 phase plans); Phases 01-05 (Foundation, Schema & Master Data, Auth, Order Entry, Printing) all ✅ VERIFIED. Phase 06 DB Settings & Delivery is the current (and FINAL) phase |
+| `order-system` | `process/features/order-system/` | **COMPLETE (07-07-26)** — phase program `phase1-order-system_06-07-26` (umbrella + 6 phase plans), all 6 phases ✅ VERIFIED (Foundation, Schema & Master Data, Auth, Order Entry, Printing, DB Settings & Delivery); folder archived to `completed/`. 6 backlog items remain, pending customer answers or optional hardening — see `process/features/order-system/backlog/` |
 
-When routing feature-scoped work, pass `Feature: order-system` and the program folder path
-`process/features/order-system/active/phase1-order-system_06-07-26/` in the subagent prompt.
+When routing any new order-system-related work, pass `Feature: order-system`; check
+`process/features/order-system/backlog/` for deferred items first, and reference the archived
+program folder `process/features/order-system/completed/phase1-order-system_06-07-26/` for prior
+decisions/patterns. Any new substantial order-system work (e.g. stock deduction, a future phase)
+should get its own new task folder rather than reopening this completed one.
 
 ## Context Group Lifecycle
 
@@ -175,7 +178,7 @@ When durable project knowledge changes:
 
 ## Repository Structure
 
-**Current state: Phases 01-05 (Foundation, Schema & Master Data, Auth, Order Entry, Printing) all VERIFIED.** The app is a real, buildable Next.js project wired to a Docker SQL Server sandbox via Prisma 7, with the full 9-model schema migrated, seeded, master-data CRUD (shops/products) wired, next-auth v5 credentials login + ADMIN/STAFF role-gating protecting every route, a daily order-sheet entry grid (create/edit/list by date+location) that recreates the 13/3/69 scan day with matching per-column totals and grand total (446), and print routes (combined daily + per-shop) that render an A4-landscape mm-faithful form from a snapshot-only fetch. Authenticated app routes live under a `src/app/(main)/` route group so `/print` can render chrome-free. Phase 06 (DB settings/delivery packaging) is the current, FINAL phase — not yet implemented.
+**Current state: all 6 phases (Foundation, Schema & Master Data, Auth, Order Entry, Printing, DB Settings & Delivery) VERIFIED — phase1-order-system PROGRAM COMPLETE.** The app is a real, buildable Next.js project wired to a Docker SQL Server sandbox via Prisma 7, with the full 9-model schema migrated, seeded, master-data CRUD (shops/products) wired, next-auth v5 credentials login + ADMIN/STAFF role-gating protecting every route, a daily order-sheet entry grid (create/edit/list by date+location) that recreates the 13/3/69 scan day with matching per-column totals and grand total (446), print routes (combined daily + per-shop) that render an A4-landscape mm-faithful form from a snapshot-only fetch, and an ADMIN-only runtime DB-connection settings page (fields → safe `.env` rewrite → restart-to-apply) plus the customer delivery package (vendor T-SQL schema script, hand-authored DB-creation/login script, Thai deployment guide). Authenticated app routes live under a `src/app/(main)/` route group so `/print` can render chrome-free. The completed program folder is archived at `process/features/order-system/completed/phase1-order-system_06-07-26/`.
 
 ```
 orderstock/
@@ -196,13 +199,18 @@ orderstock/
     load-env.ts                -- side-effect env-load import (seed.ts env-loading quirk)
   scripts/
     export-schema-sql.ts       -- vendor T-SQL DDL export -> db/create-orderstock-schema.sql
+    phase06-roundtrip-gate.ts  -- Phase 06: Hybrid gate driving the save pipeline (validate→test-connection→env-write) against the orderstock2 same-container sandbox DB with a data-distinguishing sentinel round-trip
   db/
     create-orderstock-schema.sql -- generated vendor DDL export (offline, DDL-only)
+    create-database-and-login.sql -- Phase 06: hand-authored CREATE DATABASE/LOGIN/USER/grants + COMPATIBILITY_LEVEL 140/150 TODO (customer version unconfirmed)
+  docs/
+    deployment-guide.md         -- Phase 06: Thai customer deployment guide (prereqs, .env/AUTH_SECRET setup, SQL run order, NSSM/IIS hosting, print instructions, backup, lockout recovery)
   e2e/                         -- Playwright specs (Phase 03) — see auth/all-auth.md E2E fixtures section
     auth.setup.ts               -- produces reusable ADMIN/STAFF storage-state fixtures (.auth/*.json, gitignored)
     auth.spec.ts                -- login/role-gate/redirect/enum hybrid gates
     orders.spec.ts              -- Phase 04: D1/D2 order-sheet round-trip + snapshot-preserve hybrid gates
     print.spec.ts               -- Phase 05: 7 print gates (colgroup 24/20, 29 rows + 446 totals, @page A4 landscape, snapshot-render + restore-in-finally, per-shop .sheet/break, test-side page.pdf, unauth redirect)
+    settings.spec.ts            -- Phase 06: 3 runtime auth probes for /settings/db (unauth→/login, STAFF denied, ADMIN served)
   src/
     auth.ts                    -- Node-runtime next-auth config: Credentials provider + Prisma + bcryptjs (Phase 03)
     auth.config.ts             -- edge-safe split config: JWT session, authorized route/role gate (Phase 03)
@@ -231,6 +239,7 @@ orderstock/
           new-sheet-form.tsx     -- native date input (CE) + read-only BE label + "วันนี้" shortcut
           actions.ts             -- createOrderSheet (app-level dup check) / saveOrderSheet (snapshot-preserving)
           page.tsx / [id]/page.tsx -- sheet list / editor
+        settings/db/**          -- Phase 06: ADMIN-only runtime DB-connection settings (page.tsx + db-settings-form.tsx + actions.ts: testConnection/saveDbSettings)
       print/                    -- Phase 05: dedicated NO-NAV route group (chrome-free /print), sibling of (main)/, NOT nested inside it
         layout.tsx              -- no-nav layout (imports print.css); requireAuth() called explicitly per print page
         daily/[date]/page.tsx   -- combined-day sheet: all 29 roster slots incl. blank gaps
@@ -252,22 +261,18 @@ orderstock/
       be-date.ts                -- CE<->BE conversion (Intl en-US-u-ca-buddhist) + Thai d/m/yy display helpers (Phase 04); reused for Phase 05 printed date headers
       order-save.ts             -- pure mergeSnapshots() snapshot-carry-forward helper, unit-testable without a DB (Phase 04)
       get-sheet-for-print.ts    -- Phase 05: NEW snapshot-only fetch (shopNameAtEntry/variantNameAtEntry, NEVER live Shop/ProductVariant names) — shared by both print routes; daily returns all 29 slots, per-shop filters in memory
-      __tests__/                -- smoke, variant-validation, correction-cascade, password, login-attempts, auth-guard-coverage (now covers (main)/ + print pages), secret-leak, totals, be-date, order-save (41 tests total)
+      connection-string.ts      -- Phase 06: fields → JDBC sqlserver:// DATABASE_URL builder + validateDbFields + best-effort non-load-bearing parseConnectionString + maskPassword
+      env-write.ts              -- Phase 06: safe .env DATABASE_URL rewrite — .env.bak backup-before-write, injection-safe (truncates at first CR/LF), never logs the value
+      __tests__/                -- smoke, variant-validation, correction-cascade, password, login-attempts, auth-guard-coverage (now covers (main)/ + print pages + settings), secret-leak, totals, be-date, order-save, connection-string, env-write (70 tests total, Phase 06)
   test-fixtures/
     sheet-13-03-69.json         -- canonical 13/3/69 gate fixture (51 cells, 20 column totals, grand 446, 13 NoteLines) — shared by Phase 04 unit gate + Phase 05 print e2e tests
   public/fonts/                -- self-hosted Sarabun OFL woff2 (400/600/700, thai+latin)
   process/
     context/                   -- this context system (incl. database/, auth/ groups)
     general-plans/             -- plans, reports, references
-    features/order-system/     -- phase1-order-system program (umbrella + 6 phase plans)
+    features/order-system/     -- phase1-order-system program (umbrella + 6 phase plans), COMPLETE, archived to completed/
     development-protocols/     -- RIPER-5 methodology docs
 ```
-
-### Application Structure (Phase 06, planned — FINAL phase)
-
-- `src/app/settings/db/**` — connection-string settings page (Phase 06)
-- `src/lib/connection-string.ts` — ADO.NET → adapter-accepted format conversion + validation (Phase 06)
-- `db/create-login.sql`, `docs/deployment-guide.md` — delivery packaging (Phase 06)
 
 ## Technology Stack
 
@@ -279,7 +284,7 @@ orderstock/
   - `prisma@7.8.0`, `@prisma/client@7.8.0`, `@prisma/adapter-mssql@7.8.0`, `mssql@^12.2.0`
   - dev: sandbox SQL Server 2022 in Docker (`docker-compose.yml`, `mem_limit: 2g`, compat level 150); production: customer's SQL Server via runtime connection string (Phase 06, not yet built)
 - **CSS:** Tailwind 4 (`@tailwindcss/postcss`) via create-next-app default; print CSS (Phase 05) stays separate plain CSS
-- **Testing:** Vitest 3.2.6 (`pnpm test` → `vitest run`) — 41 tests across 10 files (smoke, variant-validation, correction-cascade, password, login-attempts, auth-guard-coverage, secret-leak, totals, be-date, order-save) as of Phase 05. Playwright `@playwright/test@1.61.1` — installed Phase 03; 16 E2E tests across `e2e/auth.spec.ts` + `e2e/orders.spec.ts` + `e2e/print.spec.ts` + `e2e/auth.setup.ts` fixtures. See `tests/all-tests.md`.
+- **Testing:** Vitest 3.2.6 (`pnpm test` → `vitest run`) — 70 tests across 12 files (smoke, variant-validation, correction-cascade, password, login-attempts, auth-guard-coverage, secret-leak, totals, be-date, order-save, connection-string, env-write, settings-secret-hygiene) as of Phase 06 (program complete). Playwright `@playwright/test@1.61.1` — installed Phase 03; 19 E2E tests across `e2e/auth.spec.ts` + `e2e/orders.spec.ts` + `e2e/print.spec.ts` + `e2e/settings.spec.ts` + `e2e/auth.setup.ts` fixtures. See `tests/all-tests.md`.
 - **Validation:** `zod@^4.4.3` — server-action input validation with Thai error messages (added Phase 02, decision 5); enforces `packSize`/`group`/`role` allowed values from `src/lib/product-order.ts` since SQL Server has no Prisma enums (see `database/all-database.md`)
 - **Scripting runtime:** `tsx@^4.23.0` (devDep, added Phase 02) — runs `prisma/seed.ts` and `scripts/export-schema-sql.ts` directly
 - **Package manager:** pnpm 11.5.0 (`pnpm-workspace.yaml` sets `allowBuilds` for native-script packages: `@prisma/client`, `@prisma/engines`, `esbuild`, `prisma`, `sharp`, `unrs-resolver` — pnpm 11.5 blocks build scripts by default)
@@ -303,7 +308,7 @@ orderstock/
 
 ## Environment and Configuration
 
-- `DATABASE_URL` — JDBC-style `sqlserver://localhost:1433;database=orderstock;user=sa;password=...;encrypt=true;trustServerCertificate=true` — sandbox default; runtime override via the Phase 06 settings page (not yet built)
+- `DATABASE_URL` — JDBC-style `sqlserver://localhost:1433;database=orderstock;user=sa;password=...;encrypt=true;trustServerCertificate=true` — sandbox default; runtime override via the ADMIN-only `/settings/db` page (Phase 06, built — validates + test-connects, then rewrites this line in `.env` with a `.env.bak` backup, applied on restart)
 - `MSSQL_SA_PASSWORD` — SA password for the Docker sandbox container (also referenced by `docker-compose.yml`)
 - `.env` holds real secrets and is gitignored (`.gitignore` covers `.env*`); `.env.example` holds placeholder values and is committed-safe
 - `AUTH_SECRET` — signs the JWT session (v5 name — NOT `NEXTAUTH_SECRET`). Generate with `openssl rand -base64 32`. Real value only in `.env`.
@@ -325,19 +330,23 @@ orderstock/
 - Next 16 renames `middleware.ts` → `proxy.ts` — a `middleware.ts` file is silently ignored (no build error). Resolved Phase 03: the app uses `src/proxy.ts` (sibling of `src/app/`, matching the `src/` layout). See `auth/all-auth.md`.
 - **SQL Server has no Prisma enums** — `packSize`/`group`/`role` are `String` columns, not Prisma `enum`s (P1012 connector error otherwise). See `database/all-database.md` for the full pattern; the constants live in `src/lib/product-order.ts`.
 - **`correction-cascade.ts` requires the `CascadeDb` adapter, not a raw `PrismaClient`.** Passing `prisma` directly where a `CascadeDb` is expected silently no-ops (no error, back-fill never runs) — EVL-proven gotcha. Full detail in `database/all-database.md`.
-- **Reports/evidence files must NEVER quote real secret values** (passwords, tokens, connection strings) — write `[REDACTED-*]` placeholders instead. This recurred across Phase 02 and Phase 03 durable-capture sessions; git-manager blocks commits on literal secret matches, so a report containing a real value stalls the process commit. Always redact before writing a phase report, closeout packet, or evidence-pack JSON.
+- **Reports/evidence files must NEVER quote real secret values, and must not even describe scans by naming the pattern searched for** (passwords, tokens, connection strings). This recurred across Phase 02, Phase 03, AND Phase 06 durable-capture sessions — it is a durable, recurring risk, not a one-off mistake. git-manager blocks commits on literal secret matches, so a report containing a real value stalls the process commit. Two rules, both required: (1) redact any real value found — write `[REDACTED-*]` placeholders, never the literal string; (2) when describing a secret-scan step itself, describe it WITHOUT quoting the scanned-for pattern — e.g. write "scanned for known credential prefixes (see `.env`)" rather than spelling out the actual prefix/pattern being searched, since even the search pattern can leak structural secret info. Apply this to every phase report, closeout packet, and evidence-pack JSON, going forward on any future project work.
 
 ## Open Questions / Outstanding Work
 
-- SQL Server version at the customer site — unconfirmed (assumed mid-range); confirm before finalizing the schema script
-- Exact shop names and product list — transcribed from a handwritten scan; ~31 uncertain readings seeded with `needsConfirmation=true` (Phase 02). These are now partially resolvable **in-app**: a CRUD edit-save on the flagged shop/product clears `needsConfirmation` and fires `correction-cascade.ts` to back-fill any existing OrderLine/NoteLine snapshots — no longer strictly blocked on a separate confirmation round with the user.
-- Sandbox compatibility level: defaulted to 150 (SQL Server 2019); customer's actual target (140 for 2017 vs 150 for 2019) is unconfirmed — accepted known-gap, re-run compat check once confirmed
-- Conversion factors / any remaining uncertain readings in the canonical form transcription — see `form-canonical_REF_06-07-26.md`
-- Thai collation — deferred to Phase 06 delivery (decision 3); integer ordering (`printOrder`/`rosterOrder`) used everywhere in Phase 1 instead
+**phase1-order-system is program-complete; the items below are the remaining customer-input items, all backlogged (see `process/features/order-system/backlog/`) and none blocking delivery:**
+
+- SQL Server version/compatibility level at the customer site — unconfirmed (sandbox defaults to compat 150 / SQL Server 2019; TODO-flagged in `db/create-database-and-login.sql`); confirm before the customer's DBA runs the delivery scripts
+- Weight-factor conversion (Q22) — per-variant `weightKg`/`pipConversion` are null; print footer ships with blank values until the customer confirms (`weight-factors_NOTE_06-07-26.md`)
+- Print semantic-fill shading (Q30) — CSS layer ready, OFF by default; flip on if the customer confirms colors (`print-shading-q30_NOTE_06-07-26.md`)
+- Exact shop/product names transcribed from the handwritten scan — remaining `needsConfirmation=true` rows resolvable in-app via a CRUD edit-save (fires `correction-cascade.ts`); no longer strictly blocked on a separate confirmation round
+- Thai collation — deferred past delivery; integer ordering (`printOrder`/`rosterOrder`) used everywhere instead
+- On-site real-printer mm fidelity — agent-probe only so far; `docs/deployment-guide.md` instructs an on-site test print (Chrome/Edge, Scale 100%) before the customer relies on the layout
+- Hosting confirmation — NSSM Windows service recommended (auto-restart on `.env` apply), pending customer IT confirmation; IIS reverse-proxy is the documented alternative
 
 ## Scan Metadata
 
-- Generated: 2026-07-06 (Phase 05 closeout update)
-- HEAD: 6131ec0 (docs: phase-05 verified closeout artifacts)
-- Mode: delta update (post-Phase-05 EXECUTE+EVL+UPDATE-PROCESS)
+- Generated: 2026-07-07 (Phase 06 / program closeout update)
+- HEAD: fc71c86 (docs: phase-06 verified closeout artifacts)
+- Mode: delta update (post-Phase-06 EXECUTE+EVL+UPDATE-PROCESS — **program complete**)
 - Package manager: pnpm 11.5.0

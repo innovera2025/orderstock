@@ -3,10 +3,10 @@ name: context:all-database
 description: "Database context entrypoint for orderstock — Prisma 7 + SQL Server schema, SQL Server-specific pitfalls (no enums, one-NULL-per-UNIQUE, NoAction cascades), historical-fidelity snapshot pattern, and seed/migration/export commands"
 keywords: database, prisma, schema, sql server, mssql, migration, migrate, seed, enum, cascade, correction cascade, snapshot, printOrder, export, vendor sql, zod, tsx
 related: [context:all-tests]
-date: 06-07-26
+date: 07-07-26
 ---
 
-Last updated: 06-07-26 (Phase 04 closeout — order-entry write-path pattern added)
+Last updated: 07-07-26 (Phase 06 / program closeout — runtime connection-string settings + safe env-write pattern added)
 
 # Database Context
 
@@ -55,10 +55,10 @@ Read this entrypoint when:
 ## Quick Routing
 
 - use this file for schema overview, SQL Server pitfalls, the snapshot/cascade pattern, and commands
-- use `process/features/order-system/active/phase1-order-system_06-07-26/form-canonical_REF_06-07-26.md`
+- use `process/features/order-system/completed/phase1-order-system_06-07-26/form-canonical_REF_06-07-26.md`
   for the 20-column printOrder contract's *source data* (the canonical form transcription); the
   in-code contract lives at `src/lib/product-order.ts` (`PRINT_VARIANTS`, C3–C22)
-- use `process/features/order-system/active/phase1-order-system_06-07-26/phase-02-schema-master-data_PLAN_06-07-26.md`
+- use `process/features/order-system/completed/phase1-order-system_06-07-26/phase-02-schema-master-data_PLAN_06-07-26.md`
   for the full PVL fix rationale (F1–F7) behind each schema decision below
 
 ## Source Paths
@@ -231,13 +231,60 @@ blank grid cell means the line is OMITTED entirely, never persisted as `qty = 0`
 or writing these tables must preserve this invariant — a `qty` of `0` should never appear in the DB
 for either table.
 
+## Runtime Connection Settings & Safe Env Write (Phase 06, LOAD-BEARING for any future DB-config work)
+
+The `DATABASE_URL` used by BOTH `src/lib/db.ts` (app runtime) and `prisma.config.ts` (CLI) has a
+single source of truth: the `.env` file. Phase 06 built an ADMIN-only runtime settings page that lets
+an admin repoint the app at a different SQL Server WITHOUT editing `.env` by hand.
+
+- **`src/lib/connection-string.ts`** — `buildDatabaseUrl(fields)` builds a JDBC-style
+  `sqlserver://` URL from individual fields (host, port, named instance, database, user, password
+  brace-escaped, encrypt, trustServerCertificate). `validateDbFields()` checks required fields.
+  `parseConnectionString()` is a best-effort ADO.NET/JDBC parser used ONLY for a paste-prefill
+  convenience in the UI — its output is always admin-reviewable before save and is NEVER
+  load-bearing for the actual write. `maskPassword()` masks the password for display.
+- **`src/lib/env-write.ts`** — `writeDatabaseUrl()` is the ONLY sanctioned way to change
+  `DATABASE_URL` at runtime. Invariants, all unit-tested against hostile inputs:
+  1. Copies `.env` → `.env.bak` IMMEDIATELY BEFORE mutating `.env` (one-command rollback).
+  2. Injection-safe serialization — truncates the value at the first CR/LF, so an embedded
+     `\nAUTH_SECRET=attacker` payload (or any `\nKEY=value` clobber) cannot inject or overwrite a
+     different `.env` key. Quotes/backslashes/Thai-character passwords are all covered by the same
+     serialization path.
+  3. Rewrites ONLY the `DATABASE_URL` line — every other `.env` line is left untouched.
+  4. Never logs the written value anywhere.
+  5. `.env.bak` is covered by the pre-existing `.gitignore` `.env*` pattern — regression-guarded by
+     a unit test asserting the gitignore match, so the backup is never accidentally committed.
+- **Save-gate invariant (security-critical):** the settings page's save action calls
+  `env-write` (and the subsequent `process.exit(0)` restart trigger) ONLY if a throwaway
+  `PrismaClient` + `SELECT 1` test-connection against the NEW config succeeded first. A bad
+  connection string can never reach `.env` — test-connection failure short-circuits before any
+  write. `process.exit` itself is gated behind `NODE_ENV !== "test" && ORDERSTOCK_NO_EXIT !== "1"`
+  so test/CI runs can drive the save pipeline up to (and including) the `.env` write without
+  killing the test server.
+- **Apply = restart, NOT a hot singleton swap.** `src/lib/db.ts` is intentionally UNCHANGED by
+  Phase 06 — it already reads `process.env.DATABASE_URL` at module init, so a process restart
+  (recommended: NSSM auto-restart on Windows) genuinely picks up the new connection. Prisma 7 has
+  no live-URL-swap API on an existing `PrismaClient`; do not attempt one.
+- **Lockout recovery is a documented MANUAL step, not an in-app authless bypass.** Because
+  `requireAuth()` re-reads the DB on every call, a bad saved connection string locks EVERY admin
+  out (auth itself can't reach the DB to authenticate). The only recovery path is a manual `.env`
+  edit or `cp .env.bak .env` restore — documented in `docs/deployment-guide.md`. An authless
+  in-app bootstrap to "fix" this was explicitly considered and REJECTED during Phase 06 RESEARCH
+  as a trust-boundary hole.
+- **Delivery artifacts:** `docs/deployment-guide.md` (Thai) covers prereqs, `.env`/`AUTH_SECRET`
+  setup, SQL script run order, NSSM/IIS hosting, print instructions, backup guidance, and this
+  lockout-recovery procedure. `db/create-database-and-login.sql` is the hand-authored companion to
+  `db/create-orderstock-schema.sql` (CREATE DATABASE/LOGIN/USER/grants + a TODO-flagged
+  `COMPATIBILITY_LEVEL 140/150` pending the customer's actual SQL Server version).
+
 ## Known Gaps
 
-- **Thai collation** — deferred to Phase 06 delivery; integer ordering (`printOrder`/`rosterOrder`)
+- **Thai collation** — deferred past delivery; integer ordering (`printOrder`/`rosterOrder`)
   is used everywhere in Phase 1 instead of relying on collation-based sort.
 - **Customer SQL Server compatibility level unconfirmed** — sandbox defaults to compat 150 (SQL
-  Server 2019); the customer's actual target (140 for 2017 vs 150 for 2019) is unconfirmed. Schema
-  is written to stay compatible with the 2017+ floor Prisma requires.
+  Server 2019); the customer's actual target (140 for 2017 vs 150 for 2019) is unconfirmed and
+  TODO-flagged in `db/create-database-and-login.sql`. Schema is written to stay compatible with the
+  2017+ floor Prisma requires.
 - **CRUD automated DB-integration harness** — backlogged
   (`process/features/order-system/backlog/crud-db-integration-harness_NOTE_06-07-26.md`); the Phase
   02 CRUD round-trip was proven via agent-probe, not an automated regression test. Phase 04's

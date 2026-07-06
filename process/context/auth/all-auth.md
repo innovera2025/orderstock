@@ -9,11 +9,12 @@ metadata:
 
 # orderstock - All Auth
 
-Last updated: 2026-07-06 (Phase 03 closeout — auth is now real, ✅ VERIFIED)
+Last updated: 2026-07-07 (Phase 06 / program closeout — `/settings` added to the ADMIN edge gate)
 
 Attach this file first for any task touching login, sessions, roles, route protection, or the
-admin user-management surface. Phases 04-06 build authenticated features on top of this contract
-— read the **requireAuth contract** section below before writing any new server action.
+admin user-management surface. Phases 04-06 built authenticated features on top of this contract
+(phase1-order-system is now program-complete) — read the **requireAuth contract** section below
+before writing any new server action.
 
 ---
 
@@ -42,6 +43,13 @@ never by build success — a mis-placed or mis-shaped `proxy.ts` still builds gr
 /login, /api/auth/*, /api/health, _next/static, _next/image, fonts, favicon.ico,
 *.{woff2,woff,ttf,otf,png,jpg,jpeg,svg,ico,css}
 ```
+
+**ADMIN-only route additions (Phase 06):** the edge `authorized` callback in `src/auth.config.ts`
+ADMIN-gates `/settings` in addition to the pre-existing `/admin` branch (defense-in-depth; the real
+boundary is still server-side `requireAuth("ADMIN")` in every settings action). `src/app/nav.tsx`
+renders the settings link only when `role === "ADMIN"` (same pattern as the admin-users nav link).
+`e2e/settings.spec.ts` proves the runtime redirect for all three cases (unauth, STAFF, ADMIN)
+against `/settings/db`.
 
 ---
 
@@ -79,8 +87,11 @@ export async function someStateAction(...): Promise<SomeActionState> {
   `ProductActionState`, etc.); `requireAuthState` returns a plain `{ error: string }` shape you
   merge into your own state type.
 - A fully-automated grep gate (`auth-guard-coverage.test.ts`) asserts every exported action in
-  a file calls `requireAuth`/`requireAuthState` — a missed action is the #1 elevation risk. Any
-  new action file added in Phases 04-06 should extend this gate's file list.
+  a file calls `requireAuth`/`requireAuthState` — a missed action is the #1 elevation risk. Phase
+  06 added a dedicated `ADMIN_MODULES` assertion so ADMIN-only action files (settings, admin/users)
+  are checked for the `"ADMIN"` argument specifically, not just presence of `requireAuth` at all.
+  Any new action file should extend this gate's `MODULES`/`ADMIN_MODULES` lists (and the page-grep
+  list for new pages), following the settings `actions.ts` precedent.
 
 ---
 
