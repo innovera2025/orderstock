@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="stylesheet" href="_ds/pguard-design-system-019e2ca7-55ce-7c60-aefc-94b6b4a045e7/tokens/fonts.css">
+  <link rel="stylesheet" href="_ds/pguard-design-system-019e2ca7-55ce-7c60-aefc-94b6b4a045e7/tokens/colors.css">
+  <link rel="stylesheet" href="_ds/pguard-design-system-019e2ca7-55ce-7c60-aefc-94b6b4a045e7/tokens/typography.css">
+  <link rel="stylesheet" href="_ds/pguard-design-system-019e2ca7-55ce-7c60-aefc-94b6b4a045e7/tokens/spacing.css">
+  <link rel="stylesheet" href="_ds/pguard-design-system-019e2ca7-55ce-7c60-aefc-94b6b4a045e7/tokens/semantic.css">
+  <link rel="stylesheet" href="_ds/pguard-design-system-019e2ca7-55ce-7c60-aefc-94b6b4a045e7/styles.css">
+  <script src="_ds/pguard-design-system-019e2ca7-55ce-7c60-aefc-94b6b4a045e7/_ds_bundle.js"></script>
+  <style>
+    body{margin:0;background:#DEE5E2;font-family:var(--font-thai),'IBM Plex Sans Thai',sans-serif}
+    a{color:#1FA971;text-decoration:none} a:hover{color:#15885B}
+    input::placeholder{color:#C6D0CC}
+  </style>
+</helmet>
+
+<div style="min-height:100vh;display:flex;align-items:flex-start;justify-content:center;padding:32px 20px" data-screen-label="มือถือ ออเดอร์รายวัน">
+  <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" title="" hint-size="430px,880px">
+    <div style="height:100%;display:flex;flex-direction:column;background:#F6F8F7;font-family:'IBM Plex Sans Thai',sans-serif;position:relative;overflow:hidden">
+
+      <!-- ═════ login screen ═════ -->
+      <sc-if value="{{ isLoggedOut }}" hint-placeholder-val="{{ false }}">
+        <div style="flex:1;display:flex;flex-direction:column;justify-content:space-between;color:#fff;background:linear-gradient(rgba(255,255,255,.045) 1px,transparent 1px) 0 0/42px 42px,linear-gradient(90deg,rgba(255,255,255,.045) 1px,transparent 1px) 0 0/42px 42px,linear-gradient(155deg,#0E5238,#082619)">
+          <div style="padding:36px 24px 0">
+            <div style="display:flex;align-items:center;gap:10px">
+              <span style="display:flex;width:34px;height:34px;align-items:center;justify-content:center;border-radius:9px;background:rgba(255,255,255,.12);font-weight:700;font-size:17px">ย</span>
+              <span style="font-size:17px;font-weight:700"><span style="color:#5FCEA4">ยิ่ง</span>เจริญ</span>
+            </div>
+            <div style="margin-top:22px;font-size:24px;font-weight:700;line-height:1.4;letter-spacing:-0.01em">ระบบใบออเดอร์สินค้า<br>ประจำวัน</div>
+            <div style="margin-top:8px;font-size:13px;color:rgba(255,255,255,.68)">สำหรับพนักงานหน้างานและสายส่ง</div>
+          </div>
+          <div style="background:#fff;border-radius:18px 18px 0 0;padding:22px 22px 18px;color:#141A17">
+            <div style="font-size:17px;font-weight:600;color:#141A17">เข้าสู่ระบบ</div>
+            <input style="width:100%;height:44px;margin-top:14px;border:1.5px solid #C6D0CC;border-radius:8px;padding:0 12px;font-family:'IBM Plex Sans Thai',sans-serif;font-size:14px;color:#141A17;outline:none;background:#fff" style-focus="border-color:#1FA971;box-shadow:0 0 0 4px rgba(31,169,113,.45)" placeholder="อีเมล" value="{{ loginEmail }}" onChange="{{ onLoginEmail }}">
+            <input type="password" style="width:100%;height:44px;margin-top:10px;border:1.5px solid #C6D0CC;border-radius:8px;padding:0 12px;font-family:'IBM Plex Sans Thai',sans-serif;font-size:14px;color:#141A17;outline:none;background:#fff" style-focus="border-color:#1FA971;box-shadow:0 0 0 4px rgba(31,169,113,.45)" placeholder="รหัสผ่าน" value="{{ loginPass }}" onChange="{{ onLoginPass }}">
+            <sc-if value="{{ loginErrorOn }}" hint-placeholder-val="{{ false }}">
+              <div style="margin-top:10px;font-size:12px;color:#E5484D;background:#FCEAEA;border-radius:8px;padding:8px 12px">{{ loginError }}</div>
+            </sc-if>
+            <button style="width:100%;margin-top:14px;min-height:48px;border:none;border-radius:8px;background:#1FA971;color:#fff;font-family:'IBM Plex Sans Thai',sans-serif;font-size:15px;font-weight:600;cursor:pointer" style-active="transform:translateY(1px)" onClick="{{ doLogin }}">เข้าสู่ระบบ</button>
+            <div style="margin-top:14px;border:1px solid #DEE5E2;border-radius:8px;background:#F6F8F7;padding:10px 12px">
+              <div style="font-size:10.5px;font-weight:600;color:#69776F;margin-bottom:6px">บัญชีสาธิต · รหัสผ่าน 1234 · แตะเพื่อกรอก</div>
+              <sc-for list="{{ demoAccounts }}" as="d" hint-placeholder-count="2">
+                <div style="display:flex;align-items:baseline;gap:8px;padding:5px 0;cursor:pointer" onClick="{{ d.onFill }}">
+                  <span style="font-size:12.5px;font-weight:600;color:#1FA971">{{ d.name }}</span>
+                  <span style="font-size:10.5px;color:#94A29D;font-family:'IBM Plex Mono',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ d.email }}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ═════ list screen ═════ -->
+      <sc-if value="{{ isList }}" hint-placeholder-val="{{ true }}">
+        <div style="background:#0E3B2E;color:#fff;padding:12px 18px 14px;flex:none">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:16px;font-weight:700"><span style="color:#5FCEA4">ยิ่ง</span>เจริญ · ออเดอร์วันนี้</span>
+            <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:12px;background:rgba(255,255,255,.12);border-radius:99px;padding:2px 10px">13/3/2569</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;margin-top:11px">
+            <div style="flex:1;height:6px;border-radius:99px;background:rgba(255,255,255,.18);overflow:hidden">
+              <div style="height:100%;border-radius:99px;background:#F59E0B;width:{{ progressW }}"></div>
+            </div>
+            <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C9EEDD;white-space:nowrap">{{ doneCount }}/{{ totalCount }} ร้าน</span>
+          </div>
+        </div>
+        <div style="padding:10px 14px;flex:none">
+          <div style="display:flex;align-items:center;gap:8px;border:1.5px solid #C6D0CC;border-radius:8px;padding:0 12px;height:40px;background:#fff">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:#94A29D"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+            <input style="border:none;outline:none;background:transparent;font-family:'IBM Plex Sans Thai',sans-serif;font-size:14px;color:#141A17;flex:1" placeholder="ค้นหาร้านค้า…" value="{{ query }}" onChange="{{ onQuery }}">
+          </div>
+        </div>
+        <div style="flex:1;overflow:auto;padding:0 14px 8px">
+          <sc-for list="{{ listRows }}" as="s" hint-placeholder-count="8">
+            <div style="display:flex;align-items:center;gap:12px;background:#fff;border:1px solid #DEE5E2;border-radius:11px;padding:11px 14px;margin-bottom:8px;cursor:pointer;min-height:44px" style-active="background:#EDF1EF" onClick="{{ s.onOpen }}">
+              <span style="display:flex;width:30px;height:30px;flex:none;align-items:center;justify-content:center;border-radius:99px;background:{{ s.avBg }};color:{{ s.avColor }};font-family:'IBM Plex Mono',monospace;font-size:11.5px;font-weight:700">{{ s.no }}</span>
+              <div style="flex:1;min-width:0">
+                <div style="font-size:14px;font-weight:600;color:{{ s.nameColor }}">{{ s.name }}</div>
+                <div style="font-size:11.5px;color:#94A29D">{{ s.sub }}</div>
+              </div>
+              <span style="font-size:11px;font-weight:600;border-radius:99px;padding:3px 10px;background:{{ s.stBg }};color:{{ s.stColor }}">{{ s.stText }}</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#C6D0CC" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <!-- ═════ entry screen ═════ -->
+      <sc-if value="{{ isEntry }}" hint-placeholder-val="{{ false }}">
+        <div style="display:flex;align-items:center;gap:8px;background:#fff;border-bottom:1px solid #DEE5E2;padding:10px 12px;flex:none">
+          <button style="display:flex;align-items:center;gap:4px;height:40px;padding:0 10px;border:none;border-radius:8px;background:transparent;color:#15885B;font-family:'IBM Plex Sans Thai',sans-serif;font-size:14px;font-weight:600;cursor:pointer" onClick="{{ backToList }}">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg>
+            ร้านค้า
+          </button>
+          <div style="flex:1;text-align:center;min-width:0">
+            <div style="font-size:15.5px;font-weight:700;color:#141A17;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ entryName }}</div>
+            <div style="font-size:11px;color:#69776F">ร้านที่ {{ entryNo }} จาก {{ totalCount }} · รวม {{ entryUnits }} หน่วย</div>
+          </div>
+          <div style="display:flex;gap:4px">
+            <button style="display:flex;width:40px;height:40px;align-items:center;justify-content:center;border:1.5px solid #C6D0CC;border-radius:8px;background:#fff;color:#4C5953;cursor:pointer" onClick="{{ prevShop }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"></path></svg></button>
+            <button style="display:flex;width:40px;height:40px;align-items:center;justify-content:center;border:1.5px solid #C6D0CC;border-radius:8px;background:#fff;color:#4C5953;cursor:pointer" onClick="{{ nextShop }}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"></path></svg></button>
+          </div>
+        </div>
+
+        <div style="flex:1;overflow:auto;padding:12px 14px 8px">
+          <div style="font-size:11.5px;font-weight:600;color:#15885B;padding:2px 4px 8px">สินค้า</div>
+          <div style="background:#fff;border:1px solid #DEE5E2;border-radius:11px;overflow:hidden;margin-bottom:14px">
+            <sc-for list="{{ entryRowsA }}" as="e" hint-placeholder-count="8">
+              <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid #EDF1EF;background:{{ e.bg }}">
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:13.5px;font-weight:500;color:#141A17">{{ e.main }}</div>
+                  <div style="font-size:11px;color:#94A29D">{{ e.sub }}</div>
+                </div>
+                <button style="display:flex;width:40px;height:40px;flex:none;align-items:center;justify-content:center;border:1.5px solid #C6D0CC;border-radius:8px;background:#fff;color:#4C5953;font-size:19px;cursor:pointer" style-active="background:#EDF1EF" onClick="{{ e.onMinus }}">−</button>
+                <input inputmode="numeric" style="width:44px;height:40px;flex:none;border:none;outline:none;background:transparent;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:600;color:#141A17" value="{{ e.v }}" onChange="{{ e.onInput }}">
+                <button style="display:flex;width:40px;height:40px;flex:none;align-items:center;justify-content:center;border:none;border-radius:8px;background:#1FA971;color:#fff;font-size:19px;cursor:pointer" style-active="background:#15885B" onClick="{{ e.onPlus }}">+</button>
+              </div>
+            </sc-for>
+          </div>
+          <div style="font-size:11.5px;font-weight:600;color:#B45F09;padding:2px 4px 8px">เครื่องปรุง</div>
+          <div style="background:#fff;border:1px solid #DEE5E2;border-radius:11px;overflow:hidden;margin-bottom:14px">
+            <sc-for list="{{ entryRowsB }}" as="e" hint-placeholder-count="4">
+              <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;border-bottom:1px solid #EDF1EF;background:{{ e.bg }}">
+                <div style="flex:1;min-width:0">
+                  <div style="font-size:13.5px;font-weight:500;color:#141A17">{{ e.main }}</div>
+                  <div style="font-size:11px;color:#94A29D">{{ e.sub }}</div>
+                </div>
+                <button style="display:flex;width:40px;height:40px;flex:none;align-items:center;justify-content:center;border:1.5px solid #C6D0CC;border-radius:8px;background:#fff;color:#4C5953;font-size:19px;cursor:pointer" style-active="background:#EDF1EF" onClick="{{ e.onMinus }}">−</button>
+                <input inputmode="numeric" style="width:44px;height:40px;flex:none;border:none;outline:none;background:transparent;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:16px;font-weight:600;color:#141A17" value="{{ e.v }}" onChange="{{ e.onInput }}">
+                <button style="display:flex;width:40px;height:40px;flex:none;align-items:center;justify-content:center;border:none;border-radius:8px;background:#1FA971;color:#fff;font-size:19px;cursor:pointer" style-active="background:#15885B" onClick="{{ e.onPlus }}">+</button>
+              </div>
+            </sc-for>
+          </div>
+          <div style="font-size:11.5px;font-weight:600;color:#69776F;padding:2px 4px 8px">หมายเหตุ</div>
+          <div style="background:#fff;border:1px solid #DEE5E2;border-radius:11px;padding:4px 14px;margin-bottom:16px">
+            <input style="width:100%;height:44px;border:none;outline:none;background:transparent;font-family:'IBM Plex Sans Thai',sans-serif;font-size:14px;color:#141A17" placeholder="เช่น ดีขาว 1/2 กก." value="{{ entryNote }}" onChange="{{ onEntryNote }}">
+          </div>
+        </div>
+
+        <div style="flex:none;padding:10px 14px 12px;background:#F6F8F7;border-top:1px solid #DEE5E2">
+          <button style="width:100%;min-height:48px;border:none;border-radius:8px;background:#1FA971;color:#fff;font-family:'IBM Plex Sans Thai',sans-serif;font-size:15px;font-weight:600;cursor:pointer;transition:background .15s,transform .15s" style-hover="background:#15885B" style-active="transform:translateY(1px)" onClick="{{ saveNext }}">บันทึก แล้วไปร้านถัดไป</button>
+        </div>
+      </sc-if>
+
+      <!-- ═════ summary screen ═════ -->
+      <sc-if value="{{ isSummary }}" hint-placeholder-val="{{ false }}">
+        <div style="background:#0E3B2E;color:#fff;padding:12px 18px 16px;flex:none">
+          <div style="font-size:16px;font-weight:700">สรุปยอดวันนี้ · 13/3/2569</div>
+          <div style="display:flex;gap:10px;margin-top:12px">
+            <div style="flex:1;background:rgba(255,255,255,.1);border-radius:10px;padding:10px 14px">
+              <div style="font-size:11px;color:#97E0C2">ร้านที่สั่ง</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600">{{ doneCount }}<span style="font-size:13px;color:#97E0C2">/{{ totalCount }}</span></div>
+            </div>
+            <div style="flex:1;background:rgba(255,255,255,.1);border-radius:10px;padding:10px 14px">
+              <div style="font-size:11px;color:#97E0C2">รวมจำนวน (หน่วย)</div>
+              <div style="font-family:'IBM Plex Mono',monospace;font-size:22px;font-weight:600">{{ grandTotal }}</div>
+            </div>
+          </div>
+        </div>
+        <div style="flex:1;overflow:auto;padding:12px 14px 8px">
+          <div style="background:#fff;border:1px solid #DEE5E2;border-radius:11px;overflow:hidden">
+            <sc-for list="{{ sumRows }}" as="p" hint-placeholder-count="10">
+              <div style="display:flex;align-items:center;gap:10px;padding:9px 14px;border-bottom:1px solid #EDF1EF">
+                <div style="width:118px;flex:none;min-width:0">
+                  <div style="font-size:12.5px;font-weight:500;color:{{ p.nameColor }};overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ p.name }}</div>
+                  <div style="font-size:10.5px;color:#C6D0CC">{{ p.unit }}</div>
+                </div>
+                <div style="flex:1;height:7px;border-radius:99px;background:#EDF1EF;overflow:hidden"><div style="height:100%;border-radius:99px;background:{{ p.color }};width:{{ p.w }}"></div></div>
+                <div style="width:44px;flex:none;text-align:right;font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:600;color:{{ p.qtyColor }}">{{ p.qty }}</div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ═════ users screen ═════ -->
+      <sc-if value="{{ isUsersScr }}" hint-placeholder-val="{{ false }}">
+        <div style="background:#0E3B2E;color:#fff;padding:12px 18px 14px;flex:none;display:flex;align-items:center;gap:10px">
+          <div style="flex:1">
+            <div style="font-size:16px;font-weight:700">ผู้ใช้ระบบ</div>
+            <div style="font-size:11.5px;color:#97E0C2">{{ userSub }}</div>
+          </div>
+          <button style="height:36px;padding:0 14px;border:none;border-radius:8px;background:#1FA971;color:#fff;font-family:'IBM Plex Sans Thai',sans-serif;font-size:12.5px;font-weight:600;cursor:pointer" onClick="{{ openAddUser }}">+ เพิ่ม</button>
+        </div>
+        <div style="flex:1;overflow:auto;padding:12px 14px 8px">
+          <div style="background:#fff;border:1px solid #DEE5E2;border-radius:11px;overflow:hidden;margin-bottom:12px">
+            <sc-for list="{{ userRows }}" as="u" hint-placeholder-count="4">
+              <div style="display:flex;align-items:center;gap:11px;padding:10px 14px;border-bottom:1px solid #EDF1EF;min-height:52px">
+                <span style="display:flex;width:34px;height:34px;flex:none;align-items:center;justify-content:center;border-radius:99px;background:{{ u.avBg }};color:{{ u.avColor }};font-size:12.5px;font-weight:700">{{ u.initials }}</span>
+                <div style="flex:1;min-width:0">
+                  <div style="display:flex;align-items:baseline;gap:6px">
+                    <span style="font-size:13.5px;font-weight:600;color:#141A17">{{ u.name }}</span>
+                    <sc-if value="{{ u.isMe }}" hint-placeholder-val="{{ false }}">
+                      <span style="font-size:9.5px;font-weight:600;color:#0E5238;background:#E9F8F1;border-radius:99px;padding:1px 7px">คุณ</span>
+                    </sc-if>
+                  </div>
+                  <div style="font-size:11px;color:#94A29D">{{ u.roleLabel }} · {{ u.statusText }}</div>
+                </div>
+                <sc-if value="{{ u.notMe }}" hint-placeholder-val="{{ true }}">
+                  <button style="height:34px;padding:0 12px;border:1.5px solid #C6D0CC;border-radius:8px;background:#fff;color:{{ u.suspendColor }};font-family:'IBM Plex Sans Thai',sans-serif;font-size:12px;font-weight:600;cursor:pointer" onClick="{{ u.onToggle }}">{{ u.suspendLabel }}</button>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+          <button style="width:100%;min-height:44px;border:1.5px solid rgba(229,72,77,.35);border-radius:8px;background:#fff;color:#E5484D;font-family:'IBM Plex Sans Thai',sans-serif;font-size:13.5px;font-weight:600;cursor:pointer;margin-bottom:12px" onClick="{{ doLogout }}">ออกจากระบบ ({{ meName }})</button>
+        </div>
+      </sc-if>
+
+      <!-- ═════ add user modal ═════ -->
+      <sc-if value="{{ umOpen }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;inset:0;background:rgba(8,20,15,.5);backdrop-filter:blur(3px);z-index:60;display:flex;align-items:center;justify-content:center;padding:20px" onClick="{{ umCancel }}">
+          <div style="width:100%;background:#fff;border-radius:12px;box-shadow:0 14px 32px rgba(8,20,15,.3);padding:18px 18px 16px" onClick="{{ stop }}">
+            <div style="font-size:15.5px;font-weight:600;color:#141A17">เพิ่มผู้ใช้</div>
+            <input style="width:100%;height:44px;margin-top:12px;border:1.5px solid #C6D0CC;border-radius:8px;padding:0 12px;font-family:'IBM Plex Sans Thai',sans-serif;font-size:14px;color:#141A17;outline:none" style-focus="border-color:#1FA971;box-shadow:0 0 0 4px rgba(31,169,113,.45)" placeholder="ชื่อ-นามสกุล" value="{{ umName }}" onChange="{{ onUmName }}">
+            <input style="width:100%;height:44px;margin-top:10px;border:1.5px solid #C6D0CC;border-radius:8px;padding:0 12px;font-family:'IBM Plex Mono',monospace;font-size:13px;color:#141A17;outline:none" style-focus="border-color:#1FA971;box-shadow:0 0 0 4px rgba(31,169,113,.45)" placeholder="อีเมล" value="{{ umEmail }}" onChange="{{ onUmEmail }}">
+            <div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap">
+              <sc-for list="{{ umRoles }}" as="ro" hint-placeholder-count="3">
+                <button style="height:36px;padding:0 12px;border:1.5px solid {{ ro.bd }};border-radius:8px;background:{{ ro.bg }};color:{{ ro.color }};font-family:'IBM Plex Sans Thai',sans-serif;font-size:12px;font-weight:600;cursor:pointer" onClick="{{ ro.onPick }}">{{ ro.label }}</button>
+              </sc-for>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:16px">
+              <button style="flex:1;min-height:44px;border:1.5px solid #C6D0CC;border-radius:8px;background:#fff;color:#141A17;font-family:'IBM Plex Sans Thai',sans-serif;font-size:13.5px;font-weight:600;cursor:pointer" onClick="{{ umCancel }}">ยกเลิก</button>
+              <button style="flex:1;min-height:44px;border:none;border-radius:8px;background:#1FA971;color:#fff;font-family:'IBM Plex Sans Thai',sans-serif;font-size:13.5px;font-weight:600;cursor:pointer" onClick="{{ umOk }}">เพิ่มผู้ใช้</button>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <!-- ═════ bottom tabs (list + summary) ═════ -->
+      <sc-if value="{{ showTabs }}" hint-placeholder-val="{{ true }}">
+        <div style="flex:none;display:flex;background:#fff;border-top:1px solid #DEE5E2;padding:6px 8px 8px">
+          <button style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;min-height:48px;border:none;background:transparent;color:{{ tabListColor }};font-family:'IBM Plex Sans Thai',sans-serif;font-size:11px;font-weight:600;cursor:pointer;border-radius:8px" onClick="{{ goList }}">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"></path><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><path d="M2 7h20"></path></svg>
+            ร้านค้า
+          </button>
+          <button style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;min-height:48px;border:none;background:transparent;color:{{ tabSumColor }};font-family:'IBM Plex Sans Thai',sans-serif;font-size:11px;font-weight:600;cursor:pointer;border-radius:8px" onClick="{{ goSummary }}">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="M18 17V9"></path><path d="M13 17V5"></path><path d="M8 17v-3"></path></svg>
+            สรุปยอด
+          </button>
+          <button style="flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;min-height:48px;border:none;background:transparent;color:{{ tabUsersColor }};font-family:'IBM Plex Sans Thai',sans-serif;font-size:11px;font-weight:600;cursor:pointer;border-radius:8px" onClick="{{ goUsers }}">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            ผู้ใช้
+          </button>
+        </div>
+      </sc-if>
+
+      <!-- toast -->
+      <sc-if value="{{ toastOn }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;left:50%;bottom:86px;transform:translateX(-50%);background:#0E3B2E;color:#fff;font-size:12.5px;font-weight:500;padding:9px 16px;border-radius:8px;box-shadow:0 10px 24px rgba(8,20,15,.3);z-index:50;white-space:nowrap">{{ toastMsg }}</div>
+      </sc-if>
+    </div>
+  </x-import>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:520,&quot;height&quot;:940}}">
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.KEY = 'yingcharoen-order-proto-v1';
+    this.SHOPS = ['เจ้เปียก','เจ้เกียง','ตาใสของชำ','','เฮียเล็ก','','สุนทร','สิริพร ของชำ','ป้าอ้อย ของชำ','ประทุมนิเยาะห์','แหม่มหมายเส้น','เฮียโอภาส','พูลทรัพย์','แหนมป้าพยอม','เจ้เอ็ง','กิ่งแก้ว','แก้วข้าวสาร','กรรณิกา คลอง 2','ร้านชำตลาดนานาเจริญ','','สมชาย คำภา','พร นานาเจริญ','ธนกฤต บรรจุภัณฑ์','สมยศ นานาเจริญ','กรีนเฟรชฟู้ดส์','อาร์เอ็นเค ฟู้ดส์','บิ๊กแบงค์','เลอรส',''];
+    this.INIT_VALS = {
+      '0-3':15,'0-4':5,'1-3':2,'1-5':5,'1-7':8,'2-7':2,'2-8':2,'4-3':5,'4-4':2,'4-5':10,'4-16':16,
+      '6-7':2,'8-3':20,'9-5':4,'9-6':2,'10-4':12,'10-5':2,'10-16':10,'10-17':10,'11-4':1,'11-5':1,
+      '13-1':10,'13-2':2,'13-3':5,'13-4':1,'13-5':3,'14-5':10,'15-3':5,'15-7':10,'15-16':8,
+      '16-1':5,'16-2':2,'16-5':2,'16-6':2,'17-1':2,'17-3':30,'18-16':4,'20-1':10,'20-2':10,
+      '21-1':1,'21-7':5,'23-1':5,'23-3':5,'23-5':2,'23-7':5,'24-1':16,'26-1':30,'26-3':30,'26-7':50,
+      '27-1':20,'27-3':20,
+    };
+    this.INIT_NOTES = {
+      0:'ดีขาว 1/2 กก.',1:'ดีนิ่ม (A) 1/2 กก.',4:'พริกแดง 10 กก.',8:'ดีขาว 1/2 กก. × 1',
+      11:'ดีขาว 1/2 กก.',15:'ลานนิ่ม (ใส) 1 กก. × 20',18:'แดง',19:'ดีขาว 1 กก.',
+      21:'ดีขาว 1 กก.',22:'ดีนิ่ม (A) 1/2 กก.',23:'ดีขาว 1 กก.',26:'รอง 5 กก.',27:'ดีนิ่ม (A) 1/2 กก.',
+    };
+    this.DEFAULT_PRODS = ['ดีนิ่ม A','ตีลานนิ่ม','ตีลาน','กรวด','กรวดเหลือง','รอง','แบะแซ','สารส้ม','ปูนแดง','ปูนแดง (กป)','เลอรส','น้ำปลา / น้ำเงิน','น้ำตาลแดง','ส้มแว่น / เขียว','ส้มบด / ส้ม'];
+    this.COL_GROUP = [0,1,1,2,2,3,4,5,5,6,6,7,8,9,10,10,11,12,13,14];
+    this.COL_SUB = ['กก.','1 กก.','½ กก.','1 กก.','½ กก.','กระสอบ','กระสอบ','1 กก.','½ กก.','1 กก.','½ กก.','กก.','กก.','กป','หมู','ไก่','ปี๊บ','กก.','กก.','กก.'];
+    let saved = null;
+    try { saved = JSON.parse(localStorage.getItem(this.KEY) || 'null'); } catch (e) { saved = null; }
+    this.state = {
+      vals: (saved && saved.vals) ? saved.vals : Object.assign({}, this.INIT_VALS),
+      notes: (saved && saved.notes) ? saved.notes : Object.assign({}, this.INIT_NOTES),
+      shopNames: (saved && saved.shopNames && saved.shopNames.length) ? saved.shopNames : this.SHOPS.slice(),
+      prodNames: (saved && saved.prodNames && saved.prodNames.length === 15) ? saved.prodNames : this.DEFAULT_PRODS.slice(),
+      screen: 'list', shopIdx: 0, query: '', toastOn: false, toastMsg: '',
+      users: (saved && saved.users && saved.users.length) ? saved.users : [
+        { id: 1, name: 'สมหญิง ใจดี', roleLabel: 'ผู้ดูแลระบบ', email: 'somying@yingcharoen.co.th', active: true, last: 'วันนี้ 09:42' },
+        { id: 2, name: 'ประยุทธ แซ่ตั้ง', roleLabel: 'เสมียนโรงงาน', email: 'prayut@yingcharoen.co.th', active: true, last: 'วันนี้ 08:15' },
+        { id: 3, name: 'มานะ ศรีสุข', roleLabel: 'พนักงานส่งของ', email: 'mana@yingcharoen.co.th', active: true, last: 'เมื่อวาน 17:30' },
+        { id: 4, name: 'วิภา ทองดี', roleLabel: 'เสมียนโรงงาน', email: 'wipa@yingcharoen.co.th', active: false, last: '3 มี.ค. 69' },
+      ],
+      mUserId: (saved && saved.mobileUserId !== undefined) ? saved.mobileUserId : null,
+      loginEmail: '', loginPass: '', loginError: '',
+      umOpen: false, umName: '', umEmail: '', umRole: 'พนักงานส่งของ',
+    };
+  }
+
+  doLogin() {
+    const em = this.state.loginEmail.trim().toLowerCase();
+    const user = this.state.users.find((u) => u.email.toLowerCase() === em || u.name === this.state.loginEmail.trim());
+    if (!user) { this.setState({ loginError: 'ไม่พบบัญชีนี้ในระบบ' }); return; }
+    if (!user.active) { this.setState({ loginError: 'บัญชีนี้ถูกระงับ — ติดต่อผู้ดูแลระบบ' }); return; }
+    if (this.state.loginPass !== '1234') { this.setState({ loginError: 'รหัสผ่านไม่ถูกต้อง (เวอร์ชันสาธิตใช้ 1234)' }); return; }
+    this.setState({ mUserId: user.id, loginPass: '', loginError: '', screen: 'list' }, () => this.persist());
+    this.toast('ยินดีต้อนรับ ' + user.name);
+  }
+
+  persist() {
+    try {
+      let saved = {};
+      try { saved = JSON.parse(localStorage.getItem(this.KEY) || '{}') || {}; } catch (e) { saved = {}; }
+      saved.vals = this.state.vals;
+      saved.notes = this.state.notes;
+      const d = new Date();
+      saved.lastEdit = d.getHours().toString().padStart(2, '0') + ':' + d.getMinutes().toString().padStart(2, '0');
+      if (!saved.shopNames) saved.shopNames = this.state.shopNames;
+      if (!saved.prodNames) saved.prodNames = this.state.prodNames;
+      saved.users = this.state.users;
+      saved.mobileUserId = this.state.mUserId;
+      localStorage.setItem(this.KEY, JSON.stringify(saved));
+    } catch (e) { /* ignore */ }
+  }
+
+  toast(msg) {
+    clearTimeout(this._tt);
+    this.setState({ toastOn: true, toastMsg: msg });
+    this._tt = setTimeout(() => this.setState({ toastOn: false }), 1800);
+  }
+
+  setCell(r, c, next) {
+    const key = r + '-' + c;
+    const vals = Object.assign({}, this.state.vals);
+    if (next === '' || next === null || (typeof next === 'number' && (isNaN(next) || next <= 0))) delete vals[key];
+    else vals[key] = next;
+    this.setState({ vals }, () => this.persist());
+  }
+
+  renderVals() {
+    const st = this.state;
+    const NAMES = st.shopNames;
+    const PN = st.prodNames;
+    const total = NAMES.length;
+    const T = new Array(20).fill(0);
+    let grand = 0;
+    let done = 0;
+    const rowSums = [];
+    for (let r = 0; r < total; r++) {
+      let sum = 0;
+      for (let c = 0; c < 20; c++) {
+        const v = parseFloat(st.vals[r + '-' + c]);
+        if (!isNaN(v)) { sum += v; T[c] += v; grand += v; }
+      }
+      rowSums.push(sum);
+      if (sum > 0 || st.notes[r]) done++;
+    }
+    const round2 = (x) => Math.round(x * 100) / 100;
+    const q = st.query.trim();
+
+    const listRows = [];
+    for (let r = 0; r < total; r++) {
+      const nm = NAMES[r];
+      if (q && !(nm || '').includes(q)) continue;
+      const has = rowSums[r] > 0 || !!st.notes[r];
+      listRows.push({
+        no: r + 1,
+        name: nm || 'ช่องว่าง',
+        nameColor: nm ? '#141A17' : '#C6D0CC',
+        sub: rowSums[r] > 0 ? ('รวม ' + round2(rowSums[r]) + ' หน่วย' + (st.notes[r] ? ' · ' + st.notes[r] : '')) : (st.notes[r] ? 'หมายเหตุ: ' + st.notes[r] : 'ยังไม่มีรายการ'),
+        avBg: has ? '#C9EEDD' : '#EDF1EF',
+        avColor: has ? '#0E5238' : '#94A29D',
+        stText: has ? 'กรอกแล้ว' : 'ยังไม่สั่ง',
+        stBg: has ? '#E7F6ED' : '#FEF3E0',
+        stColor: has ? '#16A34A' : '#B45F09',
+        onOpen: () => this.setState({ screen: 'entry', shopIdx: r }),
+      });
+    }
+
+    const mkEntry = (cols) => cols.map((c) => {
+      const raw = st.vals[st.shopIdx + '-' + c];
+      const n = parseFloat(raw);
+      const has = !isNaN(n);
+      return {
+        main: PN[this.COL_GROUP[c]],
+        sub: this.COL_SUB[c],
+        v: has ? String(raw) : '',
+        bg: has ? '#F1FBF6' : 'transparent',
+        onMinus: () => { const cur = parseFloat(this.state.vals[this.state.shopIdx + '-' + c]) || 0; this.setCell(this.state.shopIdx, c, cur - 1); },
+        onPlus: () => { const cur = parseFloat(this.state.vals[this.state.shopIdx + '-' + c]) || 0; this.setCell(this.state.shopIdx, c, cur + 1); },
+        onInput: (e) => {
+          const v = e.target.value.replace(/[^0-9.]/g, '');
+          this.setCell(this.state.shopIdx, c, v === '' ? '' : (v.includes('.') ? parseFloat(v) : parseInt(v, 10)));
+        },
+      };
+    });
+    const entryRowsA = mkEntry([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15]);
+    const entryRowsB = mkEntry([16,17,18,19]);
+
+    const maxT = Math.max(1, ...T);
+    const sumRows = T.map((v, i) => ({
+      name: PN[this.COL_GROUP[i]],
+      unit: this.COL_SUB[i],
+      qty: String(round2(v)),
+      w: ((v / maxT) * 100).toFixed(1) + '%',
+      color: i >= 16 ? '#F59E0B' : '#1FA971',
+      nameColor: v > 0 ? '#141A17' : '#94A29D',
+      qtyColor: v > 0 ? '#0E3B2E' : '#C6D0CC',
+    }));
+
+    const goShop = (dir) => {
+      const next = Math.min(total - 1, Math.max(0, this.state.shopIdx + dir));
+      this.setState({ shopIdx: next });
+    };
+
+    const me = st.users.find((u) => u.id === st.mUserId) || null;
+    const loggedIn = !!me;
+    const roleAv = (label) => label === 'ผู้ดูแลระบบ'
+      ? { bg: '#C9EEDD', color: '#0E5238' }
+      : (label === 'พนักงานส่งของ' ? { bg: '#FDE9C2', color: '#92490E' } : { bg: '#EDF1EF', color: '#4C5953' });
+    const userRows = st.users.map((u) => {
+      const av = roleAv(u.roleLabel);
+      const isMe = me && u.id === me.id;
+      return {
+        name: u.name,
+        initials: u.name.trim().slice(0, 2),
+        avBg: av.bg,
+        avColor: av.color,
+        roleLabel: u.roleLabel,
+        statusText: u.active ? 'ใช้งาน' : 'ระงับ',
+        isMe,
+        notMe: !isMe,
+        suspendLabel: u.active ? 'ระงับ' : 'เปิดใช้',
+        suspendColor: u.active ? '#E5484D' : '#16A34A',
+        onToggle: () => {
+          const users = this.state.users.map((x) => x.id === u.id ? Object.assign({}, x, { active: !x.active }) : x);
+          this.setState({ users }, () => this.persist());
+          this.toast(u.active ? ('ระงับ "' + u.name + '" แล้ว') : ('เปิดใช้ "' + u.name + '" แล้ว'));
+        },
+      };
+    });
+    const ROLE_OPTS = ['ผู้ดูแลระบบ', 'เสมียนโรงงาน', 'พนักงานส่งของ'];
+    const umRoles = ROLE_OPTS.map((label) => ({
+      label,
+      bd: st.umRole === label ? '#1FA971' : '#C6D0CC',
+      bg: st.umRole === label ? '#E9F8F1' : '#fff',
+      color: st.umRole === label ? '#0E5238' : '#36423D',
+      onPick: () => this.setState({ umRole: label }),
+    }));
+    const demoAccounts = st.users.filter((u) => u.active).slice(0, 3).map((u) => ({
+      name: u.name,
+      email: u.email,
+      onFill: () => this.setState({ loginEmail: u.email, loginPass: '1234', loginError: '' }),
+    }));
+
+    return {
+      isLoggedOut: !loggedIn,
+      loginEmail: st.loginEmail,
+      loginPass: st.loginPass,
+      loginError: st.loginError,
+      loginErrorOn: !!st.loginError,
+      demoAccounts,
+      onLoginEmail: (e) => this.setState({ loginEmail: e.target.value, loginError: '' }),
+      onLoginPass: (e) => this.setState({ loginPass: e.target.value, loginError: '' }),
+      doLogin: () => this.doLogin(),
+      doLogout: () => this.setState({ mUserId: null, loginEmail: '', loginPass: '', loginError: '', screen: 'list' }, () => this.persist()),
+      meName: me ? me.name : '',
+      isUsersScr: loggedIn && st.screen === 'users',
+      goUsers: () => this.setState({ screen: 'users' }),
+      tabUsersColor: st.screen === 'users' ? '#15885B' : '#94A29D',
+      userSub: st.users.length + ' บัญชี · ใช้งาน ' + st.users.filter((u) => u.active).length + ' · รหัสสาธิต 1234',
+      userRows,
+      umOpen: st.umOpen,
+      umName: st.umName,
+      umEmail: st.umEmail,
+      umRoles,
+      onUmName: (e) => this.setState({ umName: e.target.value }),
+      onUmEmail: (e) => this.setState({ umEmail: e.target.value }),
+      openAddUser: () => this.setState({ umOpen: true, umName: '', umEmail: '', umRole: 'พนักงานส่งของ' }),
+      umCancel: () => this.setState({ umOpen: false }),
+      stop: (e) => e.stopPropagation(),
+      umOk: () => {
+        const nm = this.state.umName.trim();
+        const em = this.state.umEmail.trim();
+        if (!nm || !em) { this.toast('กรุณากรอกชื่อและอีเมลให้ครบ'); return; }
+        const nid = Math.max(0, ...this.state.users.map((x) => x.id)) + 1;
+        const users = this.state.users.concat([{ id: nid, name: nm, email: em, roleLabel: this.state.umRole, active: true, last: 'ยังไม่เคยเข้าระบบ' }]);
+        this.setState({ users, umOpen: false }, () => this.persist());
+        this.toast('เพิ่ม "' + nm + '" แล้ว · รหัสสาธิต 1234');
+      },
+      isList: loggedIn && st.screen === 'list',
+      isEntry: loggedIn && st.screen === 'entry',
+      isSummary: loggedIn && st.screen === 'summary',
+      showTabs: loggedIn && st.screen !== 'entry',
+      tabListColor: st.screen === 'list' ? '#15885B' : '#94A29D',
+      tabSumColor: st.screen === 'summary' ? '#15885B' : '#94A29D',
+      goList: () => this.setState({ screen: 'list' }),
+      goSummary: () => this.setState({ screen: 'summary' }),
+      progressW: ((done / total) * 100).toFixed(1) + '%',
+      doneCount: done,
+      totalCount: total,
+      grandTotal: round2(grand).toLocaleString('en-US'),
+      query: st.query,
+      onQuery: (e) => this.setState({ query: e.target.value }),
+      listRows,
+      entryName: NAMES[st.shopIdx] || ('ช่องว่าง (แถว ' + (st.shopIdx + 1) + ')'),
+      entryNo: st.shopIdx + 1,
+      entryUnits: round2(rowSums[st.shopIdx] || 0),
+      entryRowsA,
+      entryRowsB,
+      entryNote: st.notes[st.shopIdx] || '',
+      onEntryNote: (e) => {
+        const notes = Object.assign({}, this.state.notes);
+        if (e.target.value) notes[this.state.shopIdx] = e.target.value; else delete notes[this.state.shopIdx];
+        this.setState({ notes }, () => this.persist());
+      },
+      backToList: () => this.setState({ screen: 'list' }),
+      prevShop: () => goShop(-1),
+      nextShop: () => goShop(1),
+      saveNext: () => {
+        const nm = NAMES[this.state.shopIdx] || ('แถว ' + (this.state.shopIdx + 1));
+        this.persist();
+        this.toast('บันทึก "' + nm + '" แล้ว');
+        if (this.state.shopIdx < total - 1) this.setState({ shopIdx: this.state.shopIdx + 1 });
+        else this.setState({ screen: 'list' });
+      },
+      sumRows,
+      toastOn: st.toastOn,
+      toastMsg: st.toastMsg,
+    };
+  }
+}
+</script>
+</body>
+</html>

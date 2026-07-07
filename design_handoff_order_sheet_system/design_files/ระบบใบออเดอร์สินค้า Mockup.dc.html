@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <meta name="design_doc_mode" content="canvas">
+  <link rel="stylesheet" href="_ds/pguard-design-system-019e2ca7-55ce-7c60-aefc-94b6b4a045e7/tokens/fonts.css">
+  <link rel="stylesheet" href="_ds/pguard-design-system-019e2ca7-55ce-7c60-aefc-94b6b4a045e7/tokens/colors.css">
+  <link rel="stylesheet" href="_ds/pguard-design-system-019e2ca7-55ce-7c60-aefc-94b6b4a045e7/tokens/typography.css">
+  <link rel="stylesheet" href="_ds/pguard-design-system-019e2ca7-55ce-7c60-aefc-94b6b4a045e7/tokens/spacing.css">
+  <link rel="stylesheet" href="_ds/pguard-design-system-019e2ca7-55ce-7c60-aefc-94b6b4a045e7/tokens/semantic.css">
+  <link rel="stylesheet" href="_ds/pguard-design-system-019e2ca7-55ce-7c60-aefc-94b6b4a045e7/styles.css">
+  <script src="_ds/pguard-design-system-019e2ca7-55ce-7c60-aefc-94b6b4a045e7/_ds_bundle.js"></script>
+  <style>
+    body{margin:0;background:#EDF1EF;font-family:var(--font-thai),'IBM Plex Sans Thai',sans-serif}
+    a{color:#1FA971;text-decoration:none} a:hover{color:#15885B}
+    .dv-turn{padding:40px 44px 32px}
+    .dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 6px}
+    .dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#0E3B2E;color:#fff;border-radius:4px;text-decoration:none}
+    .dv-tname{font-size:14px;font-weight:600;color:#141A17}
+    .dv-note{margin:0 0 24px;font-size:12.5px;color:#69776F;max-width:900px}
+    .dv-opts{display:flex;flex-wrap:wrap;gap:36px;align-items:flex-start}
+    .dv-opt{flex:none;display:flex;flex-direction:column;gap:10px;scroll-margin-top:16px}
+    .dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#141A17;border-radius:5px;text-decoration:none}
+    .dv-olabel{display:flex;align-items:baseline;gap:8px;font-size:12px;color:#4C5953}
+    .dv-card{background:#fff;border:1px solid rgba(0,0,0,.08);border-radius:10px;box-shadow:0 1px 3px rgba(0,0,0,.06);overflow:hidden}
+    .dv-opt:target .dv-oid{background:#1FA971;color:#fff}
+  </style>
+</helmet>
+
+<section class="dv-turn" id="t1">
+  <div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">ระบบใบออเดอร์สินค้ารายวัน — ยิ่งเจริญ</span></div>
+  <p class="dv-note">อิงข้อมูลจริงจากใบงานสแกนวันที่ 13/3/69 ทั้ง 29 แถว · โครงหน้าจอและโทนสีตาม pguard Design System · ไม่มีราคา — นับจำนวน/น้ำหนักเหมือนใบงาน · <a class="dv-oid" href="#1a">1a</a> จอแอดมินกรอกทั้งหน้า · <a class="dv-oid" href="#1b">1b</a> มือถือกรอกทีละร้าน · <a class="dv-oid" href="#1c">1c</a> รายงานพิมพ์ตามฟอร์มเดิม</p>
+  <div class="dv-opts">
+
+    <!-- ══════════════ 1a · DESKTOP ══════════════ -->
+    <div class="dv-opt" id="1a">
+      <div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>เดสก์ท็อป — หน้ากรอกออเดอร์รายวัน (ตารางแบบใบงาน กรอกเร็วทั้งหน้า)</div>
+      <div class="dv-card" style="width:1544px" data-screen-label="เดสก์ท็อป กรอกออเดอร์">
+        <div style="display:flex;min-height:980px;background:var(--bg-app)">
+
+          <!-- sidebar -->
+          <aside style="width:216px;flex:none;background:var(--bg-surface);border-right:1px solid var(--border);display:flex;flex-direction:column">
+            <div style="display:flex;align-items:center;gap:10px;padding:16px 18px 14px;border-bottom:1px solid var(--border)">
+              <span style="display:flex;width:30px;height:30px;align-items:center;justify-content:center;border-radius:8px;background:linear-gradient(160deg,#1FA971,#0E3B2E);color:#fff;font-weight:700;font-size:15px">ย</span>
+              <span style="font-size:15.5px;font-weight:700;color:var(--text-strong)"><span style="color:var(--brand-int)">ยิ่ง</span>เจริญ</span>
+            </div>
+            <nav style="padding:12px 10px;display:flex;flex-direction:column;gap:2px;flex:1">
+              <div style="padding:8px 10px 4px;font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--text-faint)">ปฏิบัติการ</div>
+              <div style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;background:var(--green-50);color:var(--green-800);font-size:13.5px;font-weight:600;cursor:pointer">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="2" width="8" height="4" rx="1"></rect><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path><path d="M12 11h4"></path><path d="M12 16h4"></path><path d="M8 11h.01"></path><path d="M8 16h.01"></path></svg>
+                <span style="flex:1">ออเดอร์รายวัน</span>
+                <span style="font-family:var(--font-mono);font-size:11px;background:var(--green-100);color:var(--green-800);border-radius:99px;padding:1px 7px">24</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;color:var(--text);font-size:13.5px;cursor:pointer" style-hover="background:var(--bg-sunken)">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"></path><path d="M18 17V9"></path><path d="M13 17V5"></path><path d="M8 17v-3"></path></svg>
+                <span>สรุปยอดผลิต</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;color:var(--text);font-size:13.5px;cursor:pointer" style-hover="background:var(--bg-sunken)">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path><path d="M3 3v5h5"></path><path d="M12 7v5l4 2"></path></svg>
+                <span>ประวัติออเดอร์</span>
+              </div>
+              <div style="padding:16px 10px 4px;font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--text-faint)">ข้อมูลหลัก</div>
+              <div style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;color:var(--text);font-size:13.5px;cursor:pointer" style-hover="background:var(--bg-sunken)">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 7 4.41-4.41A2 2 0 0 1 7.83 2h8.34a2 2 0 0 1 1.42.59L22 7"></path><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"></path><path d="M15 22v-4a2 2 0 0 0-2-2h-2a2 2 0 0 0-2 2v4"></path><path d="M2 7h20"></path></svg>
+                <span style="flex:1">ร้านค้า</span>
+                <span style="font-family:var(--font-mono);font-size:11px;background:var(--bg-sunken);color:var(--text-muted);border-radius:99px;padding:1px 7px">29</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;color:var(--text);font-size:13.5px;cursor:pointer" style-hover="background:var(--bg-sunken)">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"></path><path d="m3.3 7 8.7 5 8.7-5"></path><path d="M12 22V12"></path></svg>
+                <span style="flex:1">สินค้า</span>
+                <span style="font-family:var(--font-mono);font-size:11px;background:var(--bg-sunken);color:var(--text-muted);border-radius:99px;padding:1px 7px">20</span>
+              </div>
+              <div style="padding:16px 10px 4px;font-size:11px;font-weight:600;letter-spacing:.04em;color:var(--text-faint)">ระบบ</div>
+              <div style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;color:var(--text);font-size:13.5px;cursor:pointer" style-hover="background:var(--bg-sunken)">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V2h12v7"></path><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                <span>รายงาน / พิมพ์</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;color:var(--text);font-size:13.5px;cursor:pointer" style-hover="background:var(--bg-sunken)">
+                <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"></path></svg>
+                <span>ตั้งค่า</span>
+              </div>
+            </nav>
+            <div style="display:flex;align-items:center;gap:10px;padding:14px 16px;border-top:1px solid var(--border)">
+              <span style="display:flex;width:32px;height:32px;align-items:center;justify-content:center;border-radius:99px;background:var(--green-100);color:var(--green-800);font-size:12.5px;font-weight:700">สม</span>
+              <div style="min-width:0">
+                <div style="font-size:13px;font-weight:600;color:var(--text-strong)">สมหญิง ใจดี</div>
+                <div style="font-size:11.5px;color:var(--text-muted)">เสมียนโรงงาน</div>
+              </div>
+            </div>
+          </aside>
+
+          <!-- main -->
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column">
+            <!-- topbar -->
+            <div style="height:62px;flex:none;display:flex;align-items:center;gap:14px;background:var(--bg-surface);border-bottom:1px solid var(--border);padding:0 22px">
+              <div>
+                <div style="font-size:16px;font-weight:600;color:var(--text-strong);line-height:1.25">ออเดอร์รายวัน</div>
+                <div style="font-size:12px;color:var(--text-muted);line-height:1.3">ใบออเดอร์สินค้าประจำวัน</div>
+              </div>
+              <div style="margin-left:auto;display:flex;align-items:center;gap:10px">
+                <div style="display:flex;align-items:center;gap:8px;border:1.5px solid var(--border-strong);border-radius:8px;padding:7px 12px;font-size:13px;color:var(--text-strong);background:var(--bg-surface);cursor:pointer" style-hover="border-color:var(--brand-int)">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-muted)"><rect x="3" y="4" width="18" height="18" rx="2"></rect><path d="M16 2v4"></path><path d="M8 2v4"></path><path d="M3 10h18"></path></svg>
+                  <span style="font-family:var(--font-mono)">13/3/2569</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;border:1.5px solid var(--border-strong);border-radius:8px;padding:7px 12px;font-size:13px;color:var(--text-strong);background:var(--bg-surface);cursor:pointer" style-hover="border-color:var(--brand-int)">
+                  <span style="font-size:11.5px;color:var(--text-muted)">สถานที่</span>
+                  <span style="font-weight:600">ยิ่งเจริญ</span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text-faint)"><path d="m6 9 6 6 6-6"></path></svg>
+                </div>
+                <div style="display:flex;border:1px solid var(--border);border-radius:8px;overflow:hidden;font-size:12px;font-weight:600">
+                  <span style="padding:6px 10px;background:var(--green-900);color:#fff">TH</span>
+                  <span style="padding:6px 10px;color:var(--text-muted);background:var(--bg-surface);cursor:pointer" style-hover="background:var(--bg-sunken)">EN</span>
+                </div>
+                <x-import component-from-global-scope="PguardDesignSystem_019e2c.Button" variant="secondary" size="sm" hint-size="110px,34px">พิมพ์ใบงาน</x-import>
+                <x-import component-from-global-scope="PguardDesignSystem_019e2c.Button" variant="primary" size="sm" hint-size="120px,34px">บันทึกออเดอร์</x-import>
+              </div>
+            </div>
+
+            <!-- content -->
+            <div style="padding:20px 22px;display:flex;flex-direction:column;gap:16px">
+
+              <!-- KPI strip -->
+              <div style="display:grid;grid-template-columns:repeat(4,1fr);border:1px solid var(--border);border-radius:11px;background:var(--bg-surface);overflow:hidden">
+                <div style="padding:16px 20px">
+                  <div style="font-size:11.5px;font-weight:600;letter-spacing:.04em;color:var(--text-faint)">รวมน้ำหนัก</div>
+                  <div style="margin-top:10px;font-family:var(--font-mono);font-size:27px;font-weight:600;letter-spacing:-0.02em;color:var(--text-strong);font-variant-numeric:tabular-nums">4,670</div>
+                  <div style="font-size:12.5px;color:var(--text-muted)">กิโลกรัม</div>
+                </div>
+                <div style="padding:16px 20px;border-left:1px solid var(--border)">
+                  <div style="font-size:11.5px;font-weight:600;letter-spacing:.04em;color:var(--text-faint)">รวมปี๊บ</div>
+                  <div style="margin-top:10px;font-family:var(--font-mono);font-size:27px;font-weight:600;letter-spacing:-0.02em;color:var(--text-strong);font-variant-numeric:tabular-nums">163.00</div>
+                  <div style="font-size:12.5px;color:var(--text-muted)">ปี๊บ</div>
+                </div>
+                <div style="padding:16px 20px;border-left:1px solid var(--border)">
+                  <div style="font-size:11.5px;font-weight:600;letter-spacing:.04em;color:var(--text-faint)">ร้านที่สั่งวันนี้</div>
+                  <div style="margin-top:10px;font-family:var(--font-mono);font-size:27px;font-weight:600;letter-spacing:-0.02em;color:var(--text-strong);font-variant-numeric:tabular-nums">24<span style="font-size:16px;color:var(--text-faint)">/29</span></div>
+                  <div style="font-size:12.5px;color:var(--text-muted)">ยังไม่สั่ง 5 ร้าน</div>
+                </div>
+                <div style="padding:16px 20px;border-left:1px solid var(--border)">
+                  <div style="font-size:11.5px;font-weight:600;letter-spacing:.04em;color:var(--text-faint)">รวมจำนวน (หน่วย)</div>
+                  <div style="margin-top:10px;font-family:var(--font-mono);font-size:27px;font-weight:600;letter-spacing:-0.02em;color:var(--text-strong);font-variant-numeric:tabular-nums">446</div>
+                  <div style="font-size:12.5px;color:var(--text-muted)">รายการที่กรอกทั้งหมด</div>
+                </div>
+              </div>
+
+              <!-- order grid panel -->
+              <div style="border:1px solid var(--border);border-radius:11px;background:var(--bg-surface);overflow:hidden">
+                <div style="display:flex;align-items:center;gap:12px;padding:14px 20px;border-bottom:1px solid var(--border)">
+                  <div>
+                    <div style="font-size:15px;font-weight:600;color:var(--text-strong)">ตารางออเดอร์ · 13/3/2569</div>
+                    <div style="font-size:12px;color:var(--text-muted)">คลิกช่องเพื่อกรอกจำนวน · Tab เลื่อนช่องถัดไป · ระบบรวมท้ายตารางให้อัตโนมัติ</div>
+                  </div>
+                  <div style="margin-left:auto;display:flex;align-items:center;gap:8px;border:1.5px solid var(--border-strong);border-radius:8px;padding:7px 12px;min-width:200px;color:var(--text-faint);font-size:13px">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+                    <span>ค้นหาร้านค้า…</span>
+                  </div>
+                </div>
+
+                <!-- header grid -->
+                <div style="display:grid;grid-template-columns:40px 172px repeat(20,45px) 168px;grid-template-rows:26px 30px 22px;background:var(--n-50);border-bottom:1px solid var(--border);font-size:11px;color:var(--text-muted)">
+                  <div style="grid-column:1;grid-row:1/4;display:flex;align-items:center;justify-content:center;font-weight:600">ลำดับ</div>
+                  <div style="grid-column:2;grid-row:1/4;display:flex;align-items:center;padding:0 12px;font-weight:600;border-left:1px solid var(--n-200)">ร้านค้า</div>
+                  <div style="grid-column:3/19;grid-row:1;display:flex;align-items:center;justify-content:center;font-weight:600;color:var(--green-800);border-left:1px solid var(--n-200);border-bottom:1px solid var(--n-200);background:var(--green-50)">สินค้า</div>
+                  <div style="grid-column:19/23;grid-row:1;display:flex;align-items:center;justify-content:center;font-weight:600;color:var(--amber-800);border-left:1px solid var(--n-200);border-bottom:1px solid var(--n-200);background:var(--amber-50)">เครื่องปรุง</div>
+                  <div style="grid-column:23;grid-row:1/4;display:flex;align-items:center;padding:0 12px;font-weight:600;border-left:1px solid var(--n-200)">หมายเหตุ</div>
+                  <div style="grid-column:3;grid-row:2/4;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.15;font-size:10.5px;border-left:1px solid var(--n-200)">ดีนิ่ม A</div>
+                  <div style="grid-column:4/6;grid-row:2;display:flex;align-items:center;justify-content:center;font-size:10.5px;border-left:1px solid var(--n-200);border-bottom:1px solid var(--n-200)">ตีลานนิ่ม</div>
+                  <div style="grid-column:6/8;grid-row:2;display:flex;align-items:center;justify-content:center;font-size:10.5px;border-left:1px solid var(--n-200);border-bottom:1px solid var(--n-200)">ตีลาน</div>
+                  <div style="grid-column:8;grid-row:2/4;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.15;font-size:10.5px;border-left:1px solid var(--n-200)">กรวด</div>
+                  <div style="grid-column:9;grid-row:2/4;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.15;font-size:10.5px;border-left:1px solid var(--n-200)">กรวด<br>เหลือง</div>
+                  <div style="grid-column:10/12;grid-row:2;display:flex;align-items:center;justify-content:center;font-size:10.5px;border-left:1px solid var(--n-200);border-bottom:1px solid var(--n-200)">รอง</div>
+                  <div style="grid-column:12/14;grid-row:2;display:flex;align-items:center;justify-content:center;font-size:10.5px;border-left:1px solid var(--n-200);border-bottom:1px solid var(--n-200)">แบะแซ</div>
+                  <div style="grid-column:14;grid-row:2/4;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.15;font-size:10.5px;border-left:1px solid var(--n-200)">สารส้ม</div>
+                  <div style="grid-column:15;grid-row:2/4;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.15;font-size:10.5px;border-left:1px solid var(--n-200)">ปูนแดง</div>
+                  <div style="grid-column:16;grid-row:2/4;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.15;font-size:10.5px;border-left:1px solid var(--n-200)">ปูนแดง<br>(กป)</div>
+                  <div style="grid-column:17/19;grid-row:2;display:flex;align-items:center;justify-content:center;font-size:10.5px;border-left:1px solid var(--n-200);border-bottom:1px solid var(--n-200)">เลอรส</div>
+                  <div style="grid-column:19;grid-row:2/4;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.15;font-size:10.5px;border-left:1px solid var(--n-200)">น้ำปลา<br>น้ำเงิน</div>
+                  <div style="grid-column:20;grid-row:2/4;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.15;font-size:10.5px;border-left:1px solid var(--n-200)">น้ำตาล<br>แดง</div>
+                  <div style="grid-column:21;grid-row:2/4;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.15;font-size:10.5px;border-left:1px solid var(--n-200)">ส้มแว่น<br>เขียว</div>
+                  <div style="grid-column:22;grid-row:2/4;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.15;font-size:10.5px;border-left:1px solid var(--n-200)">ส้มบด<br>ส้ม</div>
+                  <div style="grid-column:4;grid-row:3;display:flex;align-items:center;justify-content:center;font-size:10px;border-left:1px solid var(--n-200)">1 กก.</div>
+                  <div style="grid-column:5;grid-row:3;display:flex;align-items:center;justify-content:center;font-size:10px;border-left:1px solid var(--n-200)">½ กก.</div>
+                  <div style="grid-column:6;grid-row:3;display:flex;align-items:center;justify-content:center;font-size:10px;border-left:1px solid var(--n-200)">1 กก.</div>
+                  <div style="grid-column:7;grid-row:3;display:flex;align-items:center;justify-content:center;font-size:10px;border-left:1px solid var(--n-200)">½ กก.</div>
+                  <div style="grid-column:10;grid-row:3;display:flex;align-items:center;justify-content:center;font-size:10px;border-left:1px solid var(--n-200)">1 กก.</div>
+                  <div style="grid-column:11;grid-row:3;display:flex;align-items:center;justify-content:center;font-size:10px;border-left:1px solid var(--n-200)">½ กก.</div>
+                  <div style="grid-column:12;grid-row:3;display:flex;align-items:center;justify-content:center;font-size:10px;border-left:1px solid var(--n-200)">1 กก.</div>
+                  <div style="grid-column:13;grid-row:3;display:flex;align-items:center;justify-content:center;font-size:10px;border-left:1px solid var(--n-200)">½ กก.</div>
+                  <div style="grid-column:17;grid-row:3;display:flex;align-items:center;justify-content:center;font-size:10px;border-left:1px solid var(--n-200)">หมู</div>
+                  <div style="grid-column:18;grid-row:3;display:flex;align-items:center;justify-content:center;font-size:10px;border-left:1px solid var(--n-200)">ไก่</div>
+                </div>
+
+                <!-- rows -->
+                <sc-for list="{{ shops }}" as="s" hint-placeholder-count="8">
+                  <div style="display:grid;grid-template-columns:40px 172px repeat(20,45px) 168px;min-height:31px;border-bottom:1px solid var(--n-100)" style-hover="background:var(--n-50)">
+                    <div style="display:flex;align-items:center;justify-content:center;font-family:var(--font-mono);font-size:11.5px;color:var(--text-faint)">{{ s.no }}</div>
+                    <div style="display:flex;align-items:center;padding:0 12px;font-size:13px;font-weight:500;border-left:1px solid var(--n-100);color:{{ s.nameColor }}">{{ s.name }}</div>
+                    <sc-for list="{{ s.cells }}" as="c" hint-placeholder-count="20">
+                      <div style="display:flex;align-items:center;justify-content:center;border-left:1px solid var(--n-100);font-family:var(--font-mono);font-size:12.5px;font-variant-numeric:tabular-nums;color:var(--text-strong);background:{{ c.bg }};cursor:text" style-hover="box-shadow:inset 0 0 0 1.5px var(--brand-int)">{{ c.v }}</div>
+                    </sc-for>
+                    <div style="display:flex;align-items:center;padding:2px 12px;border-left:1px solid var(--n-100);font-size:11.5px;color:var(--text-muted);line-height:1.35">{{ s.note }}</div>
+                  </div>
+                </sc-for>
+
+                <!-- totals row -->
+                <div style="display:grid;grid-template-columns:40px 172px repeat(20,45px) 168px;min-height:36px;background:var(--green-50);border-top:1px solid var(--green-200)">
+                  <div></div>
+                  <div style="display:flex;align-items:center;padding:0 12px;font-size:12.5px;font-weight:700;color:var(--green-900);border-left:1px solid var(--green-100)">รวมทั้งหมด</div>
+                  <sc-for list="{{ totals }}" as="t" hint-placeholder-count="20">
+                    <div style="display:flex;align-items:center;justify-content:center;border-left:1px solid var(--green-100);font-family:var(--font-mono);font-size:12.5px;font-weight:700;font-variant-numeric:tabular-nums;color:{{ t.color }}">{{ t.v }}</div>
+                  </sc-for>
+                  <div style="display:flex;align-items:center;justify-content:flex-end;padding:0 12px;border-left:1px solid var(--green-100);font-family:var(--font-mono);font-size:12px;font-weight:600;color:var(--green-900)">446 หน่วย</div>
+                </div>
+
+                <!-- footer note strip -->
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:12px 20px;border-top:1px solid var(--border);background:var(--bg-surface)">
+                  <span style="font-size:12px;font-weight:600;color:var(--text-muted)">หน่วยพิเศษจากหมายเหตุ:</span>
+                  <span style="font-size:12px;color:var(--text);background:var(--bg-sunken);border:1px solid var(--border);border-radius:99px;padding:3px 10px">ลานนิ่ม (ใส) 1 กก. <span style="font-family:var(--font-mono);font-weight:600">× 20</span></span>
+                  <span style="font-size:12px;color:var(--text);background:var(--bg-sunken);border:1px solid var(--border);border-radius:99px;padding:3px 10px">ดีขาว ½ กก. <span style="font-family:var(--font-mono);font-weight:600">× 1</span></span>
+                  <span style="font-size:12px;color:var(--text);background:var(--bg-sunken);border:1px solid var(--border);border-radius:99px;padding:3px 10px">พริกแดง 10 กก. <span style="font-family:var(--font-mono);font-weight:600">× 1</span></span>
+                  <span style="margin-left:auto;font-size:13px;color:var(--text-muted)">รวมน้ำหนัก <span style="font-family:var(--font-mono);font-weight:700;color:var(--text-strong)">4,670</span> กก. · <span style="font-family:var(--font-mono);font-weight:700;color:var(--text-strong)">163.00</span> ปี๊บ</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════ 1b · MOBILE ══════════════ -->
+    <div class="dv-opt" id="1b">
+      <div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>มือถือ — พนักงานกรอกทีละร้าน (หน้างาน/สายส่ง)</div>
+      <div data-screen-label="มือถือ กรอกทีละร้าน">
+        <x-import component-from-global-scope="IOSDevice" from="./ios-frame.jsx" title="" hint-size="430px,880px">
+          <div style="display:flex;flex-direction:column;min-height:100%;background:#F6F8F7;font-family:'IBM Plex Sans Thai',sans-serif">
+            <div style="background:#0E3B2E;color:#fff;padding:14px 18px 16px">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-size:16px;font-weight:700"><span style="color:#5FCEA4">ยิ่ง</span>เจริญ · ออเดอร์วันนี้</span>
+                <span style="margin-left:auto;font-family:'IBM Plex Mono',monospace;font-size:12.5px;background:rgba(255,255,255,.12);border-radius:99px;padding:2px 10px">13/3/2569</span>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;margin-top:12px">
+                <div style="flex:1;height:6px;border-radius:99px;background:rgba(255,255,255,.18);overflow:hidden">
+                  <div style="width:83%;height:100%;border-radius:99px;background:#F59E0B"></div>
+                </div>
+                <span style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#C9EEDD">24/29 ร้าน</span>
+              </div>
+            </div>
+
+            <div style="padding:16px;display:flex;flex-direction:column;gap:12px;flex:1">
+              <div style="display:flex;align-items:center;gap:10px">
+                <button style="display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:8px;border:1.5px solid #C6D0CC;background:#fff;color:#4C5953;cursor:pointer;font-size:18px">‹</button>
+                <div style="flex:1;text-align:center">
+                  <div style="font-size:17px;font-weight:700;color:#141A17">เฮียเล็ก</div>
+                  <div style="font-size:12px;color:#69776F">ร้านที่ 5 จาก 29 · ยิ่งเจริญ</div>
+                </div>
+                <button style="display:flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:8px;border:1.5px solid #C6D0CC;background:#fff;color:#4C5953;cursor:pointer;font-size:18px">›</button>
+              </div>
+
+              <div style="background:#fff;border:1px solid #DEE5E2;border-radius:11px;overflow:hidden">
+                <div style="display:flex;align-items:center;gap:8px;padding:12px 16px;border-bottom:1px solid #EDF1EF">
+                  <span style="font-size:13px;font-weight:600;color:#141A17">รายการสินค้า</span>
+                  <span style="margin-left:auto;font-size:11.5px;color:#15885B;background:#E9F8F1;border-radius:99px;padding:2px 10px;font-weight:600">กรอกแล้ว 4 รายการ</span>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #EDF1EF">
+                  <div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500;color:#141A17">ตีลาน</div><div style="font-size:11.5px;color:#94A29D">1 กก.</div></div>
+                  <button style="width:44px;height:44px;border-radius:8px;border:1.5px solid #C6D0CC;background:#fff;color:#4C5953;font-size:20px;cursor:pointer">−</button>
+                  <span style="width:40px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:600;color:#141A17">5</span>
+                  <button style="width:44px;height:44px;border-radius:8px;border:none;background:#1FA971;color:#fff;font-size:20px;cursor:pointer">+</button>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #EDF1EF">
+                  <div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500;color:#141A17">ตีลาน</div><div style="font-size:11.5px;color:#94A29D">½ กก.</div></div>
+                  <button style="width:44px;height:44px;border-radius:8px;border:1.5px solid #C6D0CC;background:#fff;color:#4C5953;font-size:20px;cursor:pointer">−</button>
+                  <span style="width:40px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:600;color:#141A17">2</span>
+                  <button style="width:44px;height:44px;border-radius:8px;border:none;background:#1FA971;color:#fff;font-size:20px;cursor:pointer">+</button>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid #EDF1EF">
+                  <div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500;color:#141A17">กรวด</div><div style="font-size:11.5px;color:#94A29D">กระสอบ</div></div>
+                  <button style="width:44px;height:44px;border-radius:8px;border:1.5px solid #C6D0CC;background:#fff;color:#4C5953;font-size:20px;cursor:pointer">−</button>
+                  <span style="width:40px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:600;color:#141A17">10</span>
+                  <button style="width:44px;height:44px;border-radius:8px;border:none;background:#1FA971;color:#fff;font-size:20px;cursor:pointer">+</button>
+                </div>
+                <div style="display:flex;align-items:center;gap:12px;padding:12px 16px">
+                  <div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:500;color:#141A17">น้ำปลา / น้ำเงิน</div><div style="font-size:11.5px;color:#94A29D">เครื่องปรุง</div></div>
+                  <button style="width:44px;height:44px;border-radius:8px;border:1.5px solid #C6D0CC;background:#fff;color:#4C5953;font-size:20px;cursor:pointer">−</button>
+                  <span style="width:40px;text-align:center;font-family:'IBM Plex Mono',monospace;font-size:17px;font-weight:600;color:#141A17">16</span>
+                  <button style="width:44px;height:44px;border-radius:8px;border:none;background:#1FA971;color:#fff;font-size:20px;cursor:pointer">+</button>
+                </div>
+              </div>
+
+              <button style="display:flex;align-items:center;justify-content:center;gap:8px;min-height:44px;border-radius:8px;border:1.5px dashed #C6D0CC;background:transparent;color:#15885B;font-size:14px;font-weight:600;cursor:pointer;font-family:'IBM Plex Sans Thai',sans-serif">+ เพิ่มสินค้า</button>
+
+              <div style="background:#fff;border:1px solid #DEE5E2;border-radius:11px;padding:12px 16px">
+                <div style="font-size:12px;font-weight:600;color:#69776F;margin-bottom:6px">หมายเหตุ</div>
+                <div style="font-size:14px;color:#141A17">พริกแดง 10 กก.</div>
+              </div>
+
+              <div style="margin-top:auto;display:flex;gap:10px;padding-bottom:8px">
+                <button style="flex:1;min-height:48px;border-radius:8px;border:1.5px solid #C6D0CC;background:#fff;color:#141A17;font-size:15px;font-weight:600;cursor:pointer;font-family:'IBM Plex Sans Thai',sans-serif">ข้ามร้านนี้</button>
+                <button style="flex:2;min-height:48px;border-radius:8px;border:none;background:#1FA971;color:#fff;font-size:15px;font-weight:600;cursor:pointer;font-family:'IBM Plex Sans Thai',sans-serif">บันทึก แล้วไปร้านถัดไป</button>
+              </div>
+            </div>
+          </div>
+        </x-import>
+      </div>
+    </div>
+
+    <!-- ══════════════ 1c · PRINT REPORT ══════════════ -->
+    <div class="dv-opt" id="1c">
+      <div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>รายงานพิมพ์ A4 แนวนอน — ตามฟอร์มใบงานเดิมเป๊ะ (กดพิมพ์จากหน้า <a class="dv-oid" href="#1a">1a</a>)</div>
+      <div class="dv-card" style="width:1123px;border-radius:4px" data-screen-label="รายงานพิมพ์ A4">
+        <div style="width:1123px;min-height:794px;background:#fff;padding:26px 30px;font-family:'IBM Plex Sans Thai',sans-serif;color:#141A17">
+          <div style="display:grid;grid-template-columns:1fr auto 1fr;align-items:start;margin-bottom:12px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <span style="display:flex;width:34px;height:34px;align-items:center;justify-content:center;border-radius:99px;background:linear-gradient(160deg,#1FA971,#0E3B2E);color:#fff;font-weight:700;font-size:16px">ย</span>
+              <span style="font-size:12px;color:#69776F">ยิ่งเจริญ</span>
+            </div>
+            <div style="text-align:center;font-size:20px;font-weight:700;letter-spacing:.01em">ใบออเดอร์สินค้า</div>
+            <div style="justify-self:end;font-size:12px;display:grid;grid-template-columns:auto auto;gap:2px 14px">
+              <span style="color:#69776F">วันที่</span><span style="font-family:'IBM Plex Mono',monospace;font-weight:600">13/3/69</span>
+              <span style="color:#69776F">สถานที่</span><span style="font-weight:600">ยิ่งเจริญ</span>
+            </div>
+          </div>
+
+          <!-- print header -->
+          <div style="display:grid;grid-template-columns:26px 128px repeat(20,38px) 149px;grid-template-rows:18px 24px 16px;border:1px solid #94A29D;border-bottom:1.5px solid #94A29D;background:#F6F8F7;font-size:9.5px;color:#36423D">
+            <div style="grid-column:1;grid-row:1/4;display:flex;align-items:center;justify-content:center;font-weight:600">ลำดับ</div>
+            <div style="grid-column:2;grid-row:1/4;display:flex;align-items:center;padding:0 8px;font-weight:600;border-left:1px solid #C6D0CC">ร้านค้า</div>
+            <div style="grid-column:3/19;grid-row:1;display:flex;align-items:center;justify-content:center;font-weight:600;border-left:1px solid #C6D0CC;border-bottom:1px solid #C6D0CC">สินค้า</div>
+            <div style="grid-column:19/23;grid-row:1;display:flex;align-items:center;justify-content:center;font-weight:600;border-left:1px solid #C6D0CC;border-bottom:1px solid #C6D0CC">เครื่องปรุง</div>
+            <div style="grid-column:23;grid-row:1/4;display:flex;align-items:center;padding:0 8px;font-weight:600;border-left:1px solid #C6D0CC">หมายเหตุ</div>
+            <div style="grid-column:3;grid-row:2/4;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.1;border-left:1px solid #C6D0CC">ดีนิ่ม A</div>
+            <div style="grid-column:4/6;grid-row:2;display:flex;align-items:center;justify-content:center;border-left:1px solid #C6D0CC;border-bottom:1px solid #C6D0CC">ตีลานนิ่ม</div>
+            <div style="grid-column:6/8;grid-row:2;display:flex;align-items:center;justify-content:center;border-left:1px solid #C6D0CC;border-bottom:1px solid #C6D0CC">ตีลาน</div>
+            <div style="grid-column:8;grid-row:2/4;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.1;border-left:1px solid #C6D0CC">กรวด</div>
+            <div style="grid-column:9;grid-row:2/4;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.1;border-left:1px solid #C6D0CC">กรวด<br>เหลือง</div>
+            <div style="grid-column:10/12;grid-row:2;display:flex;align-items:center;justify-content:center;border-left:1px solid #C6D0CC;border-bottom:1px solid #C6D0CC">รอง</div>
+            <div style="grid-column:12/14;grid-row:2;display:flex;align-items:center;justify-content:center;border-left:1px solid #C6D0CC;border-bottom:1px solid #C6D0CC">แบะแซ</div>
+            <div style="grid-column:14;grid-row:2/4;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.1;border-left:1px solid #C6D0CC">สารส้ม</div>
+            <div style="grid-column:15;grid-row:2/4;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.1;border-left:1px solid #C6D0CC">ปูนแดง</div>
+            <div style="grid-column:16;grid-row:2/4;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.1;border-left:1px solid #C6D0CC">ปูนแดง<br>(กป)</div>
+            <div style="grid-column:17/19;grid-row:2;display:flex;align-items:center;justify-content:center;border-left:1px solid #C6D0CC;border-bottom:1px solid #C6D0CC">เลอรส</div>
+            <div style="grid-column:19;grid-row:2/4;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.1;border-left:1px solid #C6D0CC">น้ำปลา<br>น้ำเงิน</div>
+            <div style="grid-column:20;grid-row:2/4;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.1;border-left:1px solid #C6D0CC">น้ำตาล<br>แดง</div>
+            <div style="grid-column:21;grid-row:2/4;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.1;border-left:1px solid #C6D0CC">ส้มแว่น<br>เขียว</div>
+            <div style="grid-column:22;grid-row:2/4;display:flex;align-items:center;justify-content:center;text-align:center;line-height:1.1;border-left:1px solid #C6D0CC">ส้มบด<br>ส้ม</div>
+            <div style="grid-column:4;grid-row:3;display:flex;align-items:center;justify-content:center;font-size:8.5px;border-left:1px solid #C6D0CC">1 กก.</div>
+            <div style="grid-column:5;grid-row:3;display:flex;align-items:center;justify-content:center;font-size:8.5px;border-left:1px solid #C6D0CC">½ กก.</div>
+            <div style="grid-column:6;grid-row:3;display:flex;align-items:center;justify-content:center;font-size:8.5px;border-left:1px solid #C6D0CC">1 กก.</div>
+            <div style="grid-column:7;grid-row:3;display:flex;align-items:center;justify-content:center;font-size:8.5px;border-left:1px solid #C6D0CC">½ กก.</div>
+            <div style="grid-column:10;grid-row:3;display:flex;align-items:center;justify-content:center;font-size:8.5px;border-left:1px solid #C6D0CC">1 กก.</div>
+            <div style="grid-column:11;grid-row:3;display:flex;align-items:center;justify-content:center;font-size:8.5px;border-left:1px solid #C6D0CC">½ กก.</div>
+            <div style="grid-column:12;grid-row:3;display:flex;align-items:center;justify-content:center;font-size:8.5px;border-left:1px solid #C6D0CC">1 กก.</div>
+            <div style="grid-column:13;grid-row:3;display:flex;align-items:center;justify-content:center;font-size:8.5px;border-left:1px solid #C6D0CC">½ กก.</div>
+            <div style="grid-column:17;grid-row:3;display:flex;align-items:center;justify-content:center;font-size:8.5px;border-left:1px solid #C6D0CC">หมู</div>
+            <div style="grid-column:18;grid-row:3;display:flex;align-items:center;justify-content:center;font-size:8.5px;border-left:1px solid #C6D0CC">ไก่</div>
+          </div>
+
+          <!-- print rows -->
+          <sc-for list="{{ shops }}" as="s" hint-placeholder-count="8">
+            <div style="display:grid;grid-template-columns:26px 128px repeat(20,38px) 149px;min-height:19px;border:1px solid #C6D0CC;border-top:none;font-size:10px">
+              <div style="display:flex;align-items:center;justify-content:center;font-family:'IBM Plex Mono',monospace;font-size:9px;color:#69776F">{{ s.no }}</div>
+              <div style="display:flex;align-items:center;padding:0 8px;border-left:1px dotted #C6D0CC;color:{{ s.nameColor }}">{{ s.name }}</div>
+              <sc-for list="{{ s.cells }}" as="c" hint-placeholder-count="20">
+                <div style="display:flex;align-items:center;justify-content:center;border-left:1px dotted #C6D0CC;font-family:'IBM Plex Mono',monospace;font-size:10px;font-variant-numeric:tabular-nums">{{ c.v }}</div>
+              </sc-for>
+              <div style="display:flex;align-items:center;padding:0 8px;border-left:1px dotted #C6D0CC;font-size:9.5px;color:#36423D">{{ s.note }}</div>
+            </div>
+          </sc-for>
+
+          <!-- print totals -->
+          <div style="display:grid;grid-template-columns:26px 128px repeat(20,38px) 149px;min-height:24px;border:1px solid #94A29D;border-top:1.5px solid #94A29D;background:#FDF0E4;font-size:10px">
+            <div></div>
+            <div style="display:flex;align-items:center;padding:0 8px;font-weight:700;border-left:1px dotted #C6D0CC">รวม</div>
+            <sc-for list="{{ totals }}" as="t" hint-placeholder-count="20">
+              <div style="display:flex;align-items:center;justify-content:center;border-left:1px dotted #C6D0CC;font-family:'IBM Plex Mono',monospace;font-weight:700;font-variant-numeric:tabular-nums;color:{{ t.color }}">{{ t.v }}</div>
+            </sc-for>
+            <div style="display:flex;align-items:center;justify-content:flex-end;padding:0 8px;border-left:1px dotted #C6D0CC;font-family:'IBM Plex Mono',monospace;font-weight:600">446</div>
+          </div>
+
+          <!-- print footer -->
+          <div style="display:grid;grid-template-columns:110px 1fr 1fr 1fr;gap:0 24px;margin-top:14px;font-size:11px">
+            <div style="display:flex;align-items:flex-start;padding-top:2px;font-weight:600;color:#36423D">หมายเหตุ</div>
+            <div style="display:grid;grid-template-columns:1fr auto;gap:3px 16px;align-content:start">
+              <span>รอง (ปี๊บ)</span><span style="font-family:'IBM Plex Mono',monospace;text-align:right">—</span>
+              <span>กรวด (กระสอบ)</span><span style="font-family:'IBM Plex Mono',monospace;text-align:right">—</span>
+              <span>ดีนิ่ม A เข้ม</span><span style="font-family:'IBM Plex Mono',monospace;text-align:right">—</span>
+              <span>แดง</span><span style="font-family:'IBM Plex Mono',monospace;text-align:right">0</span>
+              <span>รอง 5 กก.</span><span style="font-family:'IBM Plex Mono',monospace;text-align:right">0</span>
+              <span>รองดำใส ½ กก.</span><span style="font-family:'IBM Plex Mono',monospace;text-align:right">—</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr auto;gap:3px 16px;align-content:start">
+              <span>ลานนิ่ม (ใส) 1 กก.</span><span style="font-family:'IBM Plex Mono',monospace;text-align:right;font-weight:600">20</span>
+              <span>ดีนิ่ม (A) ½ กก.</span><span style="font-family:'IBM Plex Mono',monospace;text-align:right">0</span>
+              <span>ดีขาว 1 กก.</span><span style="font-family:'IBM Plex Mono',monospace;text-align:right">0</span>
+              <span>ดีขาว ½ กก.</span><span style="font-family:'IBM Plex Mono',monospace;text-align:right;font-weight:600">1</span>
+              <span>พริกแดง 10 กก.</span><span style="font-family:'IBM Plex Mono',monospace;text-align:right">0</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr auto auto;gap:6px 12px;align-content:start;border-left:1px solid #DEE5E2;padding-left:24px">
+              <span style="font-weight:600">รวมน้ำหนัก</span><span style="font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:13px;text-align:right">4,670</span><span style="color:#69776F">กก.</span>
+              <span style="font-weight:600">รวมปี๊บ</span><span style="font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:13px;text-align:right">163.00</span><span style="color:#69776F">ปี๊บ</span>
+              <span style="color:#69776F;font-size:10px;grid-column:1/4;margin-top:8px">พิมพ์จากระบบ · 13/3/2569 09:42 · ผู้บันทึก สมหญิง ใจดี</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;highlightFilled&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;ตารางออเดอร์&quot;},&quot;showEmptyShops&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;ตารางออเดอร์&quot;}}">
+class Component extends DCLogic {
+  renderVals() {
+    const hl = this.props.highlightFilled ?? true;
+    const showEmpty = this.props.showEmptyShops ?? true;
+    // cols: 0 ดีนิ่มA · 1 ตีลานนิ่ม1 · 2 ตีลานนิ่ม½ · 3 ตีลาน1 · 4 ตีลาน½ · 5 กรวด · 6 กรวดเหลือง
+    // 7 รอง1 · 8 รอง½ · 9 แบะแซ1 · 10 แบะแซ½ · 11 สารส้ม · 12 ปูนแดง · 13 ปูนแดง(กป)
+    // 14 เลอรสหมู · 15 เลอรสไก่ · 16 น้ำปลา/น้ำเงิน · 17 น้ำตาลแดง · 18 ส้มแว่น/เขียว · 19 ส้มบด/ส้ม
+    const RAW = [
+      [1, 'เจ้เปียก', { 3: 15, 4: 5 }, 'ดีขาว 1/2 กก.'],
+      [2, 'เจ้เกียง', { 3: 2, 5: 5, 7: 8 }, 'ดีนิ่ม (A) 1/2 กก.'],
+      [3, 'ตาใสของชำ', { 7: 2, 8: 2 }, ''],
+      [4, '', {}, ''],
+      [5, 'เฮียเล็ก', { 3: 5, 4: 2, 5: 10, 16: 16 }, 'พริกแดง 10 กก.'],
+      [6, '', {}, ''],
+      [7, 'สุนทร', { 7: 2 }, ''],
+      [8, 'สิริพร ของชำ', {}, ''],
+      [9, 'ป้าอ้อย ของชำ', { 3: 20 }, 'ดีขาว 1/2 กก. × 1'],
+      [10, 'ประทุมนิเยาะห์', { 5: 4, 6: 2 }, ''],
+      [11, 'แหม่มหมายเส้น', { 4: 12, 5: 2, 16: 10, 17: 10 }, ''],
+      [12, 'เฮียโอภาส', { 4: 1, 5: 1 }, 'ดีขาว 1/2 กก.'],
+      [13, 'พูลทรัพย์', {}, ''],
+      [14, 'แหนมป้าพยอม', { 1: 10, 2: 2, 3: 5, 4: 1, 5: 3 }, ''],
+      [15, 'เจ้เอ็ง', { 5: 10 }, ''],
+      [16, 'กิ่งแก้ว', { 3: 5, 7: 10, 16: 8 }, 'ลานนิ่ม (ใส) 1 กก. × 20'],
+      [17, 'แก้วข้าวสาร', { 1: 5, 2: 2, 5: 2, 6: 2 }, ''],
+      [18, 'กรรณิกา คลอง 2', { 1: 2, 3: 30 }, ''],
+      [19, 'ร้านชำตลาดนานาเจริญ', { 16: 4 }, 'แดง'],
+      [20, '', {}, 'ดีขาว 1 กก.'],
+      [21, 'สมชาย คำภา', { 1: 10, 2: 10 }, ''],
+      [22, 'พร นานาเจริญ', { 1: 1, 7: 5 }, 'ดีขาว 1 กก.'],
+      [23, 'ธนกฤต บรรจุภัณฑ์', {}, 'ดีนิ่ม (A) 1/2 กก.'],
+      [24, 'สมยศ นานาเจริญ', { 1: 5, 3: 5, 5: 2, 7: 5 }, 'ดีขาว 1 กก.'],
+      [25, 'กรีนเฟรชฟู้ดส์', { 1: 16 }, ''],
+      [26, 'อาร์เอ็นเค ฟู้ดส์', {}, ''],
+      [27, 'บิ๊กแบงค์', { 1: 30, 3: 30, 7: 50 }, 'รอง 5 กก.'],
+      [28, 'เลอรส', { 1: 20, 3: 20 }, 'ดีนิ่ม (A) 1/2 กก.'],
+      [29, '', {}, ''],
+    ];
+    const mk = (map) => Array.from({ length: 20 }, (_, i) => {
+      const v = map[i];
+      return {
+        v: v === undefined ? '' : String(v),
+        bg: v !== undefined && hl ? '#E9F6F0' : 'transparent',
+      };
+    });
+    let shops = RAW.map((r) => ({
+      no: r[0],
+      name: r[1] || '—',
+      nameColor: r[1] ? 'var(--text-strong, #141A17)' : '#C6D0CC',
+      cells: mk(r[2]),
+      note: r[3],
+      hasOrder: Object.keys(r[2]).length > 0 || !!r[3],
+    }));
+    if (!showEmpty) shops = shops.filter((s) => s.hasOrder);
+    const T = [0, 99, 14, 137, 21, 39, 4, 82, 2, 0, 0, 0, 0, 0, 0, 0, 38, 10, 0, 0];
+    const totals = T.map((v) => ({ v: String(v), color: v > 0 ? '#0E3B2E' : '#94A29D' }));
+    return { shops, totals };
+  }
+}
+</script>
+</body>
+</html>
