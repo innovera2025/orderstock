@@ -1,28 +1,299 @@
 @import "tailwindcss";
-@import "./fonts.css";
+
+/* ============================================================
+   pguard Design System — token layer (Phase 01).
+   Source of truth: process/features/pguard-redesign/references/design_tokens/*.css
+   Light defaults on :root; dark overrides on [data-theme="dark"] (topbar toggle) with a
+   prefers-color-scheme fallback for first paint when no explicit theme is chosen.
+   Font families (--font-thai/-latin/-mono) are owned by next/font (see src/lib/fonts.ts),
+   applied to <html> — NOT redefined here.
+   ============================================================ */
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-  /* Self-hosted Sarabun (see src/lib/fonts.ts / src/app/fonts.css). */
-  --font-sarabun: "Sarabun", "TH Sarabun New", sans-serif;
+  /* ---- Brand: Primary Green (Deep Forest) ---- */
+  --green-50:  #E9F8F1;
+  --green-100: #C9EEDD;
+  --green-200: #97E0C2;
+  --green-300: #5FCEA4;
+  --green-400: #30B987;
+  --green-500: #1FA971;  /* interactive base */
+  --green-600: #15885B;
+  --green-700: #126B49;
+  --green-800: #0E5238;
+  --green-900: #0E3B2E;  /* Deep Forest — brand anchor */
+  --green-950: #082619;
+
+  /* ---- Accent: Amber ---- */
+  --amber-50:  #FEF6E7;
+  --amber-100: #FDE9C2;
+  --amber-200: #FBD489;
+  --amber-300: #F9BC4D;
+  --amber-400: #F7A823;
+  --amber-500: #F59E0B;  /* accent base */
+  --amber-600: #D97D06;
+  --amber-700: #B45F09;
+  --amber-800: #92490E;
+  --amber-900: #78400F;
+
+  /* ---- Neutrals (green-tinted slate) ---- */
+  --n-0:   #FFFFFF;
+  --n-50:  #F6F8F7;
+  --n-100: #EDF1EF;
+  --n-200: #DEE5E2;
+  --n-300: #C6D0CC;
+  --n-400: #94A29D;
+  --n-500: #69776F;
+  --n-600: #4C5953;
+  --n-700: #36423D;
+  --n-800: #222B27;
+  --n-900: #141A17;
+  --n-950: #0A0E0C;
+
+  /* ---- Semantic ---- */
+  --success:    #16A34A;
+  --success-bg: #E7F6ED;
+  --warning:    #F59E0B;
+  --warning-bg: #FEF3E0;
+  --danger:     #E5484D;
+  --danger-bg:  #FCEAEA;
+  --info:       #2A6FDB;
+  --info-bg:    #E8F0FC;
+
+  /* ---- Guard live status ---- */
+  --status-active:  #1FA971;
+  --status-working: #F59E0B;
+  --status-offline: #EF5C5C;
+  --status-active-ring:  rgba(31,169,113,.22);
+  --status-working-ring: rgba(245,158,11,.22);
+  --status-offline-ring: rgba(239,92,92,.20);
+
+  --on-amber: #2A1500;
+
+  /* ---- Type scale (px) ---- */
+  --t-display: 44px;
+  --t-h1: 34px;
+  --t-h2: 27px;
+  --t-h3: 21px;
+  --t-lg: 18px;
+  --t-base: 16px;
+  --t-sm: 14px;
+  --t-xs: 12px;
+  --t-2xs: 11px;
+
+  /* ---- Line-height (Thai-tuned) ---- */
+  --lh-tight: 1.3;
+  --lh-snug: 1.45;
+  --lh-base: 1.62;
+  --lh-relaxed: 1.78;
+
+  /* ---- Tracking ---- */
+  --ls-thai: 0.01em;
+
+  /* ---- Spacing (4pt base) ---- */
+  --sp-1: 4px;  --sp-2: 8px;  --sp-3: 12px; --sp-4: 16px;
+  --sp-5: 20px; --sp-6: 24px; --sp-7: 32px; --sp-8: 40px;
+  --sp-9: 48px; --sp-10: 64px; --sp-11: 80px; --sp-12: 96px;
+
+  /* ---- Radius ---- */
+  --r-xs: 4px;  --r-sm: 6px;  --r-md: 8px; --r-lg: 11px;
+  --r-xl: 14px; --r-2xl: 18px; --r-full: 999px;
+
+  /* ---- Elevation ---- */
+  --sh-xs: 0 1px 1px rgba(8,38,25,.04);
+  --sh-sm: 0 1px 2px rgba(8,38,25,.06);
+  --sh-md: 0 2px 6px rgba(8,38,25,.07), 0 1px 2px rgba(8,38,25,.04);
+  --sh-lg: 0 8px 20px rgba(8,38,25,.10), 0 2px 5px rgba(8,38,25,.05);
+  --sh-xl: 0 18px 44px rgba(8,38,25,.15), 0 5px 12px rgba(8,38,25,.07);
+  --sh-brand:  0 6px 16px rgba(31,169,113,.22);
+  --sh-accent: 0 6px 16px rgba(245,158,11,.22);
+
+  /* ---- Touch ---- */
+  --tap: 44px;
+
+  /* ---- Semantic surface & text aliases (LIGHT) ---- */
+  --bg-app:      var(--n-50);
+  --bg-surface:  var(--n-0);
+  --bg-raised:   var(--n-0);
+  --bg-sunken:   var(--n-100);
+  --bg-inverse:  var(--green-900);
+
+  --border:        var(--n-200);
+  --border-strong: var(--n-300);
+
+  --text-strong:   var(--n-900);
+  --text:          var(--n-800);
+  --text-muted:    var(--n-500);
+  --text-faint:    var(--n-400);
+  --text-on-brand: #FFFFFF;
+
+  --brand:           var(--green-900);
+  --brand-int:       var(--green-500);
+  --brand-int-hover: var(--green-600);
+  --accent:          var(--amber-500);
+  --accent-hover:    var(--amber-600);
+  --focus-ring:      rgba(31,169,113,.45);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-sarabun);
+/* ===================== DARK MODE (explicit toggle) ===================== */
+[data-theme="dark"] {
+  --bg-app:      #0A0F0D;
+  --bg-surface:  #121916;
+  --bg-raised:   #18211D;
+  --bg-sunken:   #0D1411;
+  --bg-inverse:  #E9F8F1;
+
+  --border:        #243029;
+  --border-strong: #324239;
+
+  --text-strong:   #F3F7F5;
+  --text:          #DCE5E0;
+  --text-muted:    #93A29B;
+  --text-faint:    #6B7A72;
+  --text-on-brand: #04140D;
+
+  --brand:           #0F2A21;
+  --brand-int:       #2FC089;
+  --brand-int-hover: #45CF9A;
+  --accent:          #FBB23E;
+  --accent-hover:    #FFC560;
+  --focus-ring:      rgba(47,192,137,.5);
+
+  --success-bg: rgba(22,163,74,.16);
+  --warning-bg: rgba(245,158,11,.15);
+  --danger-bg:  rgba(229,72,77,.16);
+  --info-bg:    rgba(42,111,219,.16);
+
+  --sh-xs: 0 1px 2px rgba(0,0,0,.4);
+  --sh-sm: 0 1px 3px rgba(0,0,0,.5), 0 1px 2px rgba(0,0,0,.4);
+  --sh-md: 0 4px 14px rgba(0,0,0,.5);
+  --sh-lg: 0 14px 32px rgba(0,0,0,.55);
+  --sh-xl: 0 26px 60px rgba(0,0,0,.6);
 }
 
+/* First-paint fallback: honor OS dark preference ONLY when no explicit theme is set. */
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  :root:not([data-theme]) {
+    --bg-app:      #0A0F0D;
+    --bg-surface:  #121916;
+    --bg-raised:   #18211D;
+    --bg-sunken:   #0D1411;
+    --bg-inverse:  #E9F8F1;
+
+    --border:        #243029;
+    --border-strong: #324239;
+
+    --text-strong:   #F3F7F5;
+    --text:          #DCE5E0;
+    --text-muted:    #93A29B;
+    --text-faint:    #6B7A72;
+    --text-on-brand: #04140D;
+
+    --brand:           #0F2A21;
+    --brand-int:       #2FC089;
+    --brand-int-hover: #45CF9A;
+    --accent:          #FBB23E;
+    --accent-hover:    #FFC560;
+    --focus-ring:      rgba(47,192,137,.5);
+
+    --success-bg: rgba(22,163,74,.16);
+    --warning-bg: rgba(245,158,11,.15);
+    --danger-bg:  rgba(229,72,77,.16);
+    --info-bg:    rgba(42,111,219,.16);
+
+    --sh-xs: 0 1px 2px rgba(0,0,0,.4);
+    --sh-sm: 0 1px 3px rgba(0,0,0,.5), 0 1px 2px rgba(0,0,0,.4);
+    --sh-md: 0 4px 14px rgba(0,0,0,.5);
+    --sh-lg: 0 14px 32px rgba(0,0,0,.55);
+    --sh-xl: 0 26px 60px rgba(0,0,0,.6);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sarabun);
+/* ============================================================
+   Tailwind v4 @theme — map pguard tokens to Tailwind utilities.
+   `inline` so utilities reference the live CSS vars (theme-aware).
+   ============================================================ */
+@theme inline {
+  --color-green-50:  var(--green-50);
+  --color-green-100: var(--green-100);
+  --color-green-200: var(--green-200);
+  --color-green-300: var(--green-300);
+  --color-green-400: var(--green-400);
+  --color-green-500: var(--green-500);
+  --color-green-600: var(--green-600);
+  --color-green-700: var(--green-700);
+  --color-green-800: var(--green-800);
+  --color-green-900: var(--green-900);
+  --color-green-950: var(--green-950);
+
+  --color-amber-50:  var(--amber-50);
+  --color-amber-100: var(--amber-100);
+  --color-amber-200: var(--amber-200);
+  --color-amber-300: var(--amber-300);
+  --color-amber-400: var(--amber-400);
+  --color-amber-500: var(--amber-500);
+  --color-amber-600: var(--amber-600);
+  --color-amber-700: var(--amber-700);
+  --color-amber-800: var(--amber-800);
+  --color-amber-900: var(--amber-900);
+
+  --color-n-0:   var(--n-0);
+  --color-n-50:  var(--n-50);
+  --color-n-100: var(--n-100);
+  --color-n-200: var(--n-200);
+  --color-n-300: var(--n-300);
+  --color-n-400: var(--n-400);
+  --color-n-500: var(--n-500);
+  --color-n-600: var(--n-600);
+  --color-n-700: var(--n-700);
+  --color-n-800: var(--n-800);
+  --color-n-900: var(--n-900);
+  --color-n-950: var(--n-950);
+
+  /* semantic aliases as Tailwind colors */
+  --color-bg-app:      var(--bg-app);
+  --color-bg-surface:  var(--bg-surface);
+  --color-bg-raised:   var(--bg-raised);
+  --color-bg-sunken:   var(--bg-sunken);
+  --color-bg-inverse:  var(--bg-inverse);
+  --color-border:        var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-text-strong:   var(--text-strong);
+  --color-text:          var(--text);
+  --color-text-muted:    var(--text-muted);
+  --color-text-faint:    var(--text-faint);
+  --color-text-on-brand: var(--text-on-brand);
+  --color-brand:           var(--brand);
+  --color-brand-int:       var(--brand-int);
+  --color-brand-int-hover: var(--brand-int-hover);
+  --color-accent:          var(--accent);
+  --color-accent-hover:    var(--accent-hover);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-danger:  var(--danger);
+  --color-info:    var(--info);
+
+  --radius-lg: var(--r-lg);
+  --radius-md: var(--r-md);
+  --radius-sm: var(--r-sm);
+  --radius-full: var(--r-full);
+
+  --font-sans: var(--font-thai);
+  --font-mono: var(--font-mono);
 }
+
+/* ---- Base reset + body type (Thai-tuned rhythm) ---- */
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: var(--font-thai), var(--font-latin), system-ui, sans-serif;
+  letter-spacing: var(--ls-thai);
+  line-height: var(--lh-base);
+  color: var(--text);
+  background: var(--bg-app);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Thai text wraps more gracefully word-by-word where supported */
+.th { word-break: break-word; line-break: loose; }

@@ -18,6 +18,7 @@ const eslintConfig = defineConfig([
     ".codex/**",
     ".agents/**",
     "process/**",
+    "design_handoff_order_sheet_system/**",
     "src/generated/**",
   ]),
 ]);

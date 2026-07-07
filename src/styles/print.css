@@ -1,7 +1,8 @@
 /* Phase 05 print stylesheet. Reproduces the scanned A4-landscape order form at TRUE millimetre
  * dimensions (print REF §1/§4). Column widths live here (E2: the print route emits the <colgroup>,
- * this file owns the mm widths + all print styling). Sarabun is inherited from the global body
- * font (globals.css / fonts.css) — Chromium shapes Thai tone marks correctly with HarfBuzz.
+ * this file owns the mm widths + all print styling). The Thai UI font (IBM Plex Sans Thai) is
+ * inherited from the global body font (globals.css) — Chromium shapes Thai tone marks correctly
+ * with HarfBuzz. This file sets no font-family of its own.
  *
  * Design rule (decision 1): BORDER / weight-emphasis only, so the form survives the print dialog's
  * "Background graphics" toggle being OFF. Semantic fills (header cream / totals salmon / footer

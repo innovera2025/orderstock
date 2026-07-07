@@ -1,24 +1,31 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { fontVariables } from "@/lib/fonts";
 
 export const metadata: Metadata = {
   title: "ระบบจัดการออเดอร์สินค้า",
   description: "ระบบบันทึกและพิมพ์ใบออเดอร์สินค้าประจำวัน",
 };
 
+// No-flash theme bootstrap: set data-theme on <html> BEFORE first paint from the persisted
+// choice (localStorage), so the pguard dark/light theme never flashes the wrong colors. When
+// no explicit choice exists we leave data-theme unset and the CSS prefers-color-scheme
+// fallback in globals.css takes over.
+const NO_FLASH_THEME = `(function(){try{var t=localStorage.getItem('theme');if(t==='dark'||t==='light'){document.documentElement.setAttribute('data-theme',t);}}catch(e){}})();`;
+
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Sarabun is applied globally via body { font-family: var(--font-sarabun) } in
-  // globals.css (self-hosted @font-face in fonts.css). lang="th" for correct Thai
-  // line-breaking and tone-mark shaping.
-  //
-  // The top nav is NOT rendered here — it lives in the (main) route group layout so the
-  // /print segment (its own layout) and the login page structurally have no app chrome.
+  // IBM Plex (Thai/Latin/Mono) CSS-var classes applied here on <html> (next/font). lang="th"
+  // for correct Thai line-breaking + tone-mark shaping. The app shell/nav lives in the (main)
+  // route group layout so /print and /login structurally have no app chrome.
   return (
-    <html lang="th" className="h-full antialiased">
+    <html lang="th" className={`h-full antialiased ${fontVariables}`}>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: NO_FLASH_THEME }} />
+      </head>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );
