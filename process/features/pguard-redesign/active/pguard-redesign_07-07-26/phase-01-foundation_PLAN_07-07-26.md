@@ -176,7 +176,7 @@ Orchestrator reads this before deciding which subagent to spawn next. 7-step inn
 - [x] 4. PVL — vc-validate-agent: DONE — validate-contract written (CONDITIONAL net gate; 2 plan defects fixed inline, 4 concerns as execute instructions/agent-probes). EXECUTE pending user consent.
 - [x] 5. EXECUTE — DONE (all A–F items; 5 automated + 2 hybrid + 3 agent-probe gates green; report written; see phase-01-foundation_REPORT_07-07-26.md)
 - [x] 6. EVL — DONE (07-07-26): all 10 validate-contract gates independently re-run green; scope fence empty; deviations audited benign; EVL HANDOFF SUMMARY written to report. Status promoted ✅ VERIFIED.
-- [ ] 7. UPDATE PROCESS — phase report written, umbrella state updated, commit done
+- [x] 7. UPDATE PROCESS — phase report written, umbrella state updated, context updated (all-context.md + new `uxui/all-uxui.md` group); commit routed via orchestrator (not this step)
 
 **Validate-contract required before execute.**
 

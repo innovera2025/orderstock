@@ -13,11 +13,11 @@ metadata:
 
 **Date**: 07-07-26
 **Complexity**: COMPLEX
-**Status**: ⏳ PLANNED
+**Status**: 🔨 CODE DONE (Phase 01 ✅ VERIFIED; Phase 02 next)
 
 ## Overview
 
-This umbrella orchestrates the pguard-redesign phased delivery plan; the per-phase implementation checklist lives in the five phase plans. Context router: `process/context/all-context.md`. Test routing: `process/context/tests/all-tests.md`. Next Step: run Phase 01 RESEARCH (ENTER EXECUTE MODE only per-phase after each validate-contract is written).
+This umbrella orchestrates the pguard-redesign phased delivery plan; the per-phase implementation checklist lives in the five phase plans. Context router: `process/context/all-context.md`. UI/token/shell context: `process/context/uxui/all-uxui.md`. Test routing: `process/context/tests/all-tests.md`. Next Step: run Phase 02 RESEARCH (ENTER EXECUTE MODE only per-phase after each validate-contract is written).
 
 - Program type: PHASE PROGRAM (5 phases, sequential with gated joins)
 - Feature folder: `process/features/pguard-redesign/`
@@ -221,9 +221,9 @@ All paths are inside `process/features/pguard-redesign/active/pguard-redesign_07
 
 | Phase | Status |
 |---|---|
-| 0 — Pre-program (plan creation) | 🧪 TESTING (umbrella + stubs created; validators pending) |
-| 01 — Foundation | 🧪 TESTING (R+I+PLAN-SUPPLEMENT done; PVL next) |
-| 02 — Core desktop | ⏳ PLANNED |
+| 0 — Pre-program (plan creation) | ✅ VERIFIED (umbrella + stubs created; validators pass) |
+| 01 — Foundation | ✅ VERIFIED (07-07-26 — EVL independent re-run: 10/10 gates green, scope fence empty; UPDATE PROCESS done) |
+| 02 — Core desktop | ⏳ PLANNED (next) |
 | 03 — New screens | ⏳ PLANNED |
 | 04 — Mobile | ⏳ PLANNED |
 | 05 — Data align + verify | ⏳ PLANNED |
@@ -286,24 +286,48 @@ for f in process/features/pguard-redesign/active/pguard-redesign_07-07-26/phase-
 ## Resume and Execution Handoff
 
 - Selected plan file path: `process/features/pguard-redesign/active/pguard-redesign_07-07-26/pguard-redesign-umbrella_PLAN_07-07-26.md`
-- Last completed phase: Phase 0 (this umbrella = Phase 0 artifact); phase stubs + registry created.
-- Validate-contract status: pending (vc-validate-agent writes per-phase before each EXECUTE).
-- Next step for a fresh agent: Read this umbrella, read `phase-01-foundation_PLAN_07-07-26.md`, then run the Phase 01 RESEARCH subagent before any EXECUTE work.
-- Current phase: Phase 01 (Foundation).
-- Next action: Spawn vc-research-agent for Phase 01.
-- Execute-agent start instruction: Do NOT execute yet. Phase 01 must complete RESEARCH → INNOVATE → PLAN-SUPPLEMENT → PVL first. Never change the saveOrderSheet payload / schema / 446 fixture / print sheet.
+- Last completed phase: Phase 01 — Foundation (✅ VERIFIED 07-07-26; EVL independent re-run 10/10 gates green).
+- Validate-contract status: Phase 01 CLEAN/closed. Phase 02 pending (vc-validate-agent writes it after Phase 02 RESEARCH → INNOVATE → PLAN-SUPPLEMENT).
+- Next step for a fresh agent: Read this umbrella (esp. `## Current Execution State` carry-forward notes), read `phase-02-core-desktop_PLAN_07-07-26.md` and the Phase 01 report, then run the Phase 02 RESEARCH subagent before any EXECUTE work.
+- Current phase: Phase 02 (Core desktop).
+- Next action: Spawn vc-research-agent for Phase 02.
+- Execute-agent start instruction: Do NOT execute yet. Phase 02 must complete RESEARCH → INNOVATE → PLAN-SUPPLEMENT → PVL first. Never change the saveOrderSheet payload / schema / 446 fixture / print sheet.
 
 ---
 
 ## Current Execution State
 
 Last updated: 07-07-26
-Completed phases: Phase 0 (Planning)
-Current phase: Phase 01 — Foundation
-Current loop step: EXECUTE (pending user consent) — RESEARCH ✅, INNOVATE ✅, PLAN-SUPPLEMENT ✅, PVL ✅ done for Phase 01
-Validate-contract status: WRITTEN — Phase 01 net gate CONDITIONAL (0 FAILs; 2 plan defects fixed inline, 4 concerns as execute-agent instructions + agent-probe gates). Accepted autonomously; EXECUTE held pending user consent per invocation.
-Program Net Gate: CONDITIONAL (Phase 01)
+Completed phases: Phase 0 (Planning), Phase 01 (Foundation) — ✅ VERIFIED
+Current phase: Phase 02 — Core desktop
+Current loop step: RESEARCH (not started)
+Validate-contract status: n/a yet for Phase 02 — PVL runs after Phase 02 RESEARCH → INNOVATE → PLAN-SUPPLEMENT.
+Program Net Gate: Phase 01 CLEAN/VERIFIED; Phase 02 not yet gated.
 Latest validator run: 07-07-26 — phase-01 + umbrella validators PASS (0 FAIL / 0 WARN)
+
+Phase 01 carry-forward (read before Phase 02 RESEARCH — durable surfaces now available):
+1. **pguard tokens** live in `src/app/globals.css` — raw palette + semantic aliases
+   (`--bg-*`, `--text-*`, `--brand*`, `--accent*`, `--focus-ring`) on `:root` and
+   `[data-theme="dark"]`. Components MUST reference the SEMANTIC aliases, never the raw
+   palette vars directly.
+2. **Fonts** are IBM Plex via `next/font/google` (`src/lib/fonts.ts` exports
+   `--font-thai` / `--font-latin` / `--font-mono` + `fontVariables`). Use `--font-mono`
+   for numbers/dates/IDs (matrix cells, order totals).
+3. **Shared primitives** live in `src/components/ui/*`
+   (button/input/card/modal/toast/chip/status-dot/switch) — REUSE these, do not
+   reinvent equivalents in Phase 02.
+4. **Shell** = `src/app/nav.tsx` (server, session/role) + `src/app/nav-links.tsx`
+   (client, active-link) + `src/app/topbar.tsx`. Topbar exposes an EMPTY
+   `#topbar-actions` slot for per-page controls (Phase 02 fills it with the matrix's
+   print/save actions).
+5. **HARD STOP still applies** — never touch `saveOrderSheet` payload shape,
+   `src/lib/totals.ts`, `src/app/(main)/orders/actions.ts` (order-save), the print
+   sheet chain (`get-sheet-for-print.ts`/`print-table.tsx`/`sheet-header.tsx`),
+   `prisma/schema.prisma`, or the 446 fixture.
+6. **Phase 02 scope reminder**: DELETES the Order Pad
+   (`order-grid.tsx`/`shop-rail.tsx`/`shop-order-card.tsx`/`summary-bar.tsx`) and
+   builds `order-matrix.tsx`, reusing the SAME `cell:{shopId}:{variantId}` /
+   `note:{shopId}` payload shape.
 
 Loop step values: RESEARCH | INNOVATE | PLAN-SUPPLEMENT | PVL | EXECUTE | EVL | UPDATE-PROCESS
 Orchestrator rule: read "Current loop step" and "validate-contract status" before spawning any subagent. Never spawn execute-agent when loop step is RESEARCH, INNOVATE, PLAN-SUPPLEMENT, or PVL.
