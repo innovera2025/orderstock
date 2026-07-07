@@ -7,7 +7,7 @@ metadata:
 ---
 # orderstock - All Context
 
-Last updated: 2026-07-07 (pguard-redesign Phase 01 closeout — Foundation ✅ VERIFIED, program continues to Phase 02; phase1-order-system remains PROGRAM COMPLETE, all 6 phases VERIFIED, archived to `completed/`)
+Last updated: 2026-07-07 (pguard-redesign Phase 02 closeout — Core Desktop ✅ VERIFIED, program continues to Phase 03; phase1-order-system remains PROGRAM COMPLETE, all 6 phases VERIFIED, archived to `completed/`)
 
 This file is the root context entrypoint for the repo.
 
@@ -108,7 +108,7 @@ For most substantial tasks:
 | `auth/` | `process/context/auth/all-auth.md` | Auth context entrypoint for orderstock — next-auth v5 split-config architecture, requireAuth server-side choke-point contract, session policy, lockout, admin user management, and E2E fixtures |
 | `database/` | `process/context/database/all-database.md` | Database context entrypoint for orderstock — Prisma 7 + SQL Server schema, SQL Server-specific pitfalls (no enums, one-NULL-per-UNIQUE, NoAction cascades), historical-fidelity snapshot pattern, and seed/migration/export commands |
 | `planning/` | `process/context/planning/all-planning.md` | Planning context entrypoint for orderstock — plan-shape calibration (SIMPLE vs COMPLEX), planning conventions, and example plan references |
-| `tests/` | `process/context/tests/all-tests.md` | Testing entrypoint for orderstock — Vitest 3.2.6 (41 tests/10 files) and Playwright E2E (16 tests) both real and wired, sandbox SQL Server constraint |
+| `tests/` | `process/context/tests/all-tests.md` | Testing entrypoint for orderstock — Vitest 3.2.6 (75 tests/14 files) and Playwright E2E (19 tests) both real and wired, sandbox SQL Server constraint |
 | `uxui/` | `process/context/uxui/all-uxui.md` | UI/UX context entrypoint for orderstock — pguard Design System tokens, semantic-alias contract, shared src/components/ui/* primitives, sidebar+topbar shell, dark mode, and print-font behavior |
 <!-- /GENERATED:routing -->
 
@@ -131,7 +131,7 @@ For most substantial tasks:
 | Feature | Folder | Status |
 |---|---|---|
 | `order-system` | `process/features/order-system/` | **COMPLETE (07-07-26)** — phase program `phase1-order-system_06-07-26` (umbrella + 6 phase plans), all 6 phases ✅ VERIFIED (Foundation, Schema & Master Data, Auth, Order Entry, Printing, DB Settings & Delivery); folder archived to `completed/`. 6 backlog items remain, pending customer answers or optional hardening — see `process/features/order-system/backlog/` |
-| `pguard-redesign` | `process/features/pguard-redesign/` | **ACTIVE (07-07-26)** — 5-phase program (`pguard-redesign_07-07-26`) re-skinning the frontend to the pguard Design System (no schema/backend rewrite). Phase 01 (Foundation: tokens, IBM Plex fonts, sidebar+topbar shell, `src/components/ui/*` primitives, dark mode) is ✅ VERIFIED. Current phase: Phase 02 (Core desktop — matrix replaces Order Pad, login, master data, admin, settings, print toolbar), loop step RESEARCH. See the umbrella `## Current Execution State` for carry-forward notes. |
+| `pguard-redesign` | `process/features/pguard-redesign/` | **ACTIVE (07-07-26)** — 5-phase program (`pguard-redesign_07-07-26`) re-skinning the frontend to the pguard Design System (no schema/backend rewrite). Phase 01 (Foundation: tokens, IBM Plex fonts, sidebar+topbar shell, `src/components/ui/*` primitives, dark mode) and Phase 02 (Core desktop: 20-col order-matrix replaces Order Pad, login/shops/products/users/settings reskin, print toolbar) are ✅ VERIFIED. Current phase: Phase 03 (New screens — สรุปยอดผลิต + ประวัติออเดอร์), loop step RESEARCH. See the umbrella `## Current Execution State` for carry-forward notes. |
 
 When routing any new order-system-related work, pass `Feature: order-system`; check
 `process/features/order-system/backlog/` for deferred items first, and reference the archived
@@ -187,7 +187,7 @@ When durable project knowledge changes:
 
 ## Repository Structure
 
-**Current state: phase1-order-system PROGRAM COMPLETE (all 6 phases VERIFIED); pguard-redesign program ACTIVE (Phase 01 VERIFIED, Phase 02 next).** The app is a real, buildable Next.js project wired to a Docker SQL Server sandbox via Prisma 7, with the full 9-model schema migrated, seeded, master-data CRUD (shops/products) wired, next-auth v5 credentials login + ADMIN/STAFF role-gating protecting every route, a daily order-sheet entry grid (create/edit/list by date+location — still the "Order Pad", scheduled for Phase 02 replacement by a matrix) that recreates the 13/3/69 scan day with matching per-column totals and grand total (446), print routes (combined daily + per-shop) that render an A4-landscape mm-faithful form from a snapshot-only fetch, and an ADMIN-only runtime DB-connection settings page (fields → safe `.env` rewrite → restart-to-apply) plus the customer delivery package (vendor T-SQL schema script, hand-authored DB-creation/login script, Thai deployment guide). Authenticated app routes live under a `src/app/(main)/` route group so `/print` can render chrome-free. As of pguard-redesign Phase 01 (07-07-26), the app renders in the pguard Design System (IBM Plex fonts, token layer, dark mode, sidebar+topbar shell, `src/components/ui/*` primitives) — see `uxui/all-uxui.md`. The completed order-system program folder is archived at `process/features/order-system/completed/phase1-order-system_06-07-26/`.
+**Current state: phase1-order-system PROGRAM COMPLETE (all 6 phases VERIFIED); pguard-redesign program ACTIVE (Phase 01 + Phase 02 VERIFIED, Phase 03 next).** The app is a real, buildable Next.js project wired to a Docker SQL Server sandbox via Prisma 7, with the full 9-model schema migrated, seeded, master-data CRUD (shops/products) wired, next-auth v5 credentials login + ADMIN/STAFF role-gating protecting every route, a daily order-sheet entry surface (create/edit/list by date+location) that recreates the 13/3/69 scan day with matching per-column totals and grand total (446), print routes (combined daily + per-shop) that render an A4-landscape mm-faithful form from a snapshot-only fetch, and an ADMIN-only runtime DB-connection settings page (fields → safe `.env` rewrite → restart-to-apply) plus the customer delivery package (vendor T-SQL schema script, hand-authored DB-creation/login script, Thai deployment guide). Authenticated app routes live under a `src/app/(main)/` route group so `/print` can render chrome-free. As of pguard-redesign Phase 01 (07-07-26), the app renders in the pguard Design System (IBM Plex fonts, token layer, dark mode, sidebar+topbar shell, `src/components/ui/*` primitives). **As of Phase 02 (07-07-26, VERIFIED), the daily order-sheet entry surface is the 20-column `order-matrix.tsx`** — it REPLACED the 4-file "Order Pad" (order-grid/shop-rail/shop-order-card/summary-bar, all deleted) and saves via the UNCHANGED `saveOrderSheet` payload; login/shops/products/admin-users/print-toolbar are reskinned and a new `/settings` establishment+display panel (backed by `src/lib/app-settings.ts`, an additive `AppSetting` read/write helper, no schema change) sits alongside the untouched `/settings/db` route — see `uxui/all-uxui.md`. The completed order-system program folder is archived at `process/features/order-system/completed/phase1-order-system_06-07-26/`.
 
 ```
 orderstock/
@@ -241,17 +241,17 @@ orderstock/
         page.tsx                -- home page: Thai title + DB-status indicator
         db-status.tsx           -- client component calling /api/health
         auth-actions.ts         -- logout server action (Phase 03)
-        summary/page.tsx         -- pguard-redesign Phase 01: stub route (requireAuth + "กำลังพัฒนา") — real build in Phase 03
-        history/page.tsx         -- pguard-redesign Phase 01: stub route (requireAuth + "กำลังพัฒนา") — real build in Phase 03
         shops/**                -- shops master-data CRUD (Phase 02; requireAuth-guarded since Phase 03)
         products/**             -- products/variants master-data CRUD (Phase 02; requireAuth-guarded since Phase 03)
         admin/users/**          -- admin user management: list/create/edit-role/reset-password/deactivate (Phase 03)
-        orders/**               -- daily order-sheet entry: list/create/edit by date+location (Phase 04); [id]/page.tsx extended Phase 05 with พิมพ์รวมทั้งวัน/พิมพ์แยกร้าน print links
-          order-grid.tsx         -- whole-sheet editable matrix client component (29 roster slots x 20 cols + notes)
+        orders/**               -- daily order-sheet entry: list/create/edit by date+location (Phase 04); [id]/page.tsx extended Phase 05 with พิมพ์รวมทั้งวัน/พิมพ์แยกร้าน print links; pguard-redesign Phase 02 REPLACED order-grid.tsx (+ shop-rail/shop-order-card/summary-bar, all 4 deleted) with order-matrix.tsx
+          order-matrix.tsx       -- pguard-redesign Phase 02: 20-col daily-order MATRIX (3-tier data-driven header, KPI strip, totals row via totals.ts) — desktop order-entry surface; hidden-input payload built EXCLUSIVELY via src/lib/order-payload.ts (byte-identical to the retired Order Pad); save/print portaled into #topbar-actions (see uxui/all-uxui.md)
           new-sheet-form.tsx     -- native date input (CE) + read-only BE label + "วันนี้" shortcut
-          actions.ts             -- createOrderSheet (app-level dup check) / saveOrderSheet (snapshot-preserving)
+          actions.ts             -- createOrderSheet (app-level dup check) / saveOrderSheet (snapshot-preserving) — IMMUTABLE since pguard-redesign Phase 02 (scope-fenced)
           page.tsx / [id]/page.tsx -- sheet list / editor
-        settings/db/**          -- Phase 06: ADMIN-only runtime DB-connection settings (page.tsx + db-settings-form.tsx + actions.ts: testConnection/saveDbSettings)
+        settings/                -- Phase 06 ADMIN-only runtime DB-connection settings (db/**, untouched by pguard-redesign) PLUS pguard-redesign Phase 02 NEW establishment+display panels (page.tsx/settings-panels.tsx/actions.ts, backed by src/lib/app-settings.ts, additive AppSetting read/write, no schema change)
+        summary/page.tsx         -- STUB through Phase 02 (requireAuth + "กำลังพัฒนา") — real build is pguard-redesign Phase 03 (bars from computeColumnTotals)
+        history/page.tsx         -- STUB through Phase 02 (requireAuth + "กำลังพัฒนา") — real build is pguard-redesign Phase 03 (real OrderSheet rows)
       print/                    -- Phase 05: dedicated NO-NAV route group (chrome-free /print), sibling of (main)/, NOT nested inside it
         layout.tsx              -- no-nav layout (imports print.css); requireAuth() called explicitly per print page
         daily/[date]/page.tsx   -- combined-day sheet: all 29 roster slots incl. blank gaps
@@ -299,7 +299,7 @@ orderstock/
   - `prisma@7.8.0`, `@prisma/client@7.8.0`, `@prisma/adapter-mssql@7.8.0`, `mssql@^12.2.0`
   - dev: sandbox SQL Server 2022 in Docker (`docker-compose.yml`, `mem_limit: 2g`, compat level 150); production: customer's SQL Server via runtime connection string (Phase 06, not yet built)
 - **CSS:** Tailwind 4 (`@tailwindcss/postcss`) via create-next-app default; print CSS (Phase 05) stays separate plain CSS
-- **Testing:** Vitest 3.2.6 (`pnpm test` → `vitest run`) — 70 tests across 12 files (smoke, variant-validation, correction-cascade, password, login-attempts, auth-guard-coverage, secret-leak, totals, be-date, order-save, connection-string, env-write, settings-secret-hygiene) as of Phase 06 (program complete). Playwright `@playwright/test@1.61.1` — installed Phase 03; 19 E2E tests across `e2e/auth.spec.ts` + `e2e/orders.spec.ts` + `e2e/print.spec.ts` + `e2e/settings.spec.ts` + `e2e/auth.setup.ts` fixtures. See `tests/all-tests.md`.
+- **Testing:** Vitest 3.2.6 (`pnpm test` → `vitest run`) — 75 tests across 14 files (smoke, variant-validation, correction-cascade, password, login-attempts, auth-guard-coverage, secret-leak, totals, be-date, order-save, connection-string, env-write, settings-secret-hygiene, order-payload) as of pguard-redesign Phase 02 (order-payload added; phase1-order-system's own baseline was 70/12 at Phase 06). Playwright `@playwright/test@1.61.1` — installed Phase 03; 19 E2E tests across `e2e/auth.spec.ts` + `e2e/orders.spec.ts` (rewritten Phase 02 to drive the order-matrix) + `e2e/print.spec.ts` + `e2e/settings.spec.ts` + `e2e/auth.setup.ts` fixtures. See `tests/all-tests.md`.
 - **Validation:** `zod@^4.4.3` — server-action input validation with Thai error messages (added Phase 02, decision 5); enforces `packSize`/`group`/`role` allowed values from `src/lib/product-order.ts` since SQL Server has no Prisma enums (see `database/all-database.md`)
 - **Scripting runtime:** `tsx@^4.23.0` (devDep, added Phase 02) — runs `prisma/seed.ts` and `scripts/export-schema-sql.ts` directly
 - **Package manager:** pnpm 11.5.0 (`pnpm-workspace.yaml` sets `allowBuilds` for native-script packages: `@prisma/client`, `@prisma/engines`, `esbuild`, `prisma`, `sharp`, `unrs-resolver` — pnpm 11.5 blocks build scripts by default)
@@ -311,6 +311,7 @@ orderstock/
 - **Prisma 7 driver-adapter singleton (`src/lib/db.ts`):** Prisma 7 REMOVED the `datasourceUrl` / `datasources` constructor options that older tutorials rely on. The runtime client MUST be built as `new PrismaClient({ adapter: new PrismaMssql(connectionString) })`, where `connectionString` is a JDBC-style `sqlserver://` string from `DATABASE_URL`. Keep ONE module-level singleton (via a `globalThis` cache in non-production) — never construct a `PrismaClient` per request (each instance owns an mssql connection pool). If the adapter cannot connect after correct config, the escape hatch is the node-mssql client directly (see `db-auth-feasibility_REF_06-07-26.md` §6) — do not silently retry with per-request clients.
 - **CLI vs runtime connection config split:** `prisma.config.ts` holds the JDBC-style URL for the Prisma CLI (`migrate`, `introspect`); the datasource block in `prisma/schema.prisma` no longer carries a URL in Prisma 7 — it's `provider = "sqlserver"` only.
 - **pguard Design System (added Phase 01 of pguard-redesign, 07-07-26, VERIFIED):** the app now runs on the pguard token layer + IBM Plex fonts + sidebar/topbar shell + shared UI primitives. Full detail lives in `uxui/all-uxui.md` — read it before any UI/token/component work. Summary: token layer in `src/app/globals.css` (raw palette + SEMANTIC aliases + `[data-theme="dark"]` overrides — components reference semantic aliases, never raw palette vars); fonts via `next/font/google` in `src/lib/fonts.ts` (IBM Plex Sans Thai/Sans/Mono — Sarabun fully removed, `src/app/fonts.css` deleted); shared primitives in `src/components/ui/*` (button/input/card/modal/toast/chip/status-dot/switch — reuse, don't reinvent); shell = `src/app/nav.tsx` (server) + `src/app/nav-links.tsx` (client active-link) + `src/app/topbar.tsx` (has an empty `#topbar-actions` per-page slot). Print pages inherit the body font (no explicit font-family in `print.css`), so the font swap re-typefaces `/print` too — verified faithful in Phase 01 (G-print-font).
+- **order-matrix + AppSetting persistence (added Phase 02 of pguard-redesign, 07-07-26, VERIFIED):** the 20-column daily-order MATRIX (`src/app/(main)/orders/order-matrix.tsx`) replaced the Order Pad and is the desktop order-entry surface; it saves via the UNCHANGED `saveOrderSheet` action, with its hidden-input payload built EXCLUSIVELY through the pure `buildOrderPayload` helper (`src/lib/order-payload.ts`) — any future surface needing the same payload (Phase 04 mobile) should import this helper, not re-derive the emission rules. `src/lib/app-settings.ts` is the new small-key-value settings-persistence pattern (`prisma.appSetting` get/set, additive, no schema change) — reuse it for future small app-wide settings rather than adding schema columns. Full detail (including the `#topbar-actions` portal pattern) lives in `uxui/all-uxui.md`.
 - Thai UI text; code, identifiers, and file names in English.
 - Product package sizes are first-class: the same product is ordered in 1 กก. and ½ กก. units and appears as separate columns on the printed form (Phase 02+).
 - Printed output must visually match `Scan2026-07-04_170934.pdf` — treat the scan as the layout spec (Phase 05).
@@ -361,7 +362,7 @@ orderstock/
 
 ## Scan Metadata
 
-- Generated: 2026-07-07 (pguard-redesign Phase 01 / UPDATE-PROCESS closeout)
-- HEAD: e258066 (docs(pguard-redesign): design handoff reference and program plans)
-- Mode: delta update (post-Phase-01 EXECUTE+EVL+UPDATE-PROCESS — Phase 01 VERIFIED, program continues)
+- Generated: 2026-07-07 (pguard-redesign Phase 02 / UPDATE-PROCESS closeout)
+- HEAD: 9a3e10b (docs(pguard-redesign): phase-02 core-desktop report + weight/peep backlog note)
+- Mode: delta update (post-Phase-02 EXECUTE+EVL+UPDATE-PROCESS — Phase 02 VERIFIED, program continues to Phase 03)
 - Package manager: pnpm 11.5.0

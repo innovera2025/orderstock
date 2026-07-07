@@ -183,7 +183,7 @@ pnpm build && pnpm lint   # Expected: exit 0
 - [x] 4. PVL — vc-validate-agent: full V1-V7 DONE 07-07-26; validate-contract written (Net Gate CONDITIONAL — 6 concerns folded into checklist as execute-instructions; program charter pre-authorizes CONDITIONAL→proceed)
 - [x] 5. EXECUTE — 07-07-26: all checklist items A1–C1 done; gates green (pnpm test 75/75 incl order-payload+446; lint clean; build all routes; scope-fence ZERO diff on 9 immutable files; e2e orders D1 446 + D2 + auth/settings/print regression 17/17). One within-blast-radius deviation (deferred live placeName reflection). Report written.
 - [x] 6. EVL — 07-07-26: INDEPENDENT re-run all gates green (unit 75/75, lint 0, build 20 routes, scope-fence exit 0 ZERO-diff on 9 immutable files, e2e 19/19 incl orders D1 446+D2, run TWICE re-runnable); payload-identity + selector-preservation + print byte-faithful confirmed; EVL HANDOFF SUMMARY written to report
-- [ ] 7. UPDATE PROCESS — phase report written, umbrella state updated, commit done
+- [x] 7. UPDATE PROCESS — archived; context updated; committed
 
 **Validate-contract required before execute.**
 

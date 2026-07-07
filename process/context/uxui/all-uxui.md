@@ -1,7 +1,7 @@
 ---
 name: context:all-uxui
 description: "UI/UX context entrypoint for orderstock — pguard Design System tokens, semantic-alias contract, shared src/components/ui/* primitives, sidebar+topbar shell, dark mode, and print-font behavior"
-keywords: ui, ux, design, tokens, pguard, theme, dark mode, dark-mode, sidebar, topbar, nav, primitives, button, input, card, modal, toast, chip, switch, ibm plex, font, focus ring, radius, print font
+keywords: ui, ux, design, tokens, pguard, theme, dark mode, dark-mode, sidebar, topbar, nav, primitives, button, input, card, modal, toast, chip, switch, ibm plex, font, focus ring, radius, print font, order-matrix, matrix, topbar-actions, portal, app-settings, settings persistence
 related: [context:all-tests]
 date: 07-07-26
 metadata:
@@ -11,9 +11,10 @@ metadata:
 # orderstock — UI/UX (uxui) Context
 
 Entrypoint for the pguard Design System introduced in `pguard-redesign` Phase 01 (07-07-26,
-✅ VERIFIED). Read this before touching `src/app/globals.css`, `src/components/ui/*`, the
-sidebar/topbar shell, or any dark-mode/theme logic. Consumed by Phases 02–05 of the
-pguard-redesign program.
+✅ VERIFIED) and extended by Phase 02 (07-07-26, ✅ VERIFIED — matrix, settings persistence,
+`#topbar-actions` portal pattern). Read this before touching `src/app/globals.css`,
+`src/components/ui/*`, the sidebar/topbar shell, `src/lib/app-settings.ts`, or any
+dark-mode/theme/topbar-portal logic. Consumed by Phases 03–05 of the pguard-redesign program.
 
 ## Scope
 
@@ -167,6 +168,64 @@ current theme via `useSyncExternalStore` (hydration-safe — do not replace with
   disabled or slow parse) and no explicit `data-theme` is present.
 - Both themes must stay legible — verified in Phase 01 via agent-probe (light bg `#F6F8F7`, dark
   bg `#0A0F0D`; screenshots at `probe-orders-light/dark.png`).
+
+## Settings persistence pattern (`src/lib/app-settings.ts`, added pguard-redesign Phase 02)
+
+The `AppSetting` Prisma model existed since the original schema but was unused until Phase 02.
+`src/lib/app-settings.ts` exposes `get`/`set` helpers over `prisma.appSetting` (key/value rows) —
+**no schema change**. Established keys: `placeName` / `recorderName` / `recorderRole` /
+`hlFilled`. Consumed by `src/app/(main)/settings/actions.ts` + `settings-panels.tsx`
+(establishment + display panels, ADMIN-gated, additive alongside the existing `/settings/db`
+route — do NOT disturb that route or its heading). This is the reference pattern for any future
+small persisted app-wide setting: add a key to the `AppSetting` table via `get`/`set`, never a new
+schema column, unless the value needs to be queried/joined (in which case use a real column).
+
+**Known deferred gap:** the saved `placeName` value is PERSISTED (proven by the settings panel
+round-trip) but not yet reflected LIVE in the topbar, sidebar, or print header. The print header
+(`sheet-header.tsx`) is an IMMUTABLE file (program HARD STOP), so wiring `placeName` there is
+explicitly out of scope until the print-header immutability constraint is relaxed by a future
+phase decision. `hlFilled` has the same persist-but-not-wired-as-default gap for the matrix's
+local highlight toggle. Both are documented Phase 02 within-blast-radius deviations, not bugs.
+
+## `#topbar-actions` portal pattern (established pguard-redesign Phase 02)
+
+`src/app/topbar.tsx`'s empty `#topbar-actions` slot (Phase 01) is filled by per-page controls via
+a React portal, not by passing props down through the layout. The pattern, established by
+`order-matrix.tsx`'s save/print/lastEdit controls:
+
+1. The page-level client component renders its action buttons via `createPortal(..., el)` where
+   `el` is looked up by `document.getElementById("topbar-actions")`.
+2. Portal attachment is **hydration-safe** via `useSyncExternalStore` (the same mechanism as
+   `theme-toggle.tsx` — do NOT use `useState`+`useEffect`, which causes a flash/attach-race on
+   navigation) so the portal reliably re-attaches on every route change.
+3. Because the portaled button lives OUTSIDE the `<form>` DOM subtree it submits, it cannot rely
+   on DOM-ancestry form submission — associate it back explicitly via the HTML `form="{id}"`
+   attribute (e.g. `form="order-sheet-form"`). This was discovered during Phase 02 e2e (a portaled
+   `<button type="submit">` does not submit its React-parent form without this).
+
+Any future phase adding a per-page topbar action (Phase 03's สรุปยอดผลิต/ประวัติออเดอร์, Phase 04
+mobile) should reuse this exact three-part pattern rather than inventing a new one.
+
+## `order-matrix.tsx` structure reference (pguard-redesign Phase 02)
+
+`src/app/(main)/orders/order-matrix.tsx` is the desktop order-entry surface (replaced the 4-file
+Order Pad). Structure, useful as a template for Phase 03's screens that also render dense
+data-driven tables:
+
+- **3-tier data-driven header**: tier-1 group bands (สินค้า/เครื่องปรุง, colored by
+  `Product.group`), tier-2 grouped by `productId` (colspan = variant count, label =
+  `Product.name` — reflects renames automatically since it reads live product data via the
+  additive `productId`/`productName` query fields), tier-3 per-column sublabel (packSize/label
+  variant). Not hardcoded column labels — always derive from the `columns` query result.
+- **Byte-identical payload boundary**: all persisted state funnels through
+  `buildOrderPayload(cells, notes)` (`src/lib/order-payload.ts`, pure/importable) which is the
+  ONLY place that decides what gets emitted as hidden `cell:`/`note:` inputs. Any future
+  UI-seam-adjacent screen that writes the same payload (Phase 04 mobile) should import this same
+  helper rather than re-deriving the emission rules.
+- KPI strip + totals row are LIVE via `computeColumnTotals`/`computeGrandTotal` (`totals.ts`,
+  unchanged) — see the Settings persistence pattern above for the two KPI cells (weight/peep)
+  that remain deliberately transient/UI-only (backlog:
+  `process/features/pguard-redesign/backlog/weight-peep-persistence_NOTE_07-07-26.md`).
 
 ## Update triggers
 
