@@ -2,12 +2,14 @@
 
 import { useActionState, useMemo, useState } from "react";
 import { saveOrderSheet, type OrderSheetActionState } from "./actions";
-import { SheetHeader, type SheetHeaderColumn } from "@/components/sheet-header";
 import {
   computeColumnTotals,
   computeGrandTotal,
   type OrderLineCell,
 } from "@/lib/totals";
+import { ShopRail, MobileShopSelect, type ShopStat } from "./shop-rail";
+import { ShopOrderCard } from "./shop-order-card";
+import { SummaryBar } from "./summary-bar";
 
 export interface GridColumn {
   variantId: number;
@@ -30,9 +32,23 @@ interface OrderGridProps {
   initialNotes: Record<number, string>;
 }
 
-// Whole-sheet editable matrix (decision 1): rows = 29 roster slots (blank gaps rendered), columns =
-// 20 in-order variants + a notes column. Sticky ลำดับ/ร้านค้า columns + horizontal scroll. Live
-// footer totals import the SAME totals engine used server-side (decision 7). Whole-form submit.
+function hasQty(raw: string | undefined): boolean {
+  if (!raw) return false;
+  const trimmed = raw.trim();
+  if (trimmed === "") return false;
+  const n = Number(trimmed);
+  return Number.isInteger(n) && n > 0;
+}
+
+function formatSavedTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
+}
+
+// Order Pad (Phase 04 redesign, EXECUTE-approved follow-up): per-shop focused entry replaces the
+// wide 29×20 matrix. Under-the-hood client state stays the SAME flat shape as the old matrix —
+// `cells: Record<"${shopId}:${variantId}", string>` + `notes: Record<shopId, string>` — the new
+// UI (rail + card + summary) is just a VIEW over these maps, and submit renders the SAME hidden
+// `cell:`/`note:` inputs the server already parses (zero server-side change).
 export function OrderGrid({
   sheetId,
   columns,
@@ -46,12 +62,24 @@ export function OrderGrid({
     {} as OrderSheetActionState,
   );
 
-  // Controlled cell values so the footer totals stay live. Key: `${shopId}:${variantId}`.
   const [cells, setCells] = useState<Record<string, string>>(() => {
     const init: Record<string, string> = {};
     for (const [k, v] of Object.entries(initialCells)) init[k] = String(v);
     return init;
   });
+  const [notes, setNotes] = useState<Record<number, string>>(() => ({ ...initialNotes }));
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [comboFocusToken, setComboFocusToken] = useState(0);
+
+  const shopRows = useMemo(() => rows.filter((r) => r.shopId != null), [rows]);
+  const [selectedShopId, setSelectedShopId] = useState<number | null>(
+    () => shopRows[0]?.shopId ?? null,
+  );
+
+  function selectShop(shopId: number) {
+    setSelectedShopId(shopId);
+    setComboFocusToken((t) => t + 1);
+  }
 
   const variantByPrintOrder = useMemo(
     () => new Map(columns.map((c) => [c.variantId, c.printOrder])),
@@ -62,10 +90,8 @@ export function OrderGrid({
   const liveCells: OrderLineCell[] = useMemo(() => {
     const out: OrderLineCell[] = [];
     for (const [key, raw] of Object.entries(cells)) {
-      const trimmed = raw.trim();
-      if (trimmed === "") continue;
-      const qty = Number(trimmed);
-      if (!Number.isInteger(qty) || qty <= 0) continue;
+      if (!hasQty(raw)) continue;
+      const qty = Number(raw.trim());
       const [shopId, variantId] = key.split(":").map(Number);
       const printOrder = variantByPrintOrder.get(variantId);
       if (printOrder == null) continue;
@@ -77,95 +103,160 @@ export function OrderGrid({
   const columnTotals = useMemo(() => computeColumnTotals(liveCells), [liveCells]);
   const grandTotal = useMemo(() => computeGrandTotal(liveCells), [liveCells]);
 
-  const headerColumns: SheetHeaderColumn[] = columns.map((c) => ({
-    printOrder: c.printOrder,
-    name: c.name,
-    group: c.group,
-  }));
+  // Per-shop line count + qty (rail badges, per-shop subtotal in the card header).
+  const shopStats = useMemo(() => {
+    const map = new Map<number, ShopStat>();
+    for (const [key, raw] of Object.entries(cells)) {
+      if (!hasQty(raw)) continue;
+      const qty = Number(raw.trim());
+      const [shopId] = key.split(":").map(Number);
+      const prev = map.get(shopId) ?? { lineCount: 0, qty: 0 };
+      map.set(shopId, { lineCount: prev.lineCount + 1, qty: prev.qty + qty });
+    }
+    return map;
+  }, [cells]);
 
-  const stickyLead = "sticky bg-white";
+  const shopsWithNotes = useMemo(() => {
+    const set = new Set<number>();
+    for (const [shopId, text] of Object.entries(notes)) {
+      if (text.trim() !== "") set.add(Number(shopId));
+    }
+    return set;
+  }, [notes]);
+
+  const orderedCount = useMemo(() => {
+    let count = 0;
+    for (const row of shopRows) {
+      const shopId = row.shopId as number;
+      const stat = shopStats.get(shopId);
+      if ((stat && stat.lineCount > 0) || shopsWithNotes.has(shopId)) count += 1;
+    }
+    return count;
+  }, [shopRows, shopStats, shopsWithNotes]);
+
+  const selectedShopRow = shopRows.find((r) => r.shopId === selectedShopId) ?? null;
+
+  function addLine(variantId: number) {
+    if (selectedShopId == null) return;
+    const key = `${selectedShopId}:${variantId}`;
+    setCells((prev) => ({ ...prev, [key]: "1" }));
+  }
+
+  function setQty(variantId: number, value: string) {
+    if (selectedShopId == null) return;
+    const key = `${selectedShopId}:${variantId}`;
+    setCells((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function increment(variantId: number) {
+    if (selectedShopId == null) return;
+    const key = `${selectedShopId}:${variantId}`;
+    setCells((prev) => {
+      const current = Number(prev[key]?.trim() || 0);
+      return { ...prev, [key]: String(current + 1) };
+    });
+  }
+
+  function decrement(variantId: number) {
+    if (selectedShopId == null) return;
+    const key = `${selectedShopId}:${variantId}`;
+    setCells((prev) => {
+      const current = Number(prev[key]?.trim() || 1);
+      return { ...prev, [key]: String(Math.max(1, current - 1)) };
+    });
+  }
+
+  function removeLine(variantId: number) {
+    if (selectedShopId == null) return;
+    const key = `${selectedShopId}:${variantId}`;
+    setCells((prev) => {
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  }
+
+  function setNote(text: string) {
+    if (selectedShopId == null) return;
+    setNotes((prev) => ({ ...prev, [selectedShopId]: text }));
+  }
 
   return (
-    <form action={formAction}>
-      <div className="mb-3 flex items-center gap-3">
+    <form action={formAction} className="rounded-xl border border-[#EBEBEB] bg-white">
+      <div className="flex items-center gap-3 border-b border-[#EBEBEB] px-4 py-3">
         <button
           type="submit"
           disabled={pending}
-          className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+          className="rounded-full bg-[#171717] px-5 py-2 text-[13.5px] font-[590] text-white disabled:opacity-50"
         >
           {pending ? "กำลังบันทึก…" : "บันทึก"}
         </button>
         {state.error && (
           <span className="rounded bg-red-50 px-3 py-1 text-sm text-red-700">{state.error}</span>
         )}
-        {state.ok && <span className="text-sm text-green-700">บันทึกแล้ว ✓</span>}
-        <span className="ml-auto text-sm font-medium">
-          รวมทั้งหมด: <span data-testid="grand-total">{grandTotal}</span> ชิ้น
-        </span>
+        {state.ok && state.savedAt && (
+          <span className="inline-flex items-center gap-1.5 text-[12.5px] text-[#15803D]">
+            บันทึกล่าสุด {formatSavedTime(state.savedAt)} ✓
+          </span>
+        )}
       </div>
 
-      <div className="overflow-x-auto border">
-        <table className="border-collapse text-sm">
-          <SheetHeader columns={headerColumns} leadClassName={`left-0 z-10 ${stickyLead}`} />
-          <tbody>
-            {rows.map((row) => {
-              const isGap = row.shopId == null;
-              return (
-                <tr key={row.rosterOrder} className={isGap ? "bg-zinc-50/50" : ""}>
-                  <td className={`border px-2 py-1 text-center ${stickyLead} left-0 z-10`}>
-                    {row.rosterOrder}
-                  </td>
-                  <td className={`border px-2 py-1 whitespace-nowrap ${stickyLead} left-12 z-10`}>
-                    {row.shopName ?? <span className="text-zinc-300">—</span>}
-                  </td>
-                  {columns.map((col) => {
-                    const key = row.shopId != null ? `${row.shopId}:${col.variantId}` : "";
-                    return (
-                      <td key={col.variantId} className="border p-0 text-center">
-                        {row.shopId != null && (
-                          <input
-                            name={`cell:${row.shopId}:${col.variantId}`}
-                            inputMode="numeric"
-                            pattern="[0-9]*"
-                            value={cells[key] ?? ""}
-                            onChange={(e) =>
-                              setCells((prev) => ({ ...prev, [key]: e.target.value }))
-                            }
-                            className="h-8 w-12 text-center outline-none focus:bg-amber-50"
-                            aria-label={`ลำดับ ${row.rosterOrder} ${col.name}`}
-                          />
-                        )}
-                      </td>
-                    );
-                  })}
-                  <td className="border p-0">
-                    {row.shopId != null && (
-                      <input
-                        name={`note:${row.shopId}`}
-                        defaultValue={initialNotes[row.shopId] ?? ""}
-                        className="h-8 w-40 px-2 outline-none focus:bg-amber-50"
-                        aria-label={`หมายเหตุ ลำดับ ${row.rosterOrder}`}
-                      />
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-          <tfoot>
-            <tr className="bg-zinc-100 text-center text-xs font-medium">
-              <td className={`border px-2 py-1 ${stickyLead} left-0 z-10`} colSpan={2}>
-                รวม
-              </td>
-              {columns.map((col) => (
-                <td key={col.variantId} className="border px-1 py-1" data-testid={`total-${col.printOrder}`}>
-                  {columnTotals[col.printOrder] || ""}
-                </td>
-              ))}
-              <td className="border px-2 py-1">{grandTotal}</td>
-            </tr>
-          </tfoot>
-        </table>
+      <MobileShopSelect
+        rows={rows}
+        selectedShopId={selectedShopId}
+        onSelect={selectShop}
+        className="md:hidden"
+      />
+
+      <div className="grid grid-cols-1 md:grid-cols-[260px_1fr]">
+        <ShopRail
+          rows={rows}
+          shopStats={shopStats}
+          shopsWithNotes={shopsWithNotes}
+          selectedShopId={selectedShopId}
+          onSelect={selectShop}
+          orderedCount={orderedCount}
+          totalShops={shopRows.length}
+          className="hidden border-r md:flex md:min-h-[520px]"
+        />
+
+        <div className="overflow-y-auto bg-[#FAFAFA] p-4 md:p-6">
+          <ShopOrderCard
+            shopRow={selectedShopRow}
+            columns={columns}
+            cells={cells}
+            noteText={selectedShopId != null ? notes[selectedShopId] ?? "" : ""}
+            onAddLine={addLine}
+            onSetQty={setQty}
+            onIncrement={increment}
+            onDecrement={decrement}
+            onRemoveLine={removeLine}
+            onSetNote={setNote}
+            focusToken={comboFocusToken}
+          />
+        </div>
+      </div>
+
+      <SummaryBar
+        grandTotal={grandTotal}
+        orderedCount={orderedCount}
+        totalShops={shopRows.length}
+        columns={columns}
+        columnTotals={columnTotals}
+        drawerOpen={drawerOpen}
+        onToggleDrawer={() => setDrawerOpen((v) => !v)}
+      />
+
+      {/* Hidden payload — SAME contract the server parses: cell:{shopId}:{variantId} / note:{shopId}. */}
+      <div className="hidden" aria-hidden="true">
+        {Object.entries(cells).map(([key, raw]) => {
+          if (!hasQty(raw)) return null;
+          return <input key={`cell-${key}`} type="hidden" name={`cell:${key}`} value={raw.trim()} />;
+        })}
+        {Object.entries(notes).map(([shopId, text]) => {
+          if (text.trim() === "") return null;
+          return <input key={`note-${shopId}`} type="hidden" name={`note:${shopId}`} value={text} />;
+        })}
       </div>
     </form>
   );

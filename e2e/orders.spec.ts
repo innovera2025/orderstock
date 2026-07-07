@@ -38,27 +38,46 @@ async function openSheet(page: import("@playwright/test").Page, isoDate: string,
   await page.waitForURL(/\/orders\/\d+$/);
 }
 
+/** Order Pad interaction: select a shop in the rail, then add one product line via the
+ * เพิ่มสินค้า combobox (type full display name → Enter adds qty=1 & focuses the qty field →
+ * fill actual qty → Enter returns focus to the combobox). Mirrors the real click-to-type flow. */
+async function enterCell(
+  page: import("@playwright/test").Page,
+  rosterOrder: number,
+  printOrder: number,
+  qty: number,
+) {
+  const name = variantNameByPrintOrder.get(printOrder)!;
+  const combobox = page.getByTestId("product-combobox");
+  await page.getByTestId(`shop-slot-${rosterOrder}`).click();
+  await combobox.fill(name);
+  await combobox.press("Enter");
+  const qtyInput = page.getByTestId(`qty-${printOrder}`);
+  await qtyInput.fill(String(qty));
+  await qtyInput.press("Enter");
+}
+
 test("D1: enter the 13/3/69 fixture, save, reload — column totals + grand 446 persist", async ({
   page,
 }) => {
   await openSheet(page, fixture.date, "E2E-D1");
 
   for (const cell of fixture.cells) {
-    const name = variantNameByPrintOrder.get(cell.printOrder)!;
-    await page.getByLabel(`ลำดับ ${cell.rosterOrder} ${name}`, { exact: true }).fill(String(cell.qty));
+    await enterCell(page, cell.rosterOrder, cell.printOrder, cell.qty);
   }
 
   // Live grand total reflects the entered grid before saving.
   await expect(page.getByTestId("grand-total")).toHaveText("446");
 
   await page.click('button:has-text("บันทึก")');
-  await expect(page.getByText("บันทึกแล้ว ✓")).toBeVisible();
+  await expect(page.getByText(/บันทึกล่าสุด/)).toBeVisible();
 
   // Reload — values rehydrate from the DB and totals recompute.
   await page.reload();
   await expect(page.getByTestId("grand-total")).toHaveText("446");
 
-  // Spot-check a few persisted per-column footer totals.
+  // Spot-check a few persisted per-column footer totals (always in the DOM; drawer toggles
+  // only visibility, not presence).
   await expect(page.getByTestId("total-4")).toHaveText("137");
   await expect(page.getByTestId("total-8")).toHaveText("82");
   await expect(page.getByTestId("total-2")).toHaveText("99");
@@ -78,9 +97,15 @@ test("D2: rename a confirmed shop, re-save — pre-existing cell snapshot is pre
   await openSheet(page, "2026-03-14", "E2E-D2");
   const sheetUrl = page.url();
   const sheetId = Number(sheetUrl.match(/\/orders\/(\d+)$/)![1]);
-  await page.getByLabel(`ลำดับ ${slot} ${variantName}`, { exact: true }).fill("7");
+  const combobox = page.getByTestId("product-combobox");
+  await page.getByTestId(`shop-slot-${slot}`).click();
+  await combobox.fill(variantName);
+  await combobox.press("Enter");
+  const qtyInput = page.getByTestId("qty-1");
+  await qtyInput.fill("7");
+  await qtyInput.press("Enter");
   await page.click('button:has-text("บันทึก")');
-  await expect(page.getByText("บันทึกแล้ว ✓")).toBeVisible();
+  await expect(page.getByText(/บันทึกล่าสุด/)).toBeVisible();
 
   const afterFirstSave = await prisma.orderLine.findFirst({
     where: { sheetId, shopId: shop!.id },
@@ -99,7 +124,7 @@ test("D2: rename a confirmed shop, re-save — pre-existing cell snapshot is pre
   // 3. Re-open the sheet and re-save (delete-and-recreate).
   await page.goto(sheetUrl);
   await page.click('button:has-text("บันทึก")');
-  await expect(page.getByText("บันทึกแล้ว ✓")).toBeVisible();
+  await expect(page.getByText(/บันทึกล่าสุด/)).toBeVisible();
 
   // 4. The snapshot must still be the ORIGINAL name (carry-forward), even though the live shop
   //    name is now the renamed value. A naive re-derive would have written the renamed value.
