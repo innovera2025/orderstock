@@ -1,7 +1,6 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
-import { OrderGrid, type GridColumn, type GridRow } from "../order-grid";
+import { OrderMatrix, type GridColumn, type GridRow, type PrintLink } from "../order-matrix";
 import { ceToBeDisplay, toDateInputValue } from "@/lib/be-date";
 
 export const dynamic = "force-dynamic";
@@ -31,7 +30,7 @@ export default async function OrderSheetPage({
     prisma.productVariant.findMany({
       where: { printOrder: { not: null } },
       orderBy: { printOrder: "asc" },
-      include: { product: { select: { group: true } } },
+      include: { product: { select: { id: true, group: true, name: true } } },
     }),
     prisma.orderLine.findMany({ where: { sheetId } }),
     prisma.noteLine.findMany({ where: { sheetId } }),
@@ -42,6 +41,10 @@ export default async function OrderSheetPage({
     printOrder: v.printOrder as number,
     name: v.name,
     group: v.product.group,
+    productId: v.product.id,
+    productName: v.product.name,
+    packSize: v.packSize,
+    labelVariant: v.labelVariant,
   }));
 
   const shopBySlot = new Map(shops.map((s) => [s.rosterOrder, s]));
@@ -67,40 +70,32 @@ export default async function OrderSheetPage({
     }
   }
 
+  const dateParam = toDateInputValue(normalizeDbDate(sheet.date));
+  const locSuffix = sheet.location ? `?location=${encodeURIComponent(sheet.location)}` : "";
+  const printLinks: PrintLink[] = [
+    { href: `/print/daily/${dateParam}${locSuffix}`, label: "พิมพ์รวมทั้งวัน" },
+    { href: `/print/shops/${dateParam}${locSuffix}`, label: "พิมพ์แยกร้าน" },
+  ];
+
   return (
     <main className="w-full p-4">
       <div className="mb-4">
-        <h1 className="text-xl font-bold">
+        <h1 className="text-[var(--t-xl)] font-semibold text-[var(--text-strong)]">
           ใบออเดอร์ วันที่ {ceToBeDisplay(normalizeDbDate(sheet.date))}
           {sheet.location ? ` — ${sheet.location}` : ""}
         </h1>
-        <p className="text-xs text-zinc-500">
+        <p className="text-[12px] text-[var(--text-muted)]">
           แก้ไขล่าสุด: {ceToBeDisplay(normalizeDbDate(sheet.updatedAt))} ({sheet.updatedAt.toLocaleTimeString("th-TH")})
         </p>
-        <div className="mt-2 flex gap-3 text-sm">
-          <Link
-            href={`/print/daily/${toDateInputValue(normalizeDbDate(sheet.date))}${sheet.location ? `?location=${encodeURIComponent(sheet.location)}` : ""}`}
-            target="_blank"
-            className="text-blue-700 hover:underline"
-          >
-            พิมพ์รวมทั้งวัน
-          </Link>
-          <Link
-            href={`/print/shops/${toDateInputValue(normalizeDbDate(sheet.date))}${sheet.location ? `?location=${encodeURIComponent(sheet.location)}` : ""}`}
-            target="_blank"
-            className="text-blue-700 hover:underline"
-          >
-            พิมพ์แยกร้าน
-          </Link>
-        </div>
       </div>
 
-      <OrderGrid
+      <OrderMatrix
         sheetId={sheetId}
         columns={columns}
         rows={rows}
         initialCells={initialCells}
         initialNotes={initialNotes}
+        printLinks={printLinks}
       />
     </main>
   );

@@ -3,6 +3,8 @@
 import { useActionState } from "react";
 import Link from "next/link";
 import type { ShopActionState } from "./actions";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
 
 interface ShopFormProps {
   action: (prev: ShopActionState, formData: FormData) => Promise<ShopActionState>;
@@ -20,32 +22,29 @@ export function ShopForm({ action, defaultValues, submitLabel }: ShopFormProps) 
   return (
     <form action={formAction} className="flex flex-col gap-4">
       {state.error && (
-        <p className="rounded bg-red-50 px-3 py-2 text-sm text-red-700">{state.error}</p>
+        <p className="rounded-[var(--r-md)] bg-[var(--danger-bg)] px-3 py-2 text-[var(--t-sm)] text-[var(--danger)]">
+          {state.error}
+        </p>
       )}
 
-      <label className="flex flex-col gap-1 text-sm">
+      <label className="flex flex-col gap-1.5 text-[var(--t-sm)] text-[var(--text)]">
         <span>ชื่อร้านค้า</span>
-        <input
-          name="name"
-          defaultValue={defaultValues?.name}
-          className="rounded-md border px-3 py-2"
-          required
-        />
+        <Input name="name" defaultValue={defaultValues?.name} required />
       </label>
 
-      <label className="flex flex-col gap-1 text-sm">
+      <label className="flex flex-col gap-1.5 text-[var(--t-sm)] text-[var(--text)]">
         <span>ลำดับ (roster)</span>
-        <input
+        <Input
           name="rosterOrder"
           type="number"
           min={1}
           defaultValue={defaultValues?.rosterOrder}
-          className="rounded-md border px-3 py-2"
+          className="font-[var(--font-mono)]"
           required
         />
       </label>
 
-      <label className="flex items-center gap-2 text-sm">
+      <label className="flex items-center gap-2 text-[var(--t-sm)] text-[var(--text)]">
         <input
           name="needsConfirmation"
           type="checkbox"
@@ -55,14 +54,13 @@ export function ShopForm({ action, defaultValues, submitLabel }: ShopFormProps) 
       </label>
 
       <div className="flex gap-3">
-        <button
-          type="submit"
-          disabled={pending}
-          className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
-        >
+        <Button type="submit" disabled={pending}>
           {submitLabel}
-        </button>
-        <Link href="/shops" className="rounded-md border px-4 py-2 text-sm">
+        </Button>
+        <Link
+          href="/shops"
+          className="inline-flex h-10 items-center rounded-[var(--r-md)] border-[1.5px] border-[var(--border-strong)] px-4 text-[var(--t-sm)] text-[var(--text)]"
+        >
           ยกเลิก
         </Link>
       </div>

@@ -9,6 +9,7 @@ import {
   type UserActionState,
 } from "./actions";
 import { ROLES, ROLE_LABELS } from "@/lib/product-order";
+import { Input } from "@/components/ui/input";
 
 export interface UserRowData {
   id: number;
@@ -17,7 +18,7 @@ export interface UserRowData {
   active: boolean;
 }
 
-export function UserRow({ user }: { user: UserRowData }) {
+export function UserRow({ user, isSelf = false }: { user: UserRowData; isSelf?: boolean }) {
   const [roleState, roleAction, rolePending] = useActionState(editRole, {} as UserActionState);
   const [resetState, resetAction, resetPending] = useActionState(
     resetPassword,
@@ -25,62 +26,84 @@ export function UserRow({ user }: { user: UserRowData }) {
   );
 
   return (
-    <tr className={user.active ? "border-b align-top" : "border-b align-top opacity-50"}>
-      <td className="py-2 pr-2">{user.username}</td>
+    <tr
+      className={
+        user.active
+          ? "border-b border-[var(--border)] align-top"
+          : "border-b border-[var(--border)] align-top opacity-50"
+      }
+    >
+      <td className="py-2 pr-2 text-[var(--text)]">{user.username}</td>
 
-      {/* Role edit */}
+      {/* Role edit — two chips (ADMIN / STAFF); the active role is filled. */}
       <td className="py-2 pr-2">
-        <form action={roleAction} className="flex items-center gap-2">
+        <form action={roleAction} className="flex items-center gap-1.5">
           <input type="hidden" name="userId" value={user.id} />
-          <select name="role" defaultValue={user.role} className="rounded-md border px-2 py-1">
-            {ROLES.map((r) => (
-              <option key={r} value={r}>
+          {ROLES.map((r) => {
+            const isActive = user.role === r;
+            return (
+              <button
+                key={r}
+                type="submit"
+                name="role"
+                value={r}
+                disabled={rolePending || isActive}
+                className={
+                  "rounded-[var(--r-full)] border px-3 py-1 text-[var(--t-xs)] font-medium transition-colors " +
+                  (isActive
+                    ? "border-transparent bg-[var(--brand-int)] text-[var(--text-on-brand)]"
+                    : "border-[var(--border-strong)] bg-[var(--bg-surface)] text-[var(--text-muted)] hover:bg-[var(--bg-sunken)]")
+                }
+              >
                 {ROLE_LABELS[r]}
-              </option>
-            ))}
-          </select>
-          <button type="submit" disabled={rolePending} className="text-blue-600 disabled:opacity-50">
-            บันทึก
-          </button>
+              </button>
+            );
+          })}
         </form>
-        {roleState.error && <p className="text-xs text-red-600">{roleState.error}</p>}
-        {roleState.success && <p className="text-xs text-green-600">{roleState.success}</p>}
+        {roleState.error && <p className="text-[var(--t-xs)] text-[var(--danger)]">{roleState.error}</p>}
+        {roleState.success && <p className="text-[var(--t-xs)] text-[var(--success)]">{roleState.success}</p>}
       </td>
 
       {/* Reset password */}
       <td className="py-2 pr-2">
         <form action={resetAction} className="flex items-center gap-2">
           <input type="hidden" name="userId" value={user.id} />
-          <input
+          <Input
             name="password"
             type="text"
             placeholder="รหัสผ่านใหม่"
             minLength={8}
-            className="w-32 rounded-md border px-2 py-1"
+            className="h-9 w-32"
             required
           />
-          <button type="submit" disabled={resetPending} className="text-blue-600 disabled:opacity-50">
+          <button type="submit" disabled={resetPending} className="text-[var(--brand-int)] disabled:opacity-50">
             รีเซ็ต
           </button>
         </form>
-        {resetState.error && <p className="text-xs text-red-600">{resetState.error}</p>}
-        {resetState.success && <p className="text-xs text-green-600">{resetState.success}</p>}
+        {resetState.error && <p className="text-[var(--t-xs)] text-[var(--danger)]">{resetState.error}</p>}
+        {resetState.success && <p className="text-[var(--t-xs)] text-[var(--success)]">{resetState.success}</p>}
       </td>
 
       {/* Status */}
-      <td className="py-2 pr-2">{user.active ? "ใช้งาน" : "ถูกระงับ"}</td>
+      <td className="py-2 pr-2 text-[var(--text-muted)]">{user.active ? "ใช้งาน" : "ถูกระงับ"}</td>
 
-      {/* Activate / deactivate */}
+      {/* Activate / deactivate — never suspend your own account (self-suspend disabled). */}
       <td className="py-2 pr-2 text-right">
         {user.active ? (
-          <form action={deactivateUser.bind(null, user.id)} className="inline">
-            <button type="submit" className="text-red-600">
+          isSelf ? (
+            <span className="text-[var(--text-faint)]" title="ไม่สามารถระงับบัญชีตนเองได้">
               ระงับ
-            </button>
-          </form>
+            </span>
+          ) : (
+            <form action={deactivateUser.bind(null, user.id)} className="inline">
+              <button type="submit" className="text-[var(--danger)]">
+                ระงับ
+              </button>
+            </form>
+          )
         ) : (
           <form action={activateUser.bind(null, user.id)} className="inline">
-            <button type="submit" className="text-green-600">
+            <button type="submit" className="text-[var(--brand-int)]">
               เปิดใช้งาน
             </button>
           </form>

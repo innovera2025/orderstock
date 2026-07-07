@@ -14,46 +14,53 @@ export default async function ProductsPage() {
   return (
     <main className="mx-auto w-full max-w-3xl p-6">
       <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">สินค้า</h1>
+        <h1 className="text-[var(--t-2xl)] font-semibold text-[var(--text-strong)]">สินค้า</h1>
         <Link
           href="/products/new"
-          className="rounded-md bg-zinc-900 px-4 py-2 text-sm font-medium text-white"
+          className="inline-flex h-10 items-center rounded-[var(--r-md)] bg-[var(--brand-int)] px-4 text-[var(--t-sm)] font-medium text-[var(--text-on-brand)] hover:bg-[var(--brand-int-hover)]"
         >
           เพิ่มสินค้า
         </Link>
       </div>
 
-      <table className="w-full border-collapse text-sm">
+      <table className="w-full border-collapse text-[var(--t-sm)]">
         <thead>
-          <tr className="border-b text-left text-zinc-500">
-            <th className="py-2 pr-2">ชื่อสินค้า</th>
-            <th className="py-2 pr-2">กลุ่ม</th>
-            <th className="py-2 pr-2">ตัวเลือก</th>
-            <th className="py-2 pr-2">สถานะ</th>
-            <th className="py-2 pr-2 text-right">จัดการ</th>
+          <tr className="border-b border-[var(--border)] text-left text-[var(--text-muted)]">
+            <th className="py-2 pr-2 font-medium">ชื่อสินค้า</th>
+            <th className="py-2 pr-2 font-medium">กลุ่ม</th>
+            <th className="py-2 pr-2 font-medium">ตัวเลือก</th>
+            <th className="py-2 pr-2 font-medium">สถานะ</th>
+            <th className="py-2 pr-2 text-right font-medium">จัดการ</th>
           </tr>
         </thead>
         <tbody>
           {products.map((p) => (
-            <tr key={p.id} className={p.active ? "border-b" : "border-b opacity-50"}>
-              <td className="py-2 pr-2">
+            <tr
+              key={p.id}
+              className={
+                p.active
+                  ? "border-b border-[var(--border)]"
+                  : "border-b border-[var(--border)] opacity-50"
+              }
+            >
+              <td className="py-2 pr-2 text-[var(--text)]">
                 {p.name}
                 {p.isOffList && (
-                  <span className="ml-2 rounded bg-zinc-100 px-1.5 py-0.5 text-xs text-zinc-600">
+                  <span className="ml-2 rounded-[var(--r-sm)] bg-[var(--bg-sunken)] px-1.5 py-0.5 text-[var(--t-xs)] text-[var(--text-muted)]">
                     นอกรายการ
                   </span>
                 )}
                 {p.needsConfirmation && (
-                  <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-xs text-amber-800">
+                  <span className="ml-2 rounded-[var(--r-sm)] bg-[var(--warning-bg)] px-1.5 py-0.5 text-[var(--t-xs)] text-[var(--warning)]">
                     รอยืนยัน
                   </span>
                 )}
               </td>
-              <td className="py-2 pr-2">{PRODUCT_GROUP_LABELS[p.group as ProductGroup]}</td>
-              <td className="py-2 pr-2">{p._count.variants}</td>
-              <td className="py-2 pr-2">{p.active ? "ใช้งาน" : "ลบแล้ว"}</td>
+              <td className="py-2 pr-2 text-[var(--text-muted)]">{PRODUCT_GROUP_LABELS[p.group as ProductGroup]}</td>
+              <td className="py-2 pr-2 font-[var(--font-mono)] text-[var(--text-muted)]">{p._count.variants}</td>
+              <td className="py-2 pr-2 text-[var(--text-muted)]">{p.active ? "ใช้งาน" : "ลบแล้ว"}</td>
               <td className="py-2 pr-2 text-right">
-                <Link href={`/products/${p.id}/edit`} className="mr-3 text-blue-600">
+                <Link href={`/products/${p.id}/edit`} className="mr-3 text-[var(--brand-int)] hover:underline">
                   แก้ไข
                 </Link>
                 {p.active ? (
@@ -64,7 +71,7 @@ export default async function ProductsPage() {
                     }}
                     className="inline"
                   >
-                    <button type="submit" className="text-red-600">
+                    <button type="submit" className="text-[var(--danger)]">
                       ลบ
                     </button>
                   </form>
@@ -76,7 +83,7 @@ export default async function ProductsPage() {
                     }}
                     className="inline"
                   >
-                    <button type="submit" className="text-green-600">
+                    <button type="submit" className="text-[var(--brand-int)]">
                       กู้คืน
                     </button>
                   </form>

@@ -18,37 +18,37 @@ export default async function OrdersPage() {
 
   return (
     <main className="mx-auto w-full max-w-4xl p-6">
-      <h1 className="mb-6 text-2xl font-bold">ใบออเดอร์สินค้า</h1>
+      <h1 className="mb-6 text-[var(--t-2xl)] font-semibold text-[var(--text-strong)]">ใบออเดอร์สินค้า</h1>
 
-      <section className="mb-8 rounded-lg border p-4">
-        <h2 className="mb-3 text-sm font-medium text-zinc-600">เปิดใบออเดอร์ใหม่</h2>
+      <section className="mb-8 rounded-[var(--r-lg)] border border-[var(--border)] bg-[var(--bg-surface)] p-4">
+        <h2 className="mb-3 text-[var(--t-sm)] font-medium text-[var(--text-muted)]">เปิดใบออเดอร์ใหม่</h2>
         <NewSheetForm />
       </section>
 
-      <table className="w-full border-collapse text-sm">
+      <table className="w-full border-collapse text-[var(--t-sm)]">
         <thead>
-          <tr className="border-b text-left text-zinc-500">
-            <th className="py-2 pr-2">วันที่ (พ.ศ.)</th>
-            <th className="py-2 pr-2">สถานที่</th>
-            <th className="py-2 pr-2 text-right">จำนวนรายการ</th>
-            <th className="py-2 pr-2 text-right">จัดการ</th>
+          <tr className="border-b border-[var(--border)] text-left text-[var(--text-muted)]">
+            <th className="py-2 pr-2 font-medium">วันที่ (พ.ศ.)</th>
+            <th className="py-2 pr-2 font-medium">สถานที่</th>
+            <th className="py-2 pr-2 text-right font-medium">จำนวนรายการ</th>
+            <th className="py-2 pr-2 text-right font-medium">จัดการ</th>
           </tr>
         </thead>
         <tbody>
           {sheets.length === 0 && (
             <tr>
-              <td colSpan={4} className="py-6 text-center text-zinc-400">
+              <td colSpan={4} className="py-6 text-center text-[var(--text-faint)]">
                 ยังไม่มีใบออเดอร์
               </td>
             </tr>
           )}
           {sheets.map((sheet) => (
-            <tr key={sheet.id} className="border-b">
-              <td className="py-2 pr-2">{ceToBeDisplay(normalizeDbDate(sheet.date))}</td>
+            <tr key={sheet.id} className="border-b border-[var(--border)]">
+              <td className="py-2 pr-2 font-[var(--font-mono)]">{ceToBeDisplay(normalizeDbDate(sheet.date))}</td>
               <td className="py-2 pr-2">{sheet.location ?? "-"}</td>
-              <td className="py-2 pr-2 text-right">{sheet._count.orderLines}</td>
+              <td className="py-2 pr-2 text-right font-[var(--font-mono)]">{sheet._count.orderLines}</td>
               <td className="py-2 pr-2 text-right">
-                <Link href={`/orders/${sheet.id}`} className="text-blue-600">
+                <Link href={`/orders/${sheet.id}`} className="text-[var(--brand-int)] hover:underline">
                   เปิด/แก้ไข
                 </Link>
               </td>
