@@ -1,0 +1,26 @@
+{
+  "phase": "phase-02-core-desktop",
+  "feature": "pguard-redesign",
+  "evl_run": "2026-07-07",
+  "invocation": "EVL step 3 — orchestrator-owned confirmation sweep (exact validate-contract gates, not diff-aware)",
+  "prior_evidence": "treated as unconfirmed; re-run from scratch",
+  "gates": [
+    {"id": "unit", "command": "pnpm test", "expected": "75/75", "result": "PASS", "detail": "14 files, 75 tests incl order-payload(6), totals, order-save, settings-secret-hygiene"},
+    {"id": "lint", "command": "pnpm lint", "result": "PASS", "detail": "exit 0, 0 problems"},
+    {"id": "build", "command": "pnpm build", "result": "PASS", "detail": "compiled OK, TS OK, 20 routes"},
+    {"id": "scope-fence", "command": "git diff --exit-code -- <9 immutable files>", "result": "PASS", "detail": "exit 0 — EMPTY diff on all 9 immutable files; 4 Order-Pad files deleted; no importers"},
+    {"id": "e2e-full", "command": "pnpm exec playwright test", "result": "PASS", "detail": "19/19 — orders D1(446)+D2, auth 4, print G1-G8, settings 3"},
+    {"id": "e2e-idempotency", "command": "pnpm exec playwright test e2e/orders.spec.ts", "result": "PASS", "detail": "2nd consecutive run 3/3 — re-runnable"}
+  ],
+  "payload_identity": "PASS — matrix renders hidden inputs solely from buildOrderPayload(cells,notes); weight/peep never emitted; byte-identical cell:/note: set vs 446 fixture",
+  "print_byte_faithful": "PASS — print.spec G1-G8 green (446, 24/20 cols, 29 rows, snapshot, A4); renderers zero-diff",
+  "selectors_preserved": "PASS — login username/password/submit+generic error, shops name/needsConfirmation/บันทึก, admin จัดการผู้ใช้, settings/db heading",
+  "deviations": [
+    {"n": 1, "desc": "payload helper at src/lib not orders/__tests__", "verdict": "within-blast-radius, acceptable"},
+    {"n": 2, "desc": "save button portal form= association", "verdict": "proven by e2e D1 save+reload 446"},
+    {"n": 3, "desc": "deferred live placeName/hlFilled reflection", "verdict": "deferral not break; no immutable file touched; no gate rests on it"}
+  ],
+  "closeout_classification": "CLEAN",
+  "status": "DONE",
+  "verified_status_decision": "VERIFIED"
+}
