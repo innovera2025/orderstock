@@ -1,7 +1,7 @@
 ---
 name: context:all-uxui
 description: "UI/UX context entrypoint for orderstock — pguard Design System tokens, semantic-alias contract, shared src/components/ui/* primitives, sidebar+topbar shell, dark mode, and print-font behavior"
-keywords: ui, ux, design, tokens, pguard, theme, dark mode, dark-mode, sidebar, topbar, nav, primitives, button, input, card, modal, toast, chip, switch, ibm plex, font, focus ring, radius, print font, order-matrix, matrix, topbar-actions, portal, app-settings, settings persistence, summary, history, bar chart, top shops, groupby, shop totals
+keywords: ui, ux, design, tokens, pguard, theme, dark mode, dark-mode, sidebar, topbar, nav, primitives, button, input, card, modal, toast, chip, switch, ibm plex, font, focus ring, radius, print font, order-matrix, matrix, topbar-actions, portal, app-settings, settings persistence, summary, history, bar chart, top shops, groupby, shop totals, mobile, responsive, breakpoint, bottom tab bar, touch target, mobile entry, mobile overlay
 related: [context:all-tests]
 date: 08-07-26
 metadata:
@@ -12,11 +12,12 @@ metadata:
 
 Entrypoint for the pguard Design System introduced in `pguard-redesign` Phase 01 (07-07-26,
 ✅ VERIFIED), extended by Phase 02 (07-07-26, ✅ VERIFIED — matrix, settings persistence,
-`#topbar-actions` portal pattern), and extended again by Phase 03 (08-07-26, ✅ VERIFIED —
-สรุปยอดผลิต bar-chart pattern, ประวัติออเดอร์ groupBy-aggregate pattern). Read this before
+`#topbar-actions` portal pattern), Phase 03 (08-07-26, ✅ VERIFIED — สรุปยอดผลิต bar-chart
+pattern, ประวัติออเดอร์ groupBy-aggregate pattern), and Phase 04 (08-07-26, ✅ VERIFIED — mobile
+responsive breakpoint pattern, bottom tab bar, mobile order-matrix branch). Read this before
 touching `src/app/globals.css`, `src/components/ui/*`, the sidebar/topbar shell,
-`src/lib/app-settings.ts`, or any dark-mode/theme/topbar-portal logic. Consumed by Phases 04–05
-of the pguard-redesign program.
+`src/lib/app-settings.ts`, or any dark-mode/theme/topbar-portal/mobile-responsive logic. Consumed
+by Phase 05 (data align — final phase) of the pguard-redesign program.
 
 ## Scope
 
@@ -283,6 +284,50 @@ per-sheet N+1 query loop.
 **Reusable pattern for any future list-with-aggregates screen:** prefer `groupBy` + in-memory
 reduce over per-row queries; union multiple `groupBy` calls in memory rather than one large raw
 query when the aggregation sources are semantically different (ordered qty vs. note-only shops).
+
+## Mobile responsive pattern (pguard-redesign Phase 04)
+
+**Architecture: RESPONSIVE shared-component — NOT a separate `(mobile)` route group.** The mobile
+build is a Tailwind `md` (768px) breakpoint swap over the SAME components/state, never a parallel
+route tree or a second save path.
+
+- **Shell breakpoint swap (`src/app/(main)/layout.tsx`):** now an `async` server component
+  reading `auth()` for `role`. Sidebar (`<Nav/>`) wrapped `hidden md:block`; `<BottomTabBar
+  role/>` (NEW `src/components/bottom-tab-bar.tsx`) renders below `md`; `<main>` gets `pb-16
+  md:pb-0` so the fixed bottom bar never covers content. CSS-breakpoint swap only.
+- **Bottom tab bar** (`src/components/bottom-tab-bar.tsx`): 3 mobile-only tabs — ร้านค้า
+  (`/orders`), สรุปยอด (`/summary`), ผู้ใช้ (`/admin/users`, **ADMIN-only** — hidden for STAFF via
+  a `role` prop, mirrors the same server-side role boundary `nav-links.tsx` uses, not a separate
+  gate). Active state `#15885B` via `usePathname` (same convention as `nav-links.tsx`). Tap
+  targets `min-h-12` (48px) — see the `--tap: 44px` token below.
+- **Order-matrix mobile branch is a VIEW over the SAME state, NOT a new surface**
+  (`src/app/(main)/orders/order-matrix.tsx`): a breakpoint-gated `md:hidden` mobile branch reads
+  and writes the SAME `cells`/`notes` state, the SAME `<form id="order-sheet-form">`, and the
+  SAME `buildOrderPayload(cells, notes)` (`src/lib/order-payload.ts`) as the desktop matrix
+  (`hidden md:flex`, unchanged). This is what makes payload byte-identity STRUCTURAL rather than
+  something that needs a separate test. Presentational subcomponents `order-mobile-list.tsx` +
+  `order-mobile-entry.tsx` live in `orders/` (not a `(mobile)` folder) and receive the SAME
+  `setCell`/`setNote` setters. The mobile save button is `type="submit" form="order-sheet-form"`
+  — never a separate save action; any future mobile-adjacent surface needing the same payload
+  MUST follow this same pattern (shared state + shared form id + `buildOrderPayload`), not
+  re-derive a save path.
+- **Full-viewport entry overlay:** the per-shop stepper entry is a `fixed z-50` overlay that
+  covers the bottom tab bar (no shared-state signal needed to hide it — it's simply on top).
+- **Responsive stack pattern (reused for any future single-column-below-md screen):**
+  `/summary` and `/admin/users` both use the same one-line responsive idiom —
+  `grid-cols-[2fr_1fr] md:grid-cols-[2fr_1fr]` style breakpoint classes, or a `hidden md:block`
+  (desktop) / `md:hidden` (mobile) pair for structurally different desktop-vs-mobile markup (used
+  by `admin/users/*`'s desktop table vs. NEW `users-mobile.tsx` card list, both driving the SAME
+  server actions — editRole/resetPassword/de-/activate — no new write path).
+- **Touch target token:** `--tap: 44px` (defined in the pguard token reference above) is the
+  mobile touch-target minimum; Phase 04 bumped steppers/prev-next/back buttons to `h-11 w-11`
+  (44px) to satisfy it — the design handoff prototype used 40px, plan compliance wins.
+- **Login responsive:** `src/app/(auth)/login/page.tsx` — md+ keeps the split-hero; below `md` a
+  green gridded hero + white bottom-sheet (`radius 18px 18px 0 0`) holds the UNCHANGED
+  `LoginForm` (`name=username`/`password` preserved — this is load-bearing for `auth.spec.ts`).
+
+**Reusable pattern for any future mobile-adjacent screen:** breakpoint-gate the SAME
+component/state at `md`; never fork a second route group, save path, or state store for mobile.
 
 ## Update triggers
 

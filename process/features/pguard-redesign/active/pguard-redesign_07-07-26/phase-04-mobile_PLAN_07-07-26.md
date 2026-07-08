@@ -155,7 +155,7 @@ pnpm build && pnpm lint
 - [x] 4. PVL — vc-validate-agent: DONE — validate-contract written (net gate PASS, no FAILs). EXECUTE next.
 - [x] 5. EXECUTE — all checklist items done; per-section test gates run and green (or gaps documented)
 - [x] 6. EVL — all EVL gates green (independent unconditional re-run: unit 82/82, lint, build 20 routes, e2e 25/25, scope-fence EMPTY, 5-screen probe); no follow-up stubs; EVL HANDOFF SUMMARY written; harness/phase-04/verification.json recorded
-- [ ] 7. UPDATE PROCESS — phase report written, umbrella state updated, commit done
+- [x] 7. UPDATE PROCESS — phase report written, umbrella state updated, commit done
 
 **Validate-contract required before execute.**
 
@@ -238,7 +238,7 @@ Rationale: 4 Layer-1 dimensions + 3 Layer-2 sections, independent read-only feas
 | criterion id | behavior | strategy | proving test | gap-resolution |
 |---|---|---|---|---|
 | DoD#4-payload | Mobile + desktop emit the IDENTICAL `cell:`/`note:` payload (one shared `buildOrderPayload`) | Fully-Automated | `pnpm test` green on `src/lib/__tests__/order-payload.test.ts` (structural — no new builder) | A |
-| scope-fence | 10 immutable files show ZERO git diff | Fully-Automated | `git diff --exit-code -- src/app/(main)/orders/actions.ts src/app/(main)/orders/order-save.ts src/lib/totals.ts src/lib/order-payload.ts prisma/schema.prisma src/test-fixtures/sheet-13-03-69.json src/app/(main)/orders/get-sheet-for-print.ts src/app/print/print-table.tsx src/app/print/sheet-header.tsx src/app/print/layout.tsx` exits 0 | A |
+| scope-fence | 10 immutable files show ZERO git diff | Fully-Automated | `git diff --exit-code -- src/app/(main)/orders/actions.ts src/app/(main)/orders/order-save.ts src/lib/totals.ts src/lib/order-payload.ts prisma/schema.prisma test-fixtures/sheet-13-03-69.json src/app/(main)/orders/get-sheet-for-print.ts src/app/print/print-table.tsx src/app/print/sheet-header.tsx src/app/print/layout.tsx` exits 0 | A |
 | DoD#4-mobile-e2e | Enter 13/3/69 via mobile per-shop steppers → save (form="order-sheet-form") → reload → grand-total 446 | Hybrid | NEW Playwright 390×844 project reusing `e2e/.auth/staff.json` + hoisted `cleanState()` helper | B |
 | tab-nav | 3 bottom tabs navigate ร้านค้า/สรุปยอด/ผู้ใช้ (ผู้ใช้ ADMIN-only); tab bar HIDDEN during entry overlay | Hybrid | same 390×844 project | B |
 | mobile-ergonomics | 5 mobile screens render at 390×844; touch targets ≥44px | Agent-Probe | 390×844 screenshot + measure | B |
@@ -251,7 +251,7 @@ Failing stubs: none required. The DoD#4-payload row is an EXISTING green test (s
 
 Legacy line form (retained for existing consumers):
 - mobile-payload: Fully-automated: `pnpm test` (existing `order-payload.test.ts` — structural parity, shared buildOrderPayload)
-- scope-fence: Fully-automated: `git diff --exit-code -- <10 immutable files>` exits 0
+- scope-fence: Fully-automated: `git diff --exit-code -- <10 immutable files>` exits 0 (corrected path: `test-fixtures/sheet-13-03-69.json`, not `src/test-fixtures/...`)
 - mobile-e2e-446: hybrid: NEW Playwright 390×844 project + precondition: dev server + `e2e/.auth/staff.json` + hoisted clean-state helper
 - tab-nav: hybrid: same 390×844 project + precondition: dev server
 - 5-screen ergonomics: agent-probe: 390×844 screenshot + >=44px measure
