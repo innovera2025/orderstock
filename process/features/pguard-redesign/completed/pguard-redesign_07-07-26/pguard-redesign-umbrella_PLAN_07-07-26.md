@@ -13,15 +13,28 @@ metadata:
 
 **Date**: 07-07-26
 **Complexity**: COMPLEX
-**Status**: 🔨 CODE DONE (Phase 01 + Phase 02 + Phase 03 + Phase 04 ✅ VERIFIED; Phase 05 — FINAL phase — next)
+**Status**: ✅ COMPLETE (08-07-26) — all 5 phases ✅ VERIFIED; program archived
 
 ## Overview
 
-This umbrella orchestrates the pguard-redesign phased delivery plan; the per-phase implementation checklist lives in the five phase plans. Context router: `process/context/all-context.md`. UI/token/shell context: `process/context/uxui/all-uxui.md`. Test routing: `process/context/tests/all-tests.md`. Next Step: run Phase 05 RESEARCH (ENTER EXECUTE MODE only per-phase after each validate-contract is written). Phase 05 is the FINAL phase — its UPDATE PROCESS step is PROGRAM CLOSEOUT (move the whole program task folder `active/` → `completed/`).
+This umbrella orchestrated the pguard-redesign phased delivery plan; the per-phase implementation checklist lives in the five phase plans. Context router: `process/context/all-context.md`. UI/token/shell context: `process/context/uxui/all-uxui.md`. Test routing: `process/context/tests/all-tests.md`. **Program is COMPLETE (08-07-26).** All 5 phases are ✅ VERIFIED and the program task folder has been archived to `completed/`.
 
-- Program type: PHASE PROGRAM (5 phases, sequential with gated joins)
+## Closing Summary
+
+pguard-redesign delivered the full pguard design-system re-skin of the orderstock frontend: design
+tokens + IBM Plex fonts + sidebar/topbar shell + dark mode (Phase 1); the 20-column order matrix
+replacing the Order Pad + all core desktop screens — login, shops, products, admin/users, settings,
+print toolbar (Phase 2); the two new screens สรุปยอดผลิต (bar chart) and ประวัติออเดอร์ (real rows)
+(Phase 3); the fully responsive mobile app + bottom tab bar over the same order-matrix state/payload
+(Phase 4); and the ตีลานนิ่ม/ตีลาน display rename with idempotent reseed + full-program regression
+(Phase 5). Three invariants held across every phase, enforced each time by a scope-fence git-diff on
+the 9-file immutable set: the `saveOrderSheet` payload stayed byte-identical, the 446-total fixture
+stayed numerically intact, and the print sheet stayed byte-faithful. Final counts: 88 Vitest units /
+16 files, 25/25 Playwright e2e (21 desktop + 4 mobile), 20 buildable routes.
+
+- Program type: PHASE PROGRAM (5 phases, sequential with gated joins) — COMPLETE
 - Feature folder: `process/features/pguard-redesign/`
-- Program task folder: `process/features/pguard-redesign/active/pguard-redesign_07-07-26/`
+- Program task folder (archived): `process/features/pguard-redesign/completed/pguard-redesign_07-07-26/`
 
 ## Design Handoff References (in the feature `references/` dir)
 
@@ -83,7 +96,7 @@ Hard safety constraints (non-negotiable, per phase):
 
 ```
 SESSION GOAL: pguard-redesign — orderstock frontend re-skin to the pguard Design System
-Ref: process/features/pguard-redesign/active/pguard-redesign_07-07-26/pguard-redesign-umbrella_PLAN_07-07-26.md
+Ref: process/features/pguard-redesign/completed/pguard-redesign_07-07-26/pguard-redesign-umbrella_PLAN_07-07-26.md
 
 TARGET: Complete ALL 5 phases until:
 - App renders in the pguard theme (light+dark), sidebar+topbar shell, every route reachable
@@ -213,7 +226,7 @@ During /goal execution of this phase program:
 | 04 — Mobile | `.../phase-04-mobile_REPORT_07-07-26.md` |
 | 05 — Data align + verify | `.../phase-05-data-align-verify_REPORT_07-07-26.md` |
 
-All paths are inside `process/features/pguard-redesign/active/pguard-redesign_07-07-26/`.
+All paths are inside `process/features/pguard-redesign/completed/pguard-redesign_07-07-26/`.
 
 ---
 
@@ -226,7 +239,7 @@ All paths are inside `process/features/pguard-redesign/active/pguard-redesign_07
 | 02 — Core desktop | ✅ VERIFIED (07-07-26 — EVL independent re-run: 6/6 gate rows green, scope fence EMPTY on all 9 immutable files, e2e 19/19 + idempotency re-run 3/3; UPDATE PROCESS done) |
 | 03 — New screens | ✅ VERIFIED (08-07-26 — EVL independent re-run: all 9 gates green, scope fence EMPTY, e2e 21/21; UPDATE PROCESS done) |
 | 04 — Mobile | ✅ VERIFIED (08-07-26 — EVL independent re-run: unit 82/82, lint, build 20 routes, e2e 25/25 [21 desktop + 4 mobile], scope-fence EMPTY on 10 immutable files, 5-screen agent-probe; UPDATE PROCESS done) |
-| 05 — Data align + verify (FINAL) | ⏳ PLANNED |
+| 05 — Data align + verify (FINAL) | ✅ VERIFIED (08-07-26 — EVL independent re-run: all 13 gates green, rename correct, 88 units, 25/25 e2e, seed idempotent + no-dup, scope-fence EMPTY, 446 intact, frozen ดีลาน snapshots preserved; UPDATE PROCESS / PROGRAM CLOSEOUT done) |
 
 Status values: ⏳ PLANNED | 🔨 CODE DONE | 🧪 TESTING | ✅ VERIFIED | 🚧 BLOCKED | ✅ COMPLETE
 
@@ -270,11 +283,11 @@ Shared-file coordination (tracked in `phase-blast-radius-registry.md`): `src/app
 ```bash
 # Umbrella artifact validity
 node .claude/skills/vc-generate-phase-program/scripts/validate-umbrella-artifact.mjs \
-  process/features/pguard-redesign/active/pguard-redesign_07-07-26/pguard-redesign-umbrella_PLAN_07-07-26.md
+  process/features/pguard-redesign/completed/pguard-redesign_07-07-26/pguard-redesign-umbrella_PLAN_07-07-26.md
 # Expected: no FAIL lines
 
 # All five phase plans valid
-for f in process/features/pguard-redesign/active/pguard-redesign_07-07-26/phase-0*_PLAN_07-07-26.md; do
+for f in process/features/pguard-redesign/completed/pguard-redesign_07-07-26/phase-0*_PLAN_07-07-26.md; do
   node .claude/skills/vc-generate-plan/scripts/validate-plan-artifact.mjs "$f"; done
 # Expected: no FAIL lines per file
 
@@ -285,63 +298,53 @@ for f in process/features/pguard-redesign/active/pguard-redesign_07-07-26/phase-
 
 ## Resume and Execution Handoff
 
-- Selected plan file path: `process/features/pguard-redesign/active/pguard-redesign_07-07-26/pguard-redesign-umbrella_PLAN_07-07-26.md`
-- Last completed phase: Phase 04 — Mobile (✅ VERIFIED 08-07-26; EVL independent re-run: unit 82/82, lint, build 20 routes, e2e 25/25 [21 desktop + 4 mobile], scope-fence EMPTY on 10 immutable files, 5-screen agent-probe).
-- Validate-contract status: Phase 01 + Phase 02 + Phase 03 + Phase 04 CLEAN/closed. Phase 05 pending (vc-validate-agent writes it after Phase 05 RESEARCH → INNOVATE → PLAN-SUPPLEMENT).
-- Next step for a fresh agent: Read this umbrella (esp. `## Current Execution State` carry-forward notes below), read `phase-05-data-align-verify_PLAN_07-07-26.md` and the Phase 04 report, then run the Phase 05 RESEARCH subagent before any EXECUTE work.
-- Current phase: Phase 05 (Data align + verify — FINAL phase).
-- Next action: Spawn vc-research-agent for Phase 05.
-- Execute-agent start instruction: Do NOT execute yet. Phase 05 must complete RESEARCH → INNOVATE → PLAN-SUPPLEMENT → PVL first. Never change the saveOrderSheet payload / schema / 446 fixture / print sheet. This is the FINAL phase — its UPDATE PROCESS step is PROGRAM CLOSEOUT (archive the whole program task folder).
+- Selected plan file path: `process/features/pguard-redesign/completed/pguard-redesign_07-07-26/pguard-redesign-umbrella_PLAN_07-07-26.md`
+- Last completed phase: Phase 05 — Data align + verify, FINAL (✅ VERIFIED 08-07-26; EVL independent re-run: all 13 gates green, rename correct, 88 units, 25/25 e2e, seed idempotent + no-dup, scope-fence EMPTY, 446 intact, frozen ดีลาน snapshots preserved).
+- Validate-contract status: Phase 01 + Phase 02 + Phase 03 + Phase 04 + Phase 05 all CLEAN/closed.
+- Program status: **✅ COMPLETE (08-07-26).** All 5 phases VERIFIED. Program task folder archived to `completed/`.
+- Next step for a fresh agent: none — program is closed. Any new pguard-related work (e.g. weight/ปี๊บ persistence backlog item) should get its own new task folder under `process/features/pguard-redesign/active/`, referencing this completed program folder for prior decisions/patterns.
 
 ---
 
 ## Current Execution State
 
 Last updated: 08-07-26
-Completed phases: Phase 0 (Planning), Phase 01 (Foundation), Phase 02 (Core desktop), Phase 03 (New screens), Phase 04 (Mobile) — ✅ VERIFIED
-Current phase: Phase 05 — Data align + verify (FINAL phase)
-Current loop step: RESEARCH (not started)
-Validate-contract status: Phase 05 pending (vc-validate-agent writes it after RESEARCH → INNOVATE → PLAN-SUPPLEMENT).
-Program Net Gate: Phase 01 CLEAN/VERIFIED; Phase 02 CLEAN/VERIFIED; Phase 03 CLEAN/VERIFIED; Phase 04 CLEAN/VERIFIED; Phase 05 not started.
+Completed phases: Phase 0 (Planning), Phase 01 (Foundation), Phase 02 (Core desktop), Phase 03 (New screens), Phase 04 (Mobile), Phase 05 (Data align + verify) — ALL ✅ VERIFIED
+Current phase: none — PROGRAM COMPLETE
+Current loop step: n/a — program closed
+Validate-contract status: all 5 phase contracts CLEAN/closed.
+Program Net Gate: Phase 01 CLEAN/VERIFIED; Phase 02 CLEAN/VERIFIED; Phase 03 CLEAN/VERIFIED; Phase 04 CLEAN/VERIFIED; Phase 05 CLEAN/VERIFIED. PROGRAM COMPLETE.
 Latest validator run: 08-07-26 — see Verification Evidence commands below
 
-Phase 04 carry-forward (read before Phase 05 RESEARCH — durable surfaces now available):
-1. **Phase 05 scope** — apply the ตีลานนิ่ม/ตีลาน product renames (`src/lib/product-order.ts` +
-   `prisma/seed.ts`) + role-label alignment, reseed idempotently, then run FULL program
-   regression (446 intact, all e2e green, names consistent across matrix/summary/print).
-2. **`product-order.ts` is IN this phase's blast radius** (allowed to write — it was
-   read-only through Phases 02-04) — the rename is display-only; `printOrder` mapping
-   1..20 MUST stay unchanged. The 446 fixture (`test-fixtures/sheet-13-03-69.json`) uses
-   `printOrder`/`rosterOrder`, not product names, so it must stay green through the
-   rename unchanged, plus verify the snapshot-name correction-cascade behavior still
-   holds (renamed live names must not retroactively alter already-saved
-   `variantNameAtEntry` snapshots — see `database/all-database.md`).
-3. **All screens read product/shop names data-driven** (matrix 3-tier header, mobile
-   list/entry, /summary bars, /history rows) — none hardcode names — so the renames
-   propagate automatically once `product-order.ts` + the seed are updated. No UI file
-   should need a rename-specific edit.
-4. **HARD STOP still applies (even in this final phase)** — never touch the
-   `saveOrderSheet` payload shape, `src/lib/totals.ts` internals,
-   `src/app/(main)/orders/actions.ts`/`order-save.ts`, the print sheet chain
-   (`get-sheet-for-print.ts`/`print-table.tsx`/`sheet-header.tsx`), `prisma/schema.prisma`,
-   or the 446 fixture's numeric totals. Only DISPLAY names change.
-5. **This is the LAST phase of the program** — Phase 05's UPDATE PROCESS step is
-   PROGRAM CLOSEOUT: move the whole program task folder
-   `process/features/pguard-redesign/active/pguard-redesign_07-07-26/` →
-   `process/features/pguard-redesign/completed/` as a unit once Phase 05 is ✅ VERIFIED.
-6. **Mobile per-shop entry writes the SAME `saveOrderSheet` payload**
-   (`cell:{shopId}:{variantId}` + `note:{shopId}`) via `buildOrderPayload`
-   (`src/lib/order-payload.ts`) — proven structural in Phase 04; the renamed product
-   names will flow through the SAME `columns` query the mobile list/entry already reads.
-7. **The e2e clean-state helper is now hoisted** to `e2e/util/clean-state.ts` (Phase 04
-   resolved the Phase-03 EVL residual) and shared by `summary-history.spec.ts` +
-   `mobile.spec.ts` — Phase 05's full-regression e2e run should reuse it if any new spec
-   needs clean-state guarantees.
+Program learnings (durable, for future phase-program work):
+1. A scope-fence git-diff on a named immutable file set, re-checked every single phase, kept the
+   `saveOrderSheet` payload, the 446-total fixture, and the print sheet byte-identical across 5
+   independent UI re-skin phases with zero regressions — this pattern is reusable for any future
+   "re-skin without touching data/business logic" program.
+2. Building the mobile UI as a RESPONSIVE branch of the SAME component/state/payload (Phase 04),
+   rather than a separate route tree, made payload parity structural instead of something that had
+   to be separately tested and maintained.
+3. The seed's name-keyed `findFirst({name, isOffList})` upsert pattern created a duplicate-row trap
+   for any future display-name rename (Phase 05) — caught in RESEARCH before it shipped, by
+   explicitly designing an `updateMany`-before-loop rename-migration. Any future seed-driven rename
+   must check for this same trap.
+4. Historical-fidelity snapshots (`variantNameAtEntry`) intentionally do NOT get retroactively
+   backfilled on a live-name rename — this is correct-by-design, not a gap, and was verified
+   end-to-end in Phase 05's EVL.
+
+Residual/backlog items (not blockers, not part of this program's scope):
+- `process/features/pguard-redesign/backlog/weight-peep-persistence_NOTE_07-07-26.md` — matrix KPI
+  weight (รวมน้ำหนัก) + peep (รวมปี๊บ) are UI-only transient inputs, not persisted.
+- Live `placeName`/`hlFilled` reflection on non-order screens was deferred (out of program scope).
+- Frozen-vs-live rename divergence (old sheets show ดีลาน, new sheets show ตีลาน) is INTENDED
+  behavior, not a gap — see Program learnings #4 above.
 
 Loop step values: RESEARCH | INNOVATE | PLAN-SUPPLEMENT | PVL | EXECUTE | EVL | UPDATE-PROCESS
-Orchestrator rule: read "Current loop step" and "validate-contract status" before spawning any subagent. Never spawn execute-agent when loop step is RESEARCH, INNOVATE, PLAN-SUPPLEMENT, or PVL.
+Orchestrator rule: this program is closed — no further subagent spawns apply to this umbrella. New
+pguard-related work opens a new task folder.
 
-Note: The Stable Program Goal above is fixed. This section is the only part that changes — update-process-agent rewrites it after every phase closeout (overwrite, not append — git history is the audit log).
+Note: The Stable Program Goal above is fixed. This section is the terminal state for this program —
+future related work should reference this file rather than reopen it.
 
 ---
 

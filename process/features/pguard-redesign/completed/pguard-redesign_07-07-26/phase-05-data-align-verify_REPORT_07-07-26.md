@@ -3,7 +3,7 @@ phase: phase-05-data-align-verify
 date: 2026-07-08
 status: COMPLETE
 feature: pguard-redesign
-plan: process/features/pguard-redesign/active/pguard-redesign_07-07-26/phase-05-data-align-verify_PLAN_07-07-26.md
+plan: process/features/pguard-redesign/completed/pguard-redesign_07-07-26/phase-05-data-align-verify_PLAN_07-07-26.md
 ---
 
 # Phase 05 — Data Align + Verify — EXECUTE Report (DRAFT)
@@ -58,7 +58,7 @@ None new. `test:e2e` script gap (cited by prior exit gate) resolved this phase (
 
 ## Closeout Packet
 
-- Selected plan: process/features/pguard-redesign/active/pguard-redesign_07-07-26/phase-05-data-align-verify_PLAN_07-07-26.md
+- Selected plan: process/features/pguard-redesign/completed/pguard-redesign_07-07-26/phase-05-data-align-verify_PLAN_07-07-26.md
 - Finished: A–E all complete; all gates green.
 - Verified: rename unit, 88 units, lint, build (20 routes), 25/25 e2e, seed idempotency, scope-fence EMPTY, agent-probe live=ตีลาน / frozen=ดีลาน.
 - Remaining: EVL (orchestrator spawns vc-tester to independently re-run gates), then PROGRAM CLOSEOUT
@@ -113,7 +113,7 @@ gates_green: [rename-source, rename-unit, full-unit-88, totals-446, lint, build-
 known_gaps: none
 follow_up_stubs: none
 context_partial: []
-preliminary_packet_path: process/features/pguard-redesign/active/pguard-redesign_07-07-26/phase-05-data-align-verify_REPORT_07-07-26.md
+preliminary_packet_path: process/features/pguard-redesign/completed/pguard-redesign_07-07-26/phase-05-data-align-verify_REPORT_07-07-26.md
 closeout_classification: CLEAN
 ```
 

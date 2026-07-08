@@ -3,7 +3,7 @@ phase: phase-03-new-screens
 date: 2026-07-08
 status: COMPLETE
 feature: pguard-redesign
-plan: process/features/pguard-redesign/active/pguard-redesign_07-07-26/phase-03-new-screens_PLAN_07-07-26.md
+plan: process/features/pguard-redesign/completed/pguard-redesign_07-07-26/phase-03-new-screens_PLAN_07-07-26.md
 ---
 
 # Phase 03 — New Screens — EXECUTE Report (DRAFT)
@@ -126,6 +126,6 @@ gates_green: [G1, G2, G3, G4, G5, G6, G7, G8, G9]
 known_gaps: [weight/ปี๊บ unpersisted — render "—" by design, backlog note registered; multi-location same-day summary out of scope]
 follow_up_stubs: [hoist e2e clean-state beforeEach into shared util if Phase 04 needs it]
 context_partial: []
-preliminary_packet_path: process/features/pguard-redesign/active/pguard-redesign_07-07-26/phase-03-new-screens_REPORT_07-07-26.md
+preliminary_packet_path: process/features/pguard-redesign/completed/pguard-redesign_07-07-26/phase-03-new-screens_REPORT_07-07-26.md
 closeout_classification: CLEAN
 ```

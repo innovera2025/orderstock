@@ -1,6 +1,6 @@
 ---
 name: context:all-tests
-description: Testing entrypoint for orderstock — Vitest 3.2.6 (82 tests/15 files) and Playwright E2E (25 tests, incl. mobile project) both real and wired, sandbox SQL Server constraint
+description: Testing entrypoint for orderstock — Vitest 3.2.6 (88 tests/16 files) and Playwright E2E (25 tests, incl. mobile project) both real and wired, sandbox SQL Server constraint
 keywords: tests, testing, vitest, playwright, e2e, unit, integration, verification, coverage, sandbox, sql server, health check, build, lint, storage state, fixtures, totals, be-date, order-save, mobile, mobile viewport, mobile project, clean-state
 related: [context:all-database, context:all-auth]
 metadata:
@@ -9,7 +9,7 @@ metadata:
 
 # orderstock - All Tests
 
-Last updated: 2026-07-08 (pguard-redesign Phase 04 closeout — Mobile ✅ VERIFIED)
+Last updated: 2026-07-08 (pguard-redesign PROGRAM COMPLETE — Phase 05 closeout, all 5 phases VERIFIED)
 
 Attach this file first when the task involves testing, verification, or test debugging.
 
@@ -36,7 +36,7 @@ This is the `all-tests.md` entrypoint for the `tests/` context group. It follows
 
 ## Current Status
 
-**Real, wired, and passing as of pguard-redesign Phase 04 (Mobile, ✅ VERIFIED 08-07-26).** phase1-order-system remains program-complete (its own baseline: 70 tests / 12 files, 19 e2e). The pguard-redesign program has since added to the SAME suites: Vitest is still **82 tests across 15 files** (unchanged since Phase 03 — Phase 04 added no new unit builder, payload parity stayed structural), and Playwright is now **25 e2e tests across 6 spec files** (the prior 21 unchanged + new `e2e/mobile.spec.ts`, 4 tests, Phase 04, run against a NEW 390×844 `mobile` Playwright project). A Docker SQL Server 2022 sandbox provides the DB-dependent gates, plus a second same-container database (`orderstock2`) used only by the Phase 06 Hybrid round-trip gate. This file's Commands table below is the current baseline; any future order-system OR pguard-redesign work should extend it the same way.
+**Real, wired, and passing as of pguard-redesign Phase 05 (Data align + verify, ✅ VERIFIED 08-07-26 — FINAL phase, PROGRAM COMPLETE).** phase1-order-system remains program-complete (its own baseline: 70 tests / 12 files, 19 e2e). The pguard-redesign program's final phase added to the SAME suites: Vitest is now **88 tests across 16 files** (Phase 05 added `src/lib/__tests__/product-names.test.ts`, 6 tests, for the ตีลานนิ่ม/ตีลาน rename — unchanged since Phase 03/04 otherwise), and Playwright is still **25 e2e tests across 6 spec files** (unchanged from Phase 04 — the rename needed no new e2e spec, proven via the existing suites + an agent-probe). A Docker SQL Server 2022 sandbox provides the DB-dependent gates, plus a second same-container database (`orderstock2`) used only by the Phase 06 Hybrid round-trip gate. **pguard-redesign is now PROGRAM COMPLETE (08-07-26)** — this baseline (88 units / 16 files, 25 e2e) is the current stable regression suite; any future order-system OR pguard-related work should extend it the same way.
 
 ## Testing Approach
 

@@ -12,9 +12,9 @@ metadata:
 # Phase 04 — Mobile
 
 **Program:** pguard-redesign
-**Umbrella plan:** process/features/pguard-redesign/active/pguard-redesign_07-07-26/pguard-redesign-umbrella_PLAN_07-07-26.md
+**Umbrella plan:** process/features/pguard-redesign/completed/pguard-redesign_07-07-26/pguard-redesign-umbrella_PLAN_07-07-26.md
 **Phase status:** ✅ VERIFIED (EVL 2026-07-08 — all gates green on independent re-run; scope-fence EMPTY; payload byte-identity STRUCTURAL)
-**Report destination:** process/features/pguard-redesign/active/pguard-redesign_07-07-26/phase-04-mobile_REPORT_07-07-26.md (flat in the program task folder)
+**Report destination:** process/features/pguard-redesign/completed/pguard-redesign_07-07-26/phase-04-mobile_REPORT_07-07-26.md (flat in the program task folder)
 
 ---
 
@@ -193,7 +193,7 @@ pnpm build && pnpm lint
 
 ## Resume and Execution Handoff
 
-- Selected plan file path: `process/features/pguard-redesign/active/pguard-redesign_07-07-26/phase-04-mobile_PLAN_07-07-26.md`
+- Selected plan file path: `process/features/pguard-redesign/completed/pguard-redesign_07-07-26/phase-04-mobile_PLAN_07-07-26.md`
 - Last completed step: 4. PVL (validate-contract written; net gate PASS)
 - Validate-contract status: WRITTEN (net gate PASS, no FAILs). NEXT STEP is EXECUTE (Step 5).
 - Next step: Spawn vc-execute-agent (opus) for EXECUTE (Step 5). Start with Step A (bottom tab bar + layout responsive swap), then Step B (order-matrix mobile branch over the SAME state/form/buildOrderPayload — expose stable testids per contract E1), then Step C. The 10-file immutable set must show ZERO git diff. Payload byte-identity is STRUCTURAL — no new save path.

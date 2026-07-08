@@ -12,9 +12,9 @@ metadata:
 # Phase 02 — Core Desktop
 
 **Program:** pguard-redesign
-**Umbrella plan:** process/features/pguard-redesign/active/pguard-redesign_07-07-26/pguard-redesign-umbrella_PLAN_07-07-26.md
+**Umbrella plan:** process/features/pguard-redesign/completed/pguard-redesign_07-07-26/pguard-redesign-umbrella_PLAN_07-07-26.md
 **Phase status:** ✅ VERIFIED (EVL independent re-run 07-07-26: all gates green + scope fence empty; only documented within-blast-radius residuals)
-**Report destination:** process/features/pguard-redesign/active/pguard-redesign_07-07-26/phase-02-core-desktop_REPORT_07-07-26.md (flat in the program task folder)
+**Report destination:** process/features/pguard-redesign/completed/pguard-redesign_07-07-26/phase-02-core-desktop_REPORT_07-07-26.md (flat in the program task folder)
 
 ---
 
@@ -223,7 +223,7 @@ pnpm build && pnpm lint   # Expected: exit 0
 
 ## Resume and Execution Handoff
 
-- Selected plan file path: `process/features/pguard-redesign/active/pguard-redesign_07-07-26/phase-02-core-desktop_PLAN_07-07-26.md`
+- Selected plan file path: `process/features/pguard-redesign/completed/pguard-redesign_07-07-26/phase-02-core-desktop_PLAN_07-07-26.md`
 - Last completed step: 3. PLAN-SUPPLEMENT (full matrix build + e2e rewrite + immutable set folded in)
 - Validate-contract status: pending — NEXT STEP is PVL (spawn vc-validate-agent). Do NOT execute yet.
 - Next step: Spawn vc-validate-agent for PVL (Step 4). Flagship phase — the IMMUTABLE 9-file set (payload/schema/print/totals/fixture) must show ZERO git diff; matrix is a UI-only replacement.

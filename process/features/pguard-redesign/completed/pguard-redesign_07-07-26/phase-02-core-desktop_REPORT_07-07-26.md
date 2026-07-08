@@ -3,7 +3,7 @@ phase: phase-02-core-desktop
 date: 2026-07-07
 status: COMPLETE
 feature: pguard-redesign
-plan: process/features/pguard-redesign/active/pguard-redesign_07-07-26/phase-02-core-desktop_PLAN_07-07-26.md
+plan: process/features/pguard-redesign/completed/pguard-redesign_07-07-26/phase-02-core-desktop_PLAN_07-07-26.md
 ---
 
 # Phase 02 — Core Desktop — Execution Report
@@ -106,7 +106,7 @@ untouched (scope-fence proves it).
 
 ## Closeout Packet
 
-- **Selected plan:** `process/features/pguard-redesign/active/pguard-redesign_07-07-26/phase-02-core-desktop_PLAN_07-07-26.md`
+- **Selected plan:** `process/features/pguard-redesign/completed/pguard-redesign_07-07-26/phase-02-core-desktop_PLAN_07-07-26.md`
 - **Finished:** all checklist items A1–A7, B1–B4, C1; 4 Order-Pad files deleted; e2e rewritten.
 - **Verified:** unit 75/75, lint, build, scope-fence ZERO-diff (9 immutable), e2e orders D1(446)+D2,
   auth+settings+print regression 17/17.
@@ -203,6 +203,6 @@ gates_green: [pnpm test (75/75), pnpm lint, pnpm build (20 routes), scope-fence 
 known_gaps: [live placeName/hlFilled topbar+sidebar reflection deferred (persistence complete), weight/peep persistence (backlog note registered)]
 follow_up_stubs: [e2e beforeEach clean-state for Phases 03/04, tests/all-tests.md idempotency note, uxui/all-uxui.md app-settings+#topbar-actions portal pattern]
 context_partial: []
-preliminary_packet_path: process/features/pguard-redesign/active/pguard-redesign_07-07-26/phase-02-core-desktop_REPORT_07-07-26.md
+preliminary_packet_path: process/features/pguard-redesign/completed/pguard-redesign_07-07-26/phase-02-core-desktop_REPORT_07-07-26.md
 closeout_classification: CLEAN
 ```

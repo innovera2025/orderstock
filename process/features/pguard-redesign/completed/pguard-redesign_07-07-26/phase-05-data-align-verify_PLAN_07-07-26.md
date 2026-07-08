@@ -12,9 +12,9 @@ metadata:
 # Phase 05 — Data Align + Verify
 
 **Program:** pguard-redesign
-**Umbrella plan:** process/features/pguard-redesign/active/pguard-redesign_07-07-26/pguard-redesign-umbrella_PLAN_07-07-26.md
-**Phase status:** ✅ VERIFIED (EVL independent re-run all gates green — rename correct, 88 units, 25/25 e2e, seed idempotent + no-dup, scope-fence EMPTY, 446 intact, frozen ดีลาน snapshots preserved)
-**Report destination:** process/features/pguard-redesign/active/pguard-redesign_07-07-26/phase-05-data-align-verify_REPORT_07-07-26.md (flat in the program task folder)
+**Umbrella plan:** process/features/pguard-redesign/completed/pguard-redesign_07-07-26/pguard-redesign-umbrella_PLAN_07-07-26.md
+**Phase status:** ✅ VERIFIED (EVL independent re-run all gates green — rename correct, 88 units, 25/25 e2e, seed idempotent + no-dup, scope-fence EMPTY, 446 intact, frozen ดีลาน snapshots preserved) — PROGRAM COMPLETE (08-07-26)
+**Report destination:** process/features/pguard-redesign/completed/pguard-redesign_07-07-26/phase-05-data-align-verify_REPORT_07-07-26.md (flat in the program task folder)
 
 ---
 
@@ -164,7 +164,7 @@ pnpm tsx prisma/seed.ts && pnpm tsx prisma/seed.ts   # Expected: idempotent (no 
 - [x] 4. PVL — vc-validate-agent: DONE — full V1-V7; net gate PASS (no FAILs); validate-contract written (see `## Validate Contract`). Duplicate-trap, 446 invariant, frozen-snapshot, scope-fence feasibility all code-verified.
 - [x] 5. EXECUTE — all checklist items done; per-section test gates run and green (or gaps documented)
 - [x] 6. EVL — all EVL gates green (independent re-run); scope-fence EMPTY; rename correct; 446 intact; no dup printOrder; frozen ดีลาน snapshots preserved; EVL HANDOFF SUMMARY written
-- [ ] 7. UPDATE PROCESS — phase report written, umbrella state updated, commit done
+- [x] 7. UPDATE PROCESS — phase report written, umbrella state updated, program folder archived active→completed, context updated; commit done
 
 **Validate-contract written — EXECUTE unblocked.**
 
@@ -204,19 +204,19 @@ pnpm tsx prisma/seed.ts && pnpm tsx prisma/seed.ts   # Expected: idempotent (no 
 
 ## Resume and Execution Handoff
 
-- Selected plan file path: `process/features/pguard-redesign/active/pguard-redesign_07-07-26/phase-05-data-align-verify_PLAN_07-07-26.md`
-- Last completed step: 4. PVL (validate-contract written — net gate PASS, no FAILs)
-- Validate-contract status: WRITTEN (PASS). NEXT STEP is EXECUTE (spawn vc-execute-agent, opus). User gave advance consent to proceed through program closeout on a no-FAIL gate.
-- Next step: EXECUTE Step A first (product-order.ts 4-name rename + product-names.test.ts), then B (seed rename-migration + idempotency x2), C (test:e2e), D (role-label verify), E (full regression). Rename is display-only via the seed updateMany migration (no duplicate trap); printOrder + 446 stay identical.
+- Selected plan file path: `process/features/pguard-redesign/completed/pguard-redesign_07-07-26/phase-05-data-align-verify_PLAN_07-07-26.md`
+- Last completed step: 7. UPDATE PROCESS (program closeout complete)
+- Validate-contract status: WRITTEN (PASS). EXECUTE + EVL complete; all gates green.
+- Program status: pguard-redesign is ✅ COMPLETE (08-07-26). This phase folder has been archived — see below.
 
-### PROGRAM CLOSEOUT (terminal phase — done by the UPDATE-PROCESS after EVL; do NOT execute now)
+### PROGRAM CLOSEOUT (terminal phase — DONE)
 
-This is the LAST phase. After EVL passes, the step-7 UPDATE-PROCESS performs the program closeout:
-- Move the whole program folder `active/pguard-redesign_07-07-26/` → `completed/pguard-redesign_07-07-26/` (git mv, folder name unchanged).
+This was the LAST phase. After EVL passed, step-7 UPDATE-PROCESS performed the program closeout:
+- Moved the whole program folder `active/pguard-redesign_07-07-26/` → `completed/pguard-redesign_07-07-26/` (git mv, folder name unchanged).
 - Umbrella: all phases → ✅ VERIFIED; program → ✅ COMPLETE.
-- Write `phase-05-data-align-verify_REPORT_07-07-26.md`.
-- `process/context/all-context.md`: mark the `pguard-redesign` feature COMPLETE (08-07-26) / archived; final context updates.
-- Commit process/plan/context artefacts separately from execution commits.
+- Wrote `phase-05-data-align-verify_REPORT_07-07-26.md`.
+- `process/context/all-context.md`: pguard-redesign feature marked COMPLETE (08-07-26) / archived; final context updates applied.
+- process/plan/context artefacts committed separately from execution commits.
 
 ---
 
@@ -224,7 +224,7 @@ This is the LAST phase. After EVL passes, the step-7 UPDATE-PROCESS performs the
 
 **Date**: 07-07-26
 **Complexity**: COMPLEX (one phase of the pguard-redesign program)
-**Status**: 🧪 TESTING (validate-contract PASS; EXECUTE next)
+**Status**: ✅ VERIFIED — PROGRAM COMPLETE (08-07-26)
 
 ## Overview
 
@@ -304,4 +304,4 @@ What this coverage does NOT prove:
 Gate: PASS (no FAILs; all load-bearing claims code-verified; plan validator 0 failures/0 warnings)
 Accepted by: session (autonomous, /goal execution — user pre-consented "ทำเฟส 5 ต่อจนจบ" to proceed to EXECUTE + program closeout on a no-FAIL gate). No CONCERNs required acceptance (net gate PASS).
 
-Note (goal block): umbrella plan holds `## Stable Program Goal` → BRANCH B; no `## Autonomous Goal Block` written to this phase plan. The umbrella /goal governs. Reference for latest state: process/features/pguard-redesign/active/pguard-redesign_07-07-26/pguard-redesign-umbrella_PLAN_07-07-26.md
+Note (goal block): umbrella plan holds `## Stable Program Goal` → BRANCH B; no `## Autonomous Goal Block` written to this phase plan. The umbrella /goal governs. Reference for latest state: process/features/pguard-redesign/completed/pguard-redesign_07-07-26/pguard-redesign-umbrella_PLAN_07-07-26.md

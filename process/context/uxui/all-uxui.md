@@ -5,7 +5,7 @@ keywords: ui, ux, design, tokens, pguard, theme, dark mode, dark-mode, sidebar, 
 related: [context:all-tests]
 date: 08-07-26
 metadata:
-  read_when: any UI/token/component/shell/theme work, or any pguard-redesign phase after Phase 01
+  read_when: any UI/token/component/shell/theme work
 ---
 
 # orderstock — UI/UX (uxui) Context
@@ -13,11 +13,16 @@ metadata:
 Entrypoint for the pguard Design System introduced in `pguard-redesign` Phase 01 (07-07-26,
 ✅ VERIFIED), extended by Phase 02 (07-07-26, ✅ VERIFIED — matrix, settings persistence,
 `#topbar-actions` portal pattern), Phase 03 (08-07-26, ✅ VERIFIED — สรุปยอดผลิต bar-chart
-pattern, ประวัติออเดอร์ groupBy-aggregate pattern), and Phase 04 (08-07-26, ✅ VERIFIED — mobile
-responsive breakpoint pattern, bottom tab bar, mobile order-matrix branch). Read this before
+pattern, ประวัติออเดอร์ groupBy-aggregate pattern), Phase 04 (08-07-26, ✅ VERIFIED — mobile
+responsive breakpoint pattern, bottom tab bar, mobile order-matrix branch), and Phase 05 (08-07-26,
+✅ VERIFIED — ตีลานนิ่ม/ตีลาน display renames, no UI-pattern changes). Read this before
 touching `src/app/globals.css`, `src/components/ui/*`, the sidebar/topbar shell,
-`src/lib/app-settings.ts`, or any dark-mode/theme/topbar-portal/mobile-responsive logic. Consumed
-by Phase 05 (data align — final phase) of the pguard-redesign program.
+`src/lib/app-settings.ts`, or any dark-mode/theme/topbar-portal/mobile-responsive logic.
+**pguard-redesign is PROGRAM COMPLETE (08-07-26)** — all 5 phases verified, folder archived to
+`process/features/pguard-redesign/completed/pguard-redesign_07-07-26/`. Every pattern documented
+below is stable, live code; any new UI work (e.g. persisting the weight/ปี๊บ KPI inputs, see
+`process/features/pguard-redesign/backlog/`) should open its own new task folder rather than
+reopen this program.
 
 ## Scope
 
@@ -37,7 +42,7 @@ Does NOT cover: order-form domain logic (see root `all-context.md`), auth/sessio
 - Live implementation: `src/app/globals.css`, `src/lib/fonts.ts`, `src/components/ui/*`,
   `src/app/nav.tsx` / `src/app/nav-links.tsx` / `src/app/topbar.tsx` /
   `src/components/theme-toggle.tsx`, `src/app/(main)/layout.tsx`
-- Phase plan/report: `process/features/pguard-redesign/active/pguard-redesign_07-07-26/phase-01-foundation_PLAN_07-07-26.md`
+- Phase plan/report: `process/features/pguard-redesign/completed/pguard-redesign_07-07-26/phase-01-foundation_PLAN_07-07-26.md`
   and `phase-01-foundation_REPORT_07-07-26.md`
 
 ## pguard token reference

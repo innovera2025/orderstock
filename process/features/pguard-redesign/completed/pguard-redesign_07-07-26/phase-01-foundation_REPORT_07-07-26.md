@@ -3,7 +3,7 @@ phase: phase-01-foundation
 date: 2026-07-07
 status: COMPLETE
 feature: pguard-redesign
-plan: process/features/pguard-redesign/active/pguard-redesign_07-07-26/phase-01-foundation_PLAN_07-07-26.md
+plan: process/features/pguard-redesign/completed/pguard-redesign_07-07-26/phase-01-foundation_PLAN_07-07-26.md
 metadata:
   node_type: memory
   type: report
@@ -111,7 +111,7 @@ All within-blast-radius (no hard-stop class); documented per /goal deviation rul
   Playwright light/dark + print screenshot baseline in a later phase (Test Infra Improvement Note).
 
 ## Closeout Packet
-- Selected plan: `process/features/pguard-redesign/active/pguard-redesign_07-07-26/phase-01-foundation_PLAN_07-07-26.md`
+- Selected plan: `process/features/pguard-redesign/completed/pguard-redesign_07-07-26/phase-01-foundation_PLAN_07-07-26.md`
 - Finished: all A–F checklist items + all 6 execute-agent CONCERN mitigations (E-ROOT-LAYOUT,
   E-NAV-SPLIT, E-LOGOUT-NAME, E-STUB-AUTH, E-PRINT-FONT, E-CONTROLS, E-SARABUN-DELETE).
 - Verified: 5 automated gates green, 2 hybrid gates green (19/19 e2e), 3 agent-probe gates green
@@ -174,6 +174,6 @@ gates_green: [G-build, G-units, G-sarabun, G-lint, G-scopefence, G-routes, G-e2e
 known_gaps: ["no automated visual-regression baseline for theme/print — agent-probe only (accepted program residual)"]
 follow_up_stubs: ["/summary stub (Phase 03)", "/history stub (Phase 03)", "#topbar-actions per-page slot (Phase 02 fills)"]
 context_partial: []
-preliminary_packet_path: process/features/pguard-redesign/active/pguard-redesign_07-07-26/phase-01-foundation_REPORT_07-07-26.md
+preliminary_packet_path: process/features/pguard-redesign/completed/pguard-redesign_07-07-26/phase-01-foundation_REPORT_07-07-26.md
 closeout_classification: CLEAN
 ```

@@ -12,9 +12,9 @@ metadata:
 # Phase 03 — New Screens
 
 **Program:** pguard-redesign
-**Umbrella plan:** process/features/pguard-redesign/active/pguard-redesign_07-07-26/pguard-redesign-umbrella_PLAN_07-07-26.md
+**Umbrella plan:** process/features/pguard-redesign/completed/pguard-redesign_07-07-26/pguard-redesign-umbrella_PLAN_07-07-26.md
 **Phase status:** ✅ VERIFIED (EVL independent re-run 08-07-26: all 9 gates green + scope fence EMPTY; awaiting UPDATE PROCESS)
-**Report destination:** process/features/pguard-redesign/active/pguard-redesign_07-07-26/phase-03-new-screens_REPORT_07-07-26.md (flat in the program task folder)
+**Report destination:** process/features/pguard-redesign/completed/pguard-redesign_07-07-26/phase-03-new-screens_REPORT_07-07-26.md (flat in the program task folder)
 
 ---
 
@@ -202,7 +202,7 @@ pnpm build && pnpm lint
 
 ## Resume and Execution Handoff
 
-- Selected plan file path: `process/features/pguard-redesign/active/pguard-redesign_07-07-26/phase-03-new-screens_PLAN_07-07-26.md`
+- Selected plan file path: `process/features/pguard-redesign/completed/pguard-redesign_07-07-26/phase-03-new-screens_PLAN_07-07-26.md`
 - Last completed step: 3. PLAN-SUPPLEMENT (full /summary + /history build + summary.ts lib folded in)
 - Validate-contract status: pending — NEXT STEP is PVL (spawn vc-validate-agent). Do NOT execute yet.
 - Next step: Spawn vc-validate-agent for PVL (Step 4). Both screens are pure read-only; the immutable 9-file set must show ZERO git diff; summary bars ARE the 20 computeColumnTotals columns.

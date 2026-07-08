@@ -12,9 +12,9 @@ metadata:
 # Phase 01 — Foundation
 
 **Program:** pguard-redesign
-**Umbrella plan:** process/features/pguard-redesign/active/pguard-redesign_07-07-26/pguard-redesign-umbrella_PLAN_07-07-26.md
+**Umbrella plan:** process/features/pguard-redesign/completed/pguard-redesign_07-07-26/pguard-redesign-umbrella_PLAN_07-07-26.md
 **Phase status:** ✅ VERIFIED (07-07-26 — EVL independent re-run: all 10 gates green, scope fence empty, deviations benign; only accepted residual = no automated visual-regression baseline. UP/commit pending.)
-**Report destination:** process/features/pguard-redesign/active/pguard-redesign_07-07-26/phase-01-foundation_REPORT_07-07-26.md (flat in the program task folder)
+**Report destination:** process/features/pguard-redesign/completed/pguard-redesign_07-07-26/phase-01-foundation_REPORT_07-07-26.md (flat in the program task folder)
 
 ---
 
@@ -217,7 +217,7 @@ Orchestrator reads this before deciding which subagent to spawn next. 7-step inn
 
 ## Resume and Execution Handoff
 
-- Selected plan file path: `process/features/pguard-redesign/active/pguard-redesign_07-07-26/phase-01-foundation_PLAN_07-07-26.md`
+- Selected plan file path: `process/features/pguard-redesign/completed/pguard-redesign_07-07-26/phase-01-foundation_PLAN_07-07-26.md`
 - Last completed step: 3. PLAN-SUPPLEMENT (concrete A–F build folded in)
 - Validate-contract status: pending — NEXT STEP is PVL (spawn vc-validate-agent). Do NOT execute yet.
 - Next step: Spawn vc-validate-agent for PVL (Step 4). Scope fence: tokens/shell/primitives only — DO NOT touch the Order Pad or any data path this phase.

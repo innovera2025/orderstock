@@ -3,7 +3,7 @@ phase: phase-04-mobile
 date: 2026-07-08
 status: COMPLETE
 feature: pguard-redesign
-plan: process/features/pguard-redesign/active/pguard-redesign_07-07-26/phase-04-mobile_PLAN_07-07-26.md
+plan: process/features/pguard-redesign/completed/pguard-redesign_07-07-26/phase-04-mobile_PLAN_07-07-26.md
 ---
 
 # Phase 04 — Mobile — EXECUTE Report
@@ -101,7 +101,7 @@ No hard-stop-class deviations. Payload shape, schema, 446 fixture, and print cha
 
 ## Closeout Packet
 
-- Selected plan: `process/features/pguard-redesign/active/pguard-redesign_07-07-26/phase-04-mobile_PLAN_07-07-26.md`
+- Selected plan: `process/features/pguard-redesign/completed/pguard-redesign_07-07-26/phase-04-mobile_PLAN_07-07-26.md`
 - Finished: A1/A2/B1/B2/C1/C2/C3 + test infra; Phase Loop step 5 (EXECUTE) ticked.
 - Verified: unit 82, lint, build, e2e 25/25 (incl mobile 446 reconstruction), scope-fence EMPTY,
   agent-probe 5 screens. Still unverified: independent EVL re-run (orchestrator-owned, step 6).
@@ -155,6 +155,6 @@ gates_green: [unit-82, scope-fence-empty, lint, build-20-routes, e2e-25, agent-p
 known_gaps: none
 follow_up_stubs: none
 context_partial: []
-preliminary_packet_path: process/features/pguard-redesign/active/pguard-redesign_07-07-26/harness/phase-04/verification.json
+preliminary_packet_path: process/features/pguard-redesign/completed/pguard-redesign_07-07-26/harness/phase-04/verification.json
 closeout_classification: CLEAN
 ```
