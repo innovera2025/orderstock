@@ -1,9 +1,9 @@
 ---
 name: context:all-uxui
 description: "UI/UX context entrypoint for orderstock — pguard Design System tokens, semantic-alias contract, shared src/components/ui/* primitives, sidebar+topbar shell, dark mode, and print-font behavior"
-keywords: ui, ux, design, tokens, pguard, theme, dark mode, dark-mode, sidebar, topbar, nav, primitives, button, input, card, modal, toast, chip, switch, ibm plex, font, focus ring, radius, print font, order-matrix, matrix, topbar-actions, portal, app-settings, settings persistence
+keywords: ui, ux, design, tokens, pguard, theme, dark mode, dark-mode, sidebar, topbar, nav, primitives, button, input, card, modal, toast, chip, switch, ibm plex, font, focus ring, radius, print font, order-matrix, matrix, topbar-actions, portal, app-settings, settings persistence, summary, history, bar chart, top shops, groupby, shop totals
 related: [context:all-tests]
-date: 07-07-26
+date: 08-07-26
 metadata:
   read_when: any UI/token/component/shell/theme work, or any pguard-redesign phase after Phase 01
 ---
@@ -11,10 +11,12 @@ metadata:
 # orderstock — UI/UX (uxui) Context
 
 Entrypoint for the pguard Design System introduced in `pguard-redesign` Phase 01 (07-07-26,
-✅ VERIFIED) and extended by Phase 02 (07-07-26, ✅ VERIFIED — matrix, settings persistence,
-`#topbar-actions` portal pattern). Read this before touching `src/app/globals.css`,
-`src/components/ui/*`, the sidebar/topbar shell, `src/lib/app-settings.ts`, or any
-dark-mode/theme/topbar-portal logic. Consumed by Phases 03–05 of the pguard-redesign program.
+✅ VERIFIED), extended by Phase 02 (07-07-26, ✅ VERIFIED — matrix, settings persistence,
+`#topbar-actions` portal pattern), and extended again by Phase 03 (08-07-26, ✅ VERIFIED —
+สรุปยอดผลิต bar-chart pattern, ประวัติออเดอร์ groupBy-aggregate pattern). Read this before
+touching `src/app/globals.css`, `src/components/ui/*`, the sidebar/topbar shell,
+`src/lib/app-settings.ts`, or any dark-mode/theme/topbar-portal logic. Consumed by Phases 04–05
+of the pguard-redesign program.
 
 ## Scope
 
@@ -226,6 +228,61 @@ data-driven tables:
   unchanged) — see the Settings persistence pattern above for the two KPI cells (weight/peep)
   that remain deliberately transient/UI-only (backlog:
   `process/features/pguard-redesign/backlog/weight-peep-persistence_NOTE_07-07-26.md`).
+
+## สรุปยอดผลิต (`/summary`) bar-chart pattern (pguard-redesign Phase 03)
+
+`src/app/(main)/summary/page.tsx` — server component, `requireAuth`, `force-dynamic`. Fetches the
+most-recent `OrderSheet` OR one selected via `?date`(+`?location`) using a local UTC-midnight
+`parseDbDate` helper (mirrors `get-sheet-for-print.ts`'s date-key convention). Builds
+`OrderLineCell[]` from the sheet's `OrderLine` rows, then derives everything from `totals.ts` and
+the new `src/lib/summary.ts` — **no re-implementation of column-total arithmetic**:
+
+- **LEFT: 20-column bar Card** — one bar per `ProductVariant.printOrder` (1..20), width = CSS
+  percentage of `computeColumnTotals(cells)[printOrder]` against the max column total. Bar color
+  is green (`--brand-int`) for `product.group === "GOODS"` (สินค้า) and amber (`--accent`) for
+  `"SEASONING"` (เครื่องปรุง) — same two-group color convention as the matrix header tiers.
+  `data-testid="bar-{printOrder}"` + `data-qty` attrs for e2e assertions. Footer row uses
+  `--green-50` background with the grand total (`computeGrandTotal(cells)`).
+- **KPI strip**: น้ำหนัก / ปี๊บ render `"—"` (not persisted — see Known deferred gap below and
+  `backlog/weight-peep-persistence_NOTE_07-07-26.md`); ร้านที่สั่ง = shop count with ≥1 nonzero
+  cell or note; รวมจำนวน = `computeGrandTotal`, `data-testid="grand-total"`.
+- **RIGHT: top-8 shops Card** — `src/lib/summary.ts` exports two pure helpers (imports only
+  `totals.ts`, unit-tested in `src/lib/__tests__/summary.test.ts`, 7 tests):
+  - `computeShopTotals(cells: OrderLineCell[]): Record<number, number>` — Σ qty per
+    `rosterOrder` (per-shop total across all 20 columns).
+  - `topShops(cells, n = 8): { rosterOrder, qty }[]` — qty-desc, `rosterOrder`-asc tiebreak,
+    sliced to `n` (default 8).
+  Any future screen needing a per-shop leaderboard (mobile summary, Phase 04) should import these
+  same two helpers rather than re-deriving shop-total arithmetic.
+- Empty state: "ยังไม่มีใบออเดอร์" when no sheet exists for the resolved date.
+
+**Reusable pattern for any future dense-summary screen:** column-level aggregates come from
+`totals.ts` (unchanged), shop-level aggregates come from `summary.ts` (new, pure, additive) —
+never mix the two derivations in one place.
+
+## ประวัติออเดอร์ (`/history`) groupBy-aggregate pattern (pguard-redesign Phase 03)
+
+`src/app/(main)/history/page.tsx` — server component, `requireAuth`, `force-dynamic`. Lists REAL
+`OrderSheet` rows (`findMany`, date-desc) with per-sheet aggregates computed via **exactly one**
+`prisma.orderLine.groupBy({ by: ["sheetId", "shopId"], _sum: { qty: true } })` reduced in memory to
+`{ units, shopCount }` per sheet, **unioned with one** `prisma.noteLine.groupBy(...)` for note-only
+shops (shops with a note but zero ordered qty — matches the matrix's `orderedCount` semantics). No
+per-sheet N+1 query loop.
+
+- Table columns: BE-mono date (`be-date.ts`), th-TH weekday, ร้านที่สั่ง (shopCount), รวมหน่วย
+  (units), a unit bar (amber if today, per `--accent`), น้ำหนัก `"—"`, ปี๊บ `"—"`, status chip,
+  "เปิดใบงาน" link to `/orders/{id}`.
+- **Today vs. closed**: compared via UTC-midnight date-key (`dbDayKey` vs. `todayKey`), never
+  naive `new Date()` comparison — today = amber row + "กำลังกรอก" chip; past = "ปิดยอดแล้ว" chip.
+  This mirrors the same UTC-midnight convention `get-sheet-for-print.ts` and `/summary`'s
+  `parseDbDate` use.
+- Current-month footer aggregates (วันทำการ / รวมหน่วย / เฉลี่ย) — omits the weight aggregate
+  (not persisted, same known gap as `/summary`'s KPI strip).
+- Empty state when no sheets exist.
+
+**Reusable pattern for any future list-with-aggregates screen:** prefer `groupBy` + in-memory
+reduce over per-row queries; union multiple `groupBy` calls in memory rather than one large raw
+query when the aggregation sources are semantically different (ordered qty vs. note-only shops).
 
 ## Update triggers
 

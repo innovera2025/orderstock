@@ -13,11 +13,11 @@ metadata:
 
 **Date**: 07-07-26
 **Complexity**: COMPLEX
-**Status**: 🔨 CODE DONE (Phase 01 + Phase 02 ✅ VERIFIED; Phase 03 next)
+**Status**: 🔨 CODE DONE (Phase 01 + Phase 02 + Phase 03 ✅ VERIFIED; Phase 04 next)
 
 ## Overview
 
-This umbrella orchestrates the pguard-redesign phased delivery plan; the per-phase implementation checklist lives in the five phase plans. Context router: `process/context/all-context.md`. UI/token/shell context: `process/context/uxui/all-uxui.md`. Test routing: `process/context/tests/all-tests.md`. Next Step: run Phase 02 RESEARCH (ENTER EXECUTE MODE only per-phase after each validate-contract is written).
+This umbrella orchestrates the pguard-redesign phased delivery plan; the per-phase implementation checklist lives in the five phase plans. Context router: `process/context/all-context.md`. UI/token/shell context: `process/context/uxui/all-uxui.md`. Test routing: `process/context/tests/all-tests.md`. Next Step: run Phase 04 RESEARCH (ENTER EXECUTE MODE only per-phase after each validate-contract is written).
 
 - Program type: PHASE PROGRAM (5 phases, sequential with gated joins)
 - Feature folder: `process/features/pguard-redesign/`
@@ -224,8 +224,8 @@ All paths are inside `process/features/pguard-redesign/active/pguard-redesign_07
 | 0 — Pre-program (plan creation) | ✅ VERIFIED (umbrella + stubs created; validators pass) |
 | 01 — Foundation | ✅ VERIFIED (07-07-26 — EVL independent re-run: 10/10 gates green, scope fence empty; UPDATE PROCESS done) |
 | 02 — Core desktop | ✅ VERIFIED (07-07-26 — EVL independent re-run: 6/6 gate rows green, scope fence EMPTY on all 9 immutable files, e2e 19/19 + idempotency re-run 3/3; UPDATE PROCESS done) |
-| 03 — New screens | ⏳ PLANNED (next) |
-| 04 — Mobile | ⏳ PLANNED |
+| 03 — New screens | ✅ VERIFIED (08-07-26 — EVL independent re-run: all 9 gates green, scope fence EMPTY, e2e 21/21; UPDATE PROCESS done) |
+| 04 — Mobile | ⏳ PLANNED (next) |
 | 05 — Data align + verify | ⏳ PLANNED |
 
 Status values: ⏳ PLANNED | 🔨 CODE DONE | 🧪 TESTING | ✅ VERIFIED | 🚧 BLOCKED | ✅ COMPLETE
@@ -286,50 +286,51 @@ for f in process/features/pguard-redesign/active/pguard-redesign_07-07-26/phase-
 ## Resume and Execution Handoff
 
 - Selected plan file path: `process/features/pguard-redesign/active/pguard-redesign_07-07-26/pguard-redesign-umbrella_PLAN_07-07-26.md`
-- Last completed phase: Phase 02 — Core desktop (✅ VERIFIED 07-07-26; EVL independent re-run 6/6 gate rows green, scope fence EMPTY on 9 immutable files).
-- Validate-contract status: Phase 01 + Phase 02 CLEAN/closed. Phase 03 pending (vc-validate-agent writes it after Phase 03 RESEARCH → INNOVATE → PLAN-SUPPLEMENT).
-- Next step for a fresh agent: Read this umbrella (esp. `## Current Execution State` carry-forward notes below), read `phase-03-new-screens_PLAN_07-07-26.md` and the Phase 02 report, then run the Phase 03 RESEARCH subagent before any EXECUTE work.
-- Current phase: Phase 03 (New screens — สรุปยอดผลิต + ประวัติออเดอร์).
-- Next action: Spawn vc-research-agent for Phase 03.
-- Execute-agent start instruction: Do NOT execute yet. Phase 03 must complete RESEARCH → INNOVATE → PLAN-SUPPLEMENT → PVL first. Never change the saveOrderSheet payload / schema / 446 fixture / print sheet.
+- Last completed phase: Phase 03 — New screens (✅ VERIFIED 08-07-26; EVL independent re-run all 9 gates green, scope fence EMPTY on 9 immutable files, e2e 21/21).
+- Validate-contract status: Phase 01 + Phase 02 + Phase 03 CLEAN/closed. Phase 04 pending (vc-validate-agent writes it after Phase 04 RESEARCH → INNOVATE → PLAN-SUPPLEMENT).
+- Next step for a fresh agent: Read this umbrella (esp. `## Current Execution State` carry-forward notes below), read `phase-04-mobile_PLAN_07-07-26.md` and the Phase 03 report, then run the Phase 04 RESEARCH subagent before any EXECUTE work.
+- Current phase: Phase 04 (Mobile — 5 screens + bottom tab bar).
+- Next action: Spawn vc-research-agent for Phase 04.
+- Execute-agent start instruction: Do NOT execute yet. Phase 04 must complete RESEARCH → INNOVATE → PLAN-SUPPLEMENT → PVL first. Never change the saveOrderSheet payload / schema / 446 fixture / print sheet.
 
 ---
 
 ## Current Execution State
 
-Last updated: 07-07-26
-Completed phases: Phase 0 (Planning), Phase 01 (Foundation), Phase 02 (Core desktop) — ✅ VERIFIED
-Current phase: Phase 03 — New screens (สรุปยอดผลิต + ประวัติออเดอร์)
+Last updated: 08-07-26
+Completed phases: Phase 0 (Planning), Phase 01 (Foundation), Phase 02 (Core desktop), Phase 03 (New screens) — ✅ VERIFIED
+Current phase: Phase 04 — Mobile (5 screens + bottom tab bar)
 Current loop step: RESEARCH (not started)
-Validate-contract status: n/a yet for Phase 03 — PVL runs after Phase 03 RESEARCH → INNOVATE → PLAN-SUPPLEMENT.
-Program Net Gate: Phase 01 CLEAN/VERIFIED; Phase 02 CLEAN/VERIFIED; Phase 03 not yet gated.
-Latest validator run: 07-07-26 — phase-02 + umbrella validators pending re-run post-bookkeeping (see Verification Evidence commands below)
+Validate-contract status: n/a yet for Phase 04 — PVL runs after Phase 04 RESEARCH → INNOVATE → PLAN-SUPPLEMENT.
+Program Net Gate: Phase 01 CLEAN/VERIFIED; Phase 02 CLEAN/VERIFIED; Phase 03 CLEAN/VERIFIED; Phase 04 not yet gated.
+Latest validator run: 08-07-26 — see Verification Evidence commands below
 
-Phase 02 carry-forward (read before Phase 03 RESEARCH — durable surfaces now available):
-1. **Matrix live totals** come from `computeColumnTotals`/`computeGrandTotal` in
-   `src/lib/totals.ts` (unchanged, REUSED) — Phase 03's สรุปยอดผลิต (`/summary`) bars
-   REUSE these same functions, do not reimplement column/grand-total arithmetic.
-2. **Order data access pattern**: the `[id]/page.tsx`-style query (columns
-   `productId`/`productName`/`packSize`/`labelVariant` + printOrder 1..20, rows by
-   `rosterOrder` 1..29) is the reference shape for reading an OrderSheet's rows —
-   Phase 03's ประวัติออเดอร์ (`/history`) and สรุปยอดผลิต both read real `OrderSheet`
-   data this way.
-3. **ประวัติออเดอร์ (`/history`) lists REAL `OrderSheet` rows** — no mock data (program
-   charter decision, resolved).
-4. **Reuse `src/components/ui/*` primitives + the shell `#topbar-actions` slot**
-   (`useSyncExternalStore` portal + `form=` association pattern established in Phase
-   02's `order-matrix.tsx` save button) for any per-page action button Phase 03 adds.
+Phase 03 carry-forward (read before Phase 04 RESEARCH — durable surfaces now available):
+1. **Mobile per-shop entry MUST write the SAME `saveOrderSheet` payload**
+   (`cell:{shopId}:{variantId}` + `note:{shopId}`) via `buildOrderPayload`
+   (`src/lib/order-payload.ts`) — REUSE it, do not re-derive the emission rules.
+2. **Reuse `src/components/ui/*` primitives + pguard tokens** — no new component
+   system for mobile; the shared primitives (button/input/card/modal/toast/chip/
+   status-dot/switch) are token-driven and should cover mobile needs directly.
+3. **Mobile shell = bottom tab bar** (ร้านค้า/สรุปยอด/ผู้ใช้), hidden during per-shop
+   entry (per the program charter's mobile screen list: login sheet, shop list w/
+   progress, per-shop stepper, summary, users).
+4. **Reuse `summary.ts` (`computeShopTotals`/`topShops`) + `totals.ts`
+   (`computeColumnTotals`/`computeGrandTotal`)** for the mobile summary screen — both
+   are pure, already unit-tested (82 unit tests total), and do not need reimplementing.
 5. **HARD STOP still applies** — never touch `saveOrderSheet` payload shape,
    `src/lib/totals.ts` internals, `src/app/(main)/orders/actions.ts` (order-save), the
    print sheet chain (`get-sheet-for-print.ts`/`print-table.tsx`/`sheet-header.tsx`),
-   `prisma/schema.prisma`, or the 446 fixture.
-6. **Both `/summary` and `/history` are currently STUBS** (created Phase 01 as
-   `requireAuth` + "กำลังพัฒนา" placeholders) — Phase 03 fills them in for real.
-7. **e2e idempotency gap (EVL residual, non-blocking)**: `e2e/orders.spec.ts` is
-   first-run-clean, not idempotent — a stale E2E-located sheet or a shop renamed by a
-   prior failed run pollutes subsequent runs. Add a `beforeEach` clean-state helper
-   (delete E2E-located sheets + restore renamed shops) when Phase 03/04 write new e2e
-   specs; see `tests/all-tests.md` Known Gaps.
+   `prisma/schema.prisma`, or the 446 fixture. The 9-file immutable set stayed
+   zero-diff through Phase 03 — keep it that way.
+6. **The e2e clean-state helper** (`beforeEach`/`afterAll` in
+   `e2e/summary-history.spec.ts` — deletes E2E-located sheets, restores renamed shops)
+   is a reusable pattern; hoist it into a shared e2e util if Phase 04's e2e specs need
+   the same clean-state guarantee (EVL follow-up stub, non-blocking).
+7. **Responsive vs. separate mobile routes is an open decision for Phase 04
+   RESEARCH** — the design handoff mobile prototype is 390×844; decide during Phase 04
+   RESEARCH/INNOVATE whether mobile is a responsive variant of existing routes or a
+   dedicated `(mobile)/` route group.
 
 Loop step values: RESEARCH | INNOVATE | PLAN-SUPPLEMENT | PVL | EXECUTE | EVL | UPDATE-PROCESS
 Orchestrator rule: read "Current loop step" and "validate-contract status" before spawning any subagent. Never spawn execute-agent when loop step is RESEARCH, INNOVATE, PLAN-SUPPLEMENT, or PVL.

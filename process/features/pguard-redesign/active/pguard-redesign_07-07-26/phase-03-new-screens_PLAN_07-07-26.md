@@ -164,7 +164,7 @@ pnpm build && pnpm lint
 - [x] 4. PVL — validate-contract written (orchestrator-authored after PVL agent completed checks but was API-cut-off twice mid-write); net gate CONDITIONAL, 0 FAILs, read-only phase
 - [x] 5. EXECUTE — all checklist items done; per-section test gates run and green. G1 unit 7/7, G2 full 82/82, G3 scope-fence EMPTY, G4 build ok (/summary+/history dynamic), G5 lint ok, G6/G7 e2e green, G8 regression 21/21, G9 probe 446 (see `harness/phase-03/`). Report drafted.
 - [x] 6. EVL — independent unconditional re-run (vc-tester, 08-07-26): all 9 gates green (unit 82/82, scope-fence EMPTY, build, lint, e2e 21/21, probe 446); summary-invariant + history-correctness + e2e-determinism CONFIRMED; 2 deviations benign; EVL HANDOFF SUMMARY + harness/phase-03/verification.json written
-- [ ] 7. UPDATE PROCESS — phase report written, umbrella state updated, commit done
+- [x] 7. UPDATE PROCESS — phase report written, umbrella state updated, context updated, commit done
 
 **Validate-contract required before execute.**
 
