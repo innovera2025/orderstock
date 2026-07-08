@@ -2,6 +2,7 @@ import { test, expect } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { prisma } from "../src/lib/db";
+import { cleanState } from "./util/clean-state";
 
 // Phase 03 hybrid gates (validate-contract G6 + G7). Both screens are READ-ONLY views over real
 // data, so these tests SEED real OrderSheet rows via prisma (E2E-located) then assert the rendered
@@ -19,29 +20,6 @@ interface Fixture {
 const fixture = JSON.parse(
   readFileSync(resolve(__dirname, "../test-fixtures/sheet-13-03-69.json"), "utf8"),
 ) as Fixture;
-
-const E2E_LOCATIONS = ["E2E-SUMMARY", "E2E-HIST-TODAY", "E2E-HIST-PAST"];
-
-/** Clean-state helper (Phase-02 residual): drop E2E-located sheets + restore renamed shops. */
-async function cleanState() {
-  const sheets = await prisma.orderSheet.findMany({
-    where: { location: { in: E2E_LOCATIONS } },
-    select: { id: true },
-  });
-  const ids = sheets.map((s) => s.id);
-  if (ids.length) {
-    await prisma.orderLine.deleteMany({ where: { sheetId: { in: ids } } });
-    await prisma.noteLine.deleteMany({ where: { sheetId: { in: ids } } });
-    await prisma.orderSheet.deleteMany({ where: { id: { in: ids } } });
-  }
-  const renamed = await prisma.shop.findMany({ where: { name: { endsWith: " TEST" } } });
-  for (const s of renamed) {
-    await prisma.shop.update({
-      where: { id: s.id },
-      data: { name: s.name.replace(/ TEST$/, "") },
-    });
-  }
-}
 
 /** Seed one OrderSheet from the 13/3/69 fixture at a given date (yyyy-mm-dd) + location. */
 async function seedSheet(dateStr: string, location: string) {

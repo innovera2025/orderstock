@@ -12,6 +12,8 @@ import {
 } from "@/lib/totals";
 import { PACK_SIZE_LABELS, type PackSize } from "@/lib/product-order";
 import { Button } from "@/components/ui/button";
+import { OrderMobileList, type MobileListRow } from "./order-mobile-list";
+import { OrderMobileEntry, type MobileEntryRow } from "./order-mobile-entry";
 
 // order-matrix.tsx (Phase 02) — the 20-column daily-order MATRIX that REPLACES the Order Pad.
 // It is a pure VIEW over the SAME flat client state the pad used
@@ -48,6 +50,8 @@ interface OrderMatrixProps {
   initialCells: Record<string, number>;
   initialNotes: Record<number, string>;
   printLinks?: PrintLink[];
+  /** BE-formatted sheet date (e.g. "13/3/69") shown in the mobile list header chip. */
+  dateLabel?: string;
 }
 
 // Grid column index for a print-order position: col 1 = "#", col 2 = shop name, col 3 = printOrder 1.
@@ -95,6 +99,7 @@ export function OrderMatrix({
   initialCells,
   initialNotes,
   printLinks = [],
+  dateLabel,
 }: OrderMatrixProps) {
   const saveAction = saveOrderSheet.bind(null, sheetId);
   const [state, formAction, pending] = useActionState(
@@ -114,6 +119,10 @@ export function OrderMatrix({
   const [peep, setPeep] = useState("");
   const [query, setQuery] = useState("");
   const [hlFilled, setHlFilled] = useState(true);
+  // Mobile branch sub-state (below md only): list of shops ↔ per-shop entry overlay. `shopIdx` is
+  // an index into the full 29-slot `rows` array so prev/next walks every roster slot.
+  const [mobileView, setMobileView] = useState<"list" | "entry">("list");
+  const [shopIdx, setShopIdx] = useState(0);
 
   const variantByPrintOrder = useMemo(
     () => new Map(columns.map((c) => [c.variantId, c.printOrder])),
@@ -183,6 +192,19 @@ export function OrderMatrix({
     setNotes((prev) => ({ ...prev, [shopId]: text }));
   };
 
+  /** Mobile +/− stepper: bump the shop×variant cell by ±1, clamping to blank at ≤0. */
+  const stepCell = (shopId: number, variantId: number, delta: number) => {
+    const raw = cells[`${shopId}:${variantId}`] ?? "";
+    const cur = Number(raw.trim()) || 0;
+    const next = cur + delta;
+    setCell(shopId, variantId, next <= 0 ? "" : String(next));
+  };
+
+  /** Sanitize mobile numeric input to digits only (positive-integer payload contract). */
+  const setCellDigits = (shopId: number, variantId: number, value: string) => {
+    setCell(shopId, variantId, value.replace(/[^0-9]/g, ""));
+  };
+
   const filterMatch = (row: GridRow) => {
     const q = query.trim();
     if (q === "") return true;
@@ -190,6 +212,74 @@ export function OrderMatrix({
   };
 
   const payloadEntries = useMemo(() => buildOrderPayload(cells, notes), [cells, notes]);
+
+  // ── Mobile branch derived data (shared cells/notes state; no second source of truth) ──
+  const rowSumByShop = useMemo(() => {
+    const m = new Map<number, number>();
+    for (const [key, raw] of Object.entries(cells)) {
+      if (!hasQty(raw)) continue;
+      const shopId = Number(key.split(":")[0]);
+      m.set(shopId, (m.get(shopId) ?? 0) + Number(raw.trim()));
+    }
+    return m;
+  }, [cells]);
+
+  const goodsCols = useMemo(() => columns.filter((c) => c.group !== "SEASONING"), [columns]);
+  const seasoningCols = useMemo(() => columns.filter((c) => c.group === "SEASONING"), [columns]);
+
+  const mobileListRows: MobileListRow[] = useMemo(() => {
+    const q = query.trim();
+    const out: MobileListRow[] = [];
+    rows.forEach((row, idx) => {
+      if (row.shopId == null || !row.shopName) return;
+      if (q !== "" && !row.shopName.includes(q)) return;
+      const total = rowSumByShop.get(row.shopId) ?? 0;
+      const note = notes[row.shopId] ?? "";
+      out.push({
+        rowIdx: idx,
+        rosterOrder: row.rosterOrder,
+        shopName: row.shopName,
+        total,
+        note,
+        has: total > 0 || note.trim() !== "",
+      });
+    });
+    return out;
+  }, [rows, rowSumByShop, notes, query]);
+
+  const currentRow = rows[shopIdx];
+  const currentShopId = currentRow?.shopId ?? null;
+  const isBlankRow = currentShopId == null;
+
+  const buildEntryRows = (cols: GridColumn[]): MobileEntryRow[] =>
+    cols.map((col) => {
+      const raw = currentShopId != null ? (cells[`${currentShopId}:${col.variantId}`] ?? "") : "";
+      return {
+        variantId: col.variantId,
+        printOrder: col.printOrder,
+        rosterOrder: currentRow?.rosterOrder ?? 0,
+        main: col.productName,
+        sub: columnSub(col),
+        value: raw,
+        filled: hasQty(raw),
+      };
+    });
+
+  const entryUnits = currentShopId != null ? (rowSumByShop.get(currentShopId) ?? 0) : 0;
+
+  const openEntry = (rowIdx: number) => {
+    setShopIdx(rowIdx);
+    setMobileView("entry");
+  };
+  const goShop = (dir: number) => {
+    setShopIdx((i) => Math.min(rows.length - 1, Math.max(0, i + dir)));
+  };
+  const onSaveNext = () => {
+    // The form submit (saveOrderSheet) fires from the button's own submit; here we only advance
+    // the local view: last slot → back to the list, otherwise → next roster slot.
+    if (shopIdx >= rows.length - 1) setMobileView("list");
+    else setShopIdx((i) => i + 1);
+  };
 
   const cellBg = (raw: string | undefined) =>
     hlFilled && hasQty(raw) ? "#E9F6F0" : "transparent";
@@ -236,6 +326,8 @@ export function OrderMatrix({
         </div>
       </TopbarActions>
 
+      {/* ── Desktop matrix (md+) — unchanged 20-column grid; hidden on mobile. ── */}
+      <div className="hidden flex-col gap-3 md:flex">
       {/* Toolbar: search + reset + clear + highlight toggle. */}
       <div className="flex flex-wrap items-center gap-2">
         <input
@@ -500,6 +592,52 @@ export function OrderMatrix({
           </div>
         </div>
       </div>
+      </div>
+      {/* ── /Desktop matrix ── */}
+
+      {/* ── Mobile branch (below md) — list ↔ per-shop entry over the SAME cells/notes state. ── */}
+      <div className="md:hidden">
+        {mobileView === "list" ? (
+          <OrderMobileList
+            dateLabel={dateLabel}
+            orderedCount={orderedCount}
+            totalCount={namedRows.length}
+            query={query}
+            onQuery={setQuery}
+            rows={mobileListRows}
+            onOpen={openEntry}
+          />
+        ) : (
+          <OrderMobileEntry
+            formId={FORM_ID}
+            shopName={
+              currentRow?.shopName ?? `ช่องว่าง (แถว ${currentRow?.rosterOrder ?? shopIdx + 1})`
+            }
+            entryNo={currentRow?.rosterOrder ?? shopIdx + 1}
+            totalCount={rows.length}
+            entryUnits={entryUnits}
+            isBlank={isBlankRow}
+            goodsRows={isBlankRow ? [] : buildEntryRows(goodsCols)}
+            seasoningRows={isBlankRow ? [] : buildEntryRows(seasoningCols)}
+            note={currentShopId != null ? (notes[currentShopId] ?? "") : ""}
+            pending={pending}
+            canPrev={shopIdx > 0}
+            canNext={shopIdx < rows.length - 1}
+            onBack={() => setMobileView("list")}
+            onPrev={() => goShop(-1)}
+            onNext={() => goShop(1)}
+            onInput={(variantId, raw) =>
+              currentShopId != null && setCellDigits(currentShopId, variantId, raw)
+            }
+            onStep={(variantId, delta) =>
+              currentShopId != null && stepCell(currentShopId, variantId, delta)
+            }
+            onNote={(text) => currentShopId != null && setNote(currentShopId, text)}
+            onSaveNext={onSaveNext}
+          />
+        )}
+      </div>
+      {/* ── /Mobile branch ── */}
 
       {/* Hidden payload — byte-identical `cell:`/`note:` set the server parses (via buildOrderPayload). */}
       <div className="hidden" aria-hidden="true">

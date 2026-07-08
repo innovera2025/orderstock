@@ -2,6 +2,7 @@ import { prisma } from "@/lib/db";
 import { requireAuth } from "@/lib/auth-guard";
 import { CreateUserForm } from "./create-user-form";
 import { UserRow } from "./user-row";
+import { UsersMobile } from "./users-mobile";
 
 export const dynamic = "force-dynamic";
 
@@ -16,29 +17,35 @@ export default async function AdminUsersPage() {
   });
 
   return (
-    <main className="mx-auto w-full max-w-4xl p-6">
-      <h1 className="mb-6 text-[var(--t-2xl)] font-semibold text-[var(--text-strong)]">จัดการผู้ใช้</h1>
+    <>
+      {/* Desktop (md+) — the unchanged table. */}
+      <main className="mx-auto hidden w-full max-w-4xl p-6 md:block">
+        <h1 className="mb-6 text-[var(--t-2xl)] font-semibold text-[var(--text-strong)]">จัดการผู้ใช้</h1>
 
-      <div className="mb-8">
-        <CreateUserForm />
-      </div>
+        <div className="mb-8">
+          <CreateUserForm />
+        </div>
 
-      <table className="w-full border-collapse text-[var(--t-sm)]">
-        <thead>
-          <tr className="border-b border-[var(--border)] text-left text-[var(--text-muted)]">
-            <th className="py-2 pr-2 font-medium">ชื่อผู้ใช้</th>
-            <th className="py-2 pr-2 font-medium">บทบาท</th>
-            <th className="py-2 pr-2 font-medium">รีเซ็ตรหัสผ่าน</th>
-            <th className="py-2 pr-2 font-medium">สถานะ</th>
-            <th className="py-2 pr-2 text-right font-medium">จัดการ</th>
-          </tr>
-        </thead>
-        <tbody>
-          {users.map((u) => (
-            <UserRow key={u.id} user={u} isSelf={u.id === me.id} />
-          ))}
-        </tbody>
-      </table>
-    </main>
+        <table className="w-full border-collapse text-[var(--t-sm)]">
+          <thead>
+            <tr className="border-b border-[var(--border)] text-left text-[var(--text-muted)]">
+              <th className="py-2 pr-2 font-medium">ชื่อผู้ใช้</th>
+              <th className="py-2 pr-2 font-medium">บทบาท</th>
+              <th className="py-2 pr-2 font-medium">รีเซ็ตรหัสผ่าน</th>
+              <th className="py-2 pr-2 font-medium">สถานะ</th>
+              <th className="py-2 pr-2 text-right font-medium">จัดการ</th>
+            </tr>
+          </thead>
+          <tbody>
+            {users.map((u) => (
+              <UserRow key={u.id} user={u} isSelf={u.id === me.id} />
+            ))}
+          </tbody>
+        </table>
+      </main>
+
+      {/* Mobile (below md) — responsive card list + add modal. */}
+      <UsersMobile users={users} meId={me.id} />
+    </>
   );
 }

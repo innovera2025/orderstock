@@ -159,7 +159,7 @@ export default async function SummaryPage({
         ))}
       </div>
 
-      <div className="grid grid-cols-[2fr_1fr] gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-[2fr_1fr]">
         {/* LEFT — 20 per-column bars (== computeColumnTotals). */}
         <Card className="flex flex-col gap-3 p-5">
           <div className="flex items-center justify-between">

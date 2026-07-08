@@ -96,6 +96,7 @@ export default async function OrderSheetPage({
         initialCells={initialCells}
         initialNotes={initialNotes}
         printLinks={printLinks}
+        dateLabel={ceToBeDisplay(normalizeDbDate(sheet.date))}
       />
     </main>
   );

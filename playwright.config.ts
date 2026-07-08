@@ -29,6 +29,21 @@ export default defineConfig({
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
       dependencies: ["setup"],
+      // Desktop project runs every spec EXCEPT the mobile-viewport one.
+      testIgnore: /mobile\.spec\.ts/,
+    },
+    {
+      // Phase 04 mobile project — 390×844 viewport reusing the STAFF storage state so the mobile
+      // per-shop stepper e2e runs headless. Only picks up mobile.spec.ts.
+      name: "mobile",
+      testMatch: /mobile\.spec\.ts/,
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 390, height: 844 },
+        isMobile: true,
+        hasTouch: true,
+      },
+      dependencies: ["setup"],
     },
   ],
   webServer: {
