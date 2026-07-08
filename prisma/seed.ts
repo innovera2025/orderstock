@@ -159,6 +159,21 @@ async function upsertVariant(args: {
 }
 
 async function main(): Promise<void> {
+  // 0. Rename-migration (Phase 05): align the two ด/ต-ambiguous master Product rows to their
+  // canonical reading IN PLACE, so the upsert loop below (which keys Product by name via
+  // findFirst({name,isOffList})) MATCHES the renamed row and updates it — instead of CREATEing
+  // a duplicate Product + duplicate printOrder variant. Idempotent: a 2nd run matches 0 rows.
+  const RENAMES: ReadonlyArray<readonly [string, string]> = [
+    ["ดีลานนิ่ม", "ตีลานนิ่ม"],
+    ["ดีลาน", "ตีลาน"],
+  ];
+  for (const [oldName, newName] of RENAMES) {
+    await prisma.product.updateMany({
+      where: { name: oldName, isOffList: false },
+      data: { name: newName },
+    });
+  }
+
   // 1. The 20 in-order product-variants (C3–C22) in fixed print order.
   for (const v of PRINT_VARIANTS) {
     const productId = await upsertProduct(v.productName, v.group, false, v.needsConfirmation);

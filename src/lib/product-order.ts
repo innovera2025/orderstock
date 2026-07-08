@@ -52,10 +52,10 @@ export interface PrintVariant {
 // readings, (กป) meaning, แบะแซ spelling).
 export const PRINT_VARIANTS: readonly PrintVariant[] = [
   { printOrder: 1, column: "C3", productName: "ดีนิ่ม A", group: "GOODS", packSize: "NONE", labelVariant: null, needsConfirmation: true },
-  { printOrder: 2, column: "C4", productName: "ดีลานนิ่ม", group: "GOODS", packSize: "KG_1", labelVariant: null, needsConfirmation: true },
-  { printOrder: 3, column: "C5", productName: "ดีลานนิ่ม", group: "GOODS", packSize: "HALF_KG", labelVariant: null, needsConfirmation: true },
-  { printOrder: 4, column: "C6", productName: "ดีลาน", group: "GOODS", packSize: "KG_1", labelVariant: null, needsConfirmation: true },
-  { printOrder: 5, column: "C7", productName: "ดีลาน", group: "GOODS", packSize: "HALF_KG", labelVariant: null, needsConfirmation: true },
+  { printOrder: 2, column: "C4", productName: "ตีลานนิ่ม", group: "GOODS", packSize: "KG_1", labelVariant: null, needsConfirmation: true },
+  { printOrder: 3, column: "C5", productName: "ตีลานนิ่ม", group: "GOODS", packSize: "HALF_KG", labelVariant: null, needsConfirmation: true },
+  { printOrder: 4, column: "C6", productName: "ตีลาน", group: "GOODS", packSize: "KG_1", labelVariant: null, needsConfirmation: true },
+  { printOrder: 5, column: "C7", productName: "ตีลาน", group: "GOODS", packSize: "HALF_KG", labelVariant: null, needsConfirmation: true },
   { printOrder: 6, column: "C8", productName: "กรวด", group: "GOODS", packSize: "NONE", labelVariant: null, needsConfirmation: false },
   { printOrder: 7, column: "C9", productName: "กรวดเหลือง", group: "GOODS", packSize: "NONE", labelVariant: null, needsConfirmation: false },
   { printOrder: 8, column: "C10", productName: "รอง", group: "GOODS", packSize: "KG_1", labelVariant: null, needsConfirmation: false },
