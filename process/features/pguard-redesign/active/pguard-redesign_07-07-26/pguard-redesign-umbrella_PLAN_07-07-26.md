@@ -225,7 +225,7 @@ All paths are inside `process/features/pguard-redesign/active/pguard-redesign_07
 | 01 — Foundation | ✅ VERIFIED (07-07-26 — EVL independent re-run: 10/10 gates green, scope fence empty; UPDATE PROCESS done) |
 | 02 — Core desktop | ✅ VERIFIED (07-07-26 — EVL independent re-run: 6/6 gate rows green, scope fence EMPTY on all 9 immutable files, e2e 19/19 + idempotency re-run 3/3; UPDATE PROCESS done) |
 | 03 — New screens | ✅ VERIFIED (08-07-26 — EVL independent re-run: all 9 gates green, scope fence EMPTY, e2e 21/21; UPDATE PROCESS done) |
-| 04 — Mobile | ⏳ PLANNED (next) |
+| 04 — Mobile | 🧪 TESTING (PVL PASS — validate-contract written; EXECUTE next) |
 | 05 — Data align + verify | ⏳ PLANNED |
 
 Status values: ⏳ PLANNED | 🔨 CODE DONE | 🧪 TESTING | ✅ VERIFIED | 🚧 BLOCKED | ✅ COMPLETE
@@ -300,9 +300,9 @@ for f in process/features/pguard-redesign/active/pguard-redesign_07-07-26/phase-
 Last updated: 08-07-26
 Completed phases: Phase 0 (Planning), Phase 01 (Foundation), Phase 02 (Core desktop), Phase 03 (New screens) — ✅ VERIFIED
 Current phase: Phase 04 — Mobile (5 screens + bottom tab bar)
-Current loop step: RESEARCH (not started)
-Validate-contract status: n/a yet for Phase 04 — PVL runs after Phase 04 RESEARCH → INNOVATE → PLAN-SUPPLEMENT.
-Program Net Gate: Phase 01 CLEAN/VERIFIED; Phase 02 CLEAN/VERIFIED; Phase 03 CLEAN/VERIFIED; Phase 04 not yet gated.
+Current loop step: EXECUTE (pending — PVL DONE, validate-contract written net gate PASS)
+Validate-contract status: Phase 04 validate-contract WRITTEN (net gate PASS, no FAILs) — EXECUTE may proceed under advance consent.
+Program Net Gate: Phase 01 CLEAN/VERIFIED; Phase 02 CLEAN/VERIFIED; Phase 03 CLEAN/VERIFIED; Phase 04 PVL PASS (validate-contract written, EXECUTE pending).
 Latest validator run: 08-07-26 — see Verification Evidence commands below
 
 Phase 03 carry-forward (read before Phase 04 RESEARCH — durable surfaces now available):

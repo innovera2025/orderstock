@@ -1,0 +1,28 @@
+{
+  "phase": "phase-04-mobile",
+  "feature": "pguard-redesign",
+  "evl_run": "2026-07-08",
+  "agent": "vc-tester",
+  "run_type": "EVL independent unconditional re-run",
+  "net_status": "DONE",
+  "gates": [
+    { "id": "G1", "name": "full unit suite", "command": "pnpm test", "result": "PASS", "detail": "82/82 across 15 files; order-payload 6/6, totals 6/6, summary 7/7" },
+    { "id": "G2", "name": "scope fence (10 immutable)", "command": "git diff --exit-code -- <10 files>", "result": "PASS", "detail": "exit 0, EMPTY. Note: contract path 'src/test-fixtures/...' does not exist; real fixture at test-fixtures/sheet-13-03-69.json independently re-checked git-clean (exit 0). order-payload.ts CONSUMED not edited." },
+    { "id": "G3", "name": "lint", "command": "pnpm lint", "result": "PASS", "detail": "exit 0, 0 errors 0 warnings" },
+    { "id": "G4", "name": "build", "command": "pnpm run build", "result": "PASS", "detail": "exit 0; 20 routes incl /orders/[id], /admin/users, /summary" },
+    { "id": "G5", "name": "e2e full suite (mobile drives mobile view)", "command": "pnpm exec playwright test", "result": "PASS", "detail": "25/25 = 21 desktop chromium + 4 mobile@390x844. Test 22 enters 13/3/69 via mobile-cell-{r}-{po} steppers -> mobile-save -> reload asserts grand-total 446, total-4 137, total-8 82." },
+    { "id": "G6", "name": "5-screen agent-probe @390x844", "command": "screenshots", "result": "PASS", "detail": "harness/phase-04/01-login..05-users.png (5 screens)" }
+  ],
+  "scope_fence": { "result": "EMPTY", "exit_code": 0, "immutable_files": 10, "order_payload_status": "CONSUMED (buildOrderPayload single call at order-matrix.tsx:214), not edited" },
+  "payload_identity": "CONFIRMED STRUCTURAL — ONE buildOrderPayload def (order-payload.ts), ONE call (order-matrix.tsx:214), ONE <form id=order-sheet-form> (order-matrix.tsx:298 FORM_ID const). Mobile save button type=submit form=FORM_ID (order-mobile-entry:200-202). Mobile stepper onStep/onInput/onNote route to stepCell/setCellDigits/setNote -> SAME setCell/setNote the desktop matrix owns. No second save path.",
+  "mobile_e2e_drives_mobile_view": "CONFIRMED — mobile.spec.ts uses mobile-shop-{roster}/mobile-entry/mobile-cell-{r}-{po}/mobile-save testids under the 390x844 'mobile' project (not desktop cell- testids).",
+  "tab_bar_admin_gate": "CONFIRMED — bottom-tab-bar.tsx filters adminOnly on role===ADMIN; layout.tsx reads auth() role and passes it; e2e test 24 asserts STAFF sees tab-users count 0, test 25 asserts ADMIN sees all 3.",
+  "selectors_preserved": "CONFIRMED — desktop grand-total/total-{po}/cell-{r}-{po} intact (orders.spec 21 green); auth name=username (auth.spec green).",
+  "deviations": [
+    "dateLabel prop added to OrderMatrix + passed from orders/[id]/page.tsx — additive, within blast radius, benign",
+    "users-mobile.tsx (client) reuses SAME server actions editRole/resetPassword/activate/deactivate/logout from ./actions — NO new use-server action, benign",
+    "touch targets bumped 40->44px (h-11/w-11) to honor plan >=44px over prototype — benign",
+    "cosmetic: Phase-01 topbar + page h1 remain above green mobile list header (immutable Phase-01 shell) — non-blocking"
+  ],
+  "closeout_classification": "CLEAN"
+}

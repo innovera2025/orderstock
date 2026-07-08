@@ -46,10 +46,12 @@ Claimed blast radius:
 
 ## Phase 04 — Mobile
 
+status: DONE — EXECUTE complete 08-07-26; all gates green (unit 82, lint clean, build OK, e2e 25/25 incl 4 mobile, scope-fence EMPTY on 10 immutable, agent-probe 5 screens @390×844). See phase-04-mobile_REPORT_07-07-26.md.
+
 **Cross-phase input (from Phase 02):** REUSES the immutable `saveOrderSheet` payload; the mobile stepper must produce a byte-identical payload to the desktop matrix.
 
 Claimed blast radius:
-- `src/app/(mobile)/**` (5 screens: login sheet, shop list, per-shop stepper, summary, users)
+- ~~`src/app/(mobile)/**`~~ → RESPONSIVE shared-component (no `(mobile)` route group). ACTUAL: `src/components/bottom-tab-bar.tsx` (NEW), `src/app/(main)/orders/order-mobile-list.tsx` + `order-mobile-entry.tsx` (NEW presentational), `src/app/(main)/admin/users/users-mobile.tsx` (NEW). MODIFIED: `order-matrix.tsx` (mobile branch), `(main)/layout.tsx`, `orders/[id]/page.tsx` (dateLabel prop), `login/page.tsx`, `summary/page.tsx`, `admin/users/page.tsx`. TEST infra: `e2e/util/clean-state.ts` (hoisted), `e2e/mobile.spec.ts`, `playwright.config.ts` (390×844 project).
 - `src/components/bottom-tab-bar.tsx`
 - Consumes Phase-01 primitives + Phase-02 data. Independent of Phase 03 (disjoint route folders) → 03/04 optionally parallel after 02.
 
