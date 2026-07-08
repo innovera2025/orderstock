@@ -1,0 +1,28 @@
+{
+  "phase": "phase-03-new-screens",
+  "feature": "pguard-redesign",
+  "evl_run": "2026-07-08",
+  "agent": "vc-tester",
+  "run_type": "EVL independent unconditional re-run",
+  "net_status": "DONE",
+  "gates": [
+    { "id": "G1", "name": "summary unit", "command": "pnpm test src/lib/__tests__/summary.test.ts", "result": "PASS", "detail": "7/7 (Σ446, top-8 desc, empty)" },
+    { "id": "G2", "name": "full unit suite", "command": "pnpm test", "result": "PASS", "detail": "82/82; totals 6/6, summary 7/7" },
+    { "id": "G3", "name": "scope fence", "command": "git diff --exit-code (9 immutable files)", "result": "PASS", "detail": "exit 0, EMPTY; summary.ts NEW, totals.ts unmodified" },
+    { "id": "G4", "name": "build", "command": "pnpm build", "result": "PASS", "detail": "exit 0; /summary + /history ƒ Dynamic" },
+    { "id": "G5", "name": "lint", "command": "pnpm lint", "result": "PASS", "detail": "exit 0" },
+    { "id": "G6", "name": "/summary hybrid", "command": "playwright", "result": "PASS", "detail": "grand 446, 20 bars, col 137/99/82" },
+    { "id": "G7", "name": "/history hybrid", "command": "playwright", "result": "PASS", "detail": "live/closed chips, weight dash, /orders/{id} link" },
+    { "id": "G8", "name": "e2e regression", "command": "pnpm exec playwright test", "result": "PASS", "detail": "21/21 (19 prior + 2 new)" },
+    { "id": "G9", "name": "prototype fidelity", "command": "agent-probe screenshots", "result": "PASS", "detail": "harness/phase-03/*.png light+dark + orchestrator live-confirm" }
+  ],
+  "scope_fence": { "result": "EMPTY", "exit_code": 0 },
+  "summary_invariant": "CONFIRMED",
+  "history_correctness": "CONFIRMED — groupBy no N+1, UTC-midnight compare, union note shops, weight dash",
+  "e2e_determinism": "CONFIRMED — beforeEach+afterAll cleanState, re-runnable",
+  "deviations": [
+    "topShops(cells) computes shopTotals internally vs A1 arg wording — benign",
+    "/summary ?date+?location hybrid selector, most-recent default — benign (Decision 3)"
+  ],
+  "closeout_classification": "CLEAN"
+}
