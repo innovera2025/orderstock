@@ -10,7 +10,11 @@ export function DbStatus() {
 
   useEffect(() => {
     let active = true;
-    fetch("/api/health")
+    // Raw browser fetch is relative-to-origin — Next's automatic basePath prefixing applies only
+    // to <Link>/useRouter/redirect(), NOT raw fetch(). ENV-CONDITIONAL prefix (unset ⇒ "" ⇒
+    // identical to today). This is the ONLY raw client fetch in the app (login/logout are server
+    // actions). NEXT_PUBLIC_* is build-time inlined, so build ARG and runtime env must match.
+    fetch(`${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/health`)
       .then((res) => res.json())
       .then((data: { ok?: boolean }) => {
         if (active) setStatus(data.ok ? "ok" : "error");

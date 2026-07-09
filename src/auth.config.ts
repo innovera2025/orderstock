@@ -7,6 +7,13 @@ import type { NextAuthConfig } from "next-auth";
 // `proxy.ts` (Next 16 route protection) imports THIS config to decode the JWT and run the
 // `authorized` callback at the edge. auth.ts spreads this config and appends the provider.
 export const authConfig = {
+  // Bare `/login` — do NOT prefix with basePath here. In PRODUCTION (next start / standalone
+  // `node server.js`), NextAuth's edge middleware AUTO-prepends the Next.js basePath to
+  // `pages.signIn`, so a prefixed value would double to `/orderstock/orderstock/login` (404).
+  // Empirically proven against the standalone prod server (deploy H1 gate) — this supersedes the
+  // feasibility verdict's `next dev`-only finding (dev does NOT auto-prepend; production does).
+  // basePath unset ⇒ `/login` (bare root, unchanged); basePath set ⇒ Next yields `/orderstock/login`.
+  // Still do NOT add `authConfig.basePath` (that reproduces the api/auth double-strip 400).
   pages: { signIn: "/login" },
   // Credentials provider REQUIRES the JWT session strategy. maxAge locked to 12h (decision 5);
   // requireAuth re-checks User.active/role from the DB so a demoted/deactivated user inside

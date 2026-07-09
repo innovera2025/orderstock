@@ -16,6 +16,10 @@ export const config = {
   // Guard everything EXCEPT: the login page, Auth.js endpoints, the health check, Next static
   // assets/images, self-hosted fonts, and common static file extensions (B3 exclusions).
   matcher: [
+    // Explicit root entry (Next #73786): under basePath, the negative-lookahead pattern below
+    // fails to match the bare root once basePath-stripping is in effect, silently bypassing the
+    // auth gate. Harmless when basePath is unset (root is already gated by the pattern).
+    "/",
     "/((?!login|api/auth|api/health|_next/static|_next/image|fonts|favicon.ico|.*\\.(?:woff2?|ttf|otf|png|jpe?g|svg|ico|css)).*)",
   ],
 };

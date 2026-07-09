@@ -1,6 +1,11 @@
 -- orderstock — vendor SQL Server schema creation script (Phase 02, auto-generated).
 -- Generated offline via `prisma migrate diff --from-empty --to-schema`.
--- Does NOT create the database or logins — Phase 06 hand-authors those.
+-- Does NOT create the database or logins — create-database-and-login.sql hand-authors those.
+-- RUN THIS WITH THE [db_TCL] DATABASE SELECTED, i.e. run `USE [db_TCL];` (or set the SSMS/sqlcmd
+--   database context to db_TCL) FIRST, then run this script. The DDL below is schema-scoped
+--   (dbo.*) and carries no DB name — it applies to whichever database is current.
+-- NOTE: the DB is named db_TCL; this file keeps the create-orderstock-schema.sql name (intentional
+--   DB-name/file-name mismatch, see docs/deployment-guide-docker.md).
 -- Review in SSMS before running against the customer's SQL Server.
 
 BEGIN TRY

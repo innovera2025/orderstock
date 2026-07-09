@@ -1,0 +1,31 @@
+# Build-context exclusions for the production image. Keep prisma/ and public/ IN the context.
+node_modules
+.next
+.git
+.gitignore
+
+# Secrets — NEVER copy .env into the image. Runtime secrets arrive via env_file + a writable
+# .env bind-mount (docker-compose.prod.yml), so the /settings/db rewrite persists on the host.
+.env
+.env.*
+!.env.example
+
+# Test + tooling artifacts.
+e2e/.auth
+test-results
+playwright-report
+*.log
+
+# Compose files are host-side deploy config, not app source.
+docker-compose*.yml
+
+# DB backups (never image them).
+db/*.bak
+
+# Local/editor cruft and process docs (not needed to build the app).
+.DS_Store
+.vscode
+.idea
+process
+reports
+plans
