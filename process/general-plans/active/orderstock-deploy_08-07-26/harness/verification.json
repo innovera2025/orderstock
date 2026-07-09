@@ -1,0 +1,40 @@
+{
+  "phase": "orderstock-deploy",
+  "evl_run": {
+    "by": "vc-tester",
+    "date": "2026-07-09",
+    "context": "EVL post-DONE independent confirmation sweep",
+    "execute_claim_treated_as": "unconfirmed (re-run from scratch)"
+  },
+  "risk_class": ["auth", "deploy/runtime/container"],
+  "gates": [
+    { "id": "G1-build", "command": "pnpm build (NEXT_PUBLIC_BASE_PATH unset)", "result": "PASS", "detail": "exit 0, Compiled successfully" },
+    { "id": "G1-lint", "command": "pnpm lint (unset)", "result": "PASS", "detail": "exit 0" },
+    { "id": "G2-unit", "command": "pnpm test (unset)", "result": "PASS", "detail": "16 files / 88 tests passed" },
+    { "id": "G3-e2e", "command": "pnpm exec playwright test (unset)", "result": "PASS", "detail": "25 passed" },
+    { "id": "scope-fence", "command": "git diff --exit-code on IMMUTABLE set", "result": "PASS", "detail": "EMPTY (exit 0)" },
+    { "id": "H1-basepath-auth-standalone", "command": "node .next/standalone/server.js + curl (AUTH_URL unset)", "result": "PASS", "detail": "logged-out /orderstock -> 307 /orderstock/login; deep route -> /orderstock/login; /login 404; /orderstock/login 200; api/auth/csrf 200; NO double-prefix" },
+    { "id": "H2-docker-build", "command": "docker compose -f docker-compose.prod.yml build", "result": "PASS", "detail": "orderstock-app:latest built, exit 0" },
+    { "id": "H2-docker-serve", "command": "docker run image + curl", "result": "PASS", "detail": "image serves /orderstock/login 200, /login 404, /orderstock -> 307 /orderstock/login single-prefix (AUTH_URL unset)" },
+    { "id": "placeholders-present", "command": "grep __PLACEHOLDER", "result": "PASS", "detail": "CADDY_NETWORK, TLS_EMAIL, COMPAT_LEVEL all present, not fabricated" }
+  ],
+  "d_a2_verdict": {
+    "claim": "pages.signIn bare /login yields single-prefix /orderstock/login in production; no double-prefix",
+    "independently_confirmed": true,
+    "double_prefix_found": false,
+    "evidence_surfaces": ["node .next/standalone/server.js", "orderstock-app:latest docker image"]
+  },
+  "concerns": [
+    { "severity": "low", "type": "documentation", "detail": "AUTH_URL bare-origin (without subpath) breaks the signIn redirect to bare /login (404); recommended default (AUTH_URL unset) is correct. .env.example alternative guidance should be tightened to UNSET-only for subpath deploy." },
+    { "severity": "low", "type": "evidence-gap", "detail": "Authenticated login sub-flow (login->/orderstock/, authed health, logout, ADMIN gate) not independently re-run under basePath: privacy hook blocks .env secret access in subagent context. Covered by independent 25/25 e2e (bare root) + execute-agent manual H1; auth logic byte-unchanged vs main." }
+  ],
+  "known_gaps": [
+    "H3 full 25-spec e2e under /orderstock (accepted CONDITIONAL; backlog stub basepath-e2e-parameterize_NOTE_08-07-26.md)",
+    "real caddy-gen reverse-proxy hop (on-host manual only)"
+  ],
+  "still_required_before_verified": [
+    "user acceptance of H1/H2 evidence + AUTH_URL-unset documentation tightening",
+    "4 Required-Input placeholder values resolved (caddy net, TLS email, SQL compat level, qtso matcher precedence)"
+  ],
+  "aggregate_status": "DONE_WITH_CONCERNS"
+}
