@@ -1,40 +1,33 @@
 # orderstock — PRODUCTION compose (Linux host, behind an existing caddy-gen reverse proxy).
-# Serves the app at https://app.krs.co.th/orderstock. NO host port is published — host :3000 is
-# taken by qtso-app; all ingress is via the caddy-gen labels below. Deploy from /opt/orderstock.
+# Serves the app at https://orderstock.krs.co.th — its own subdomain, served at the domain root
+# (no basePath). NO host port is published; all ingress is via the caddy-gen labels below.
+# Deploy from /opt/orderstock.
 #
 # ============================================================================================
-#  REQUIRED-INPUT — replace these 3 __PLACEHOLDER__ tokens before `docker compose up` (see
+#  REQUIRED-INPUT — replace these 2 __PLACEHOLDER__ tokens before `docker compose up` (see
 #  docs/deployment-guide-docker.md §"Required values"):
 #    __PLACEHOLDER_CADDY_NETWORK__  — the external Docker network the caddy-gen container is on
 #                                     (find via `docker network ls` / `docker inspect <caddy-gen>`).
 #    __PLACEHOLDER_TLS_EMAIL__      — ops email for Let's Encrypt / ACME cert issuance.
-#    (A 4th Required-Input — the external SQL Server version → COMPATIBILITY_LEVEL — lives in
-#     db/create-database-and-login.sql, and the qtso-app matcher-precedence check is a guide note.)
+#    (Two more Required-Inputs live outside this file: the external SQL Server version →
+#     COMPATIBILITY_LEVEL in db/create-database-and-login.sql, and a DNS A-record pointing
+#     orderstock.krs.co.th → this host's public IP — an infra step, see the deploy guide.)
 # ============================================================================================
 services:
   app:
     build:
       context: .
       dockerfile: Dockerfile
-      args:
-        # Build-time inline of the subpath into the client bundle. MUST equal the runtime value below.
-        NEXT_PUBLIC_BASE_PATH: "/orderstock"
     labels:
-      # caddy-gen picks up these labels to route app.krs.co.th/orderstock* → this container:3000.
-      # matcher /orderstock* is PATH-THROUGH: caddy-gen must forward the `/orderstock` prefix
-      # UNCHANGED — the Next.js app owns the prefix (basePath), do NOT strip it at the proxy.
-      # NOTE: confirm this matcher does not collide with qtso-app's own caddy host/path on
-      # app.krs.co.th (Required-Input Q4) — see the deploy guide precedence note.
-      virtual.host: "app.krs.co.th"
+      # caddy-gen picks up these labels to route orderstock.krs.co.th → this container:3000.
+      # A dedicated subdomain serves the app at the domain root — no path matcher, no prefix to
+      # forward or strip. (A DNS A-record orderstock.krs.co.th → this host must exist first.)
+      virtual.host: "orderstock.krs.co.th"
       virtual.port: "3000"
-      virtual.proxy.matcher: "/orderstock*"
       virtual.tls-email: "__PLACEHOLDER_TLS_EMAIL__"
     # Runtime secrets + config from the host .env (gitignored, .dockerignore-excluded from the image).
     env_file:
       - .env
-    environment:
-      # Runtime copy of the subpath (server-side reads). Must match the build ARG above.
-      NEXT_PUBLIC_BASE_PATH: "/orderstock"
     volumes:
       # WRITABLE bind-mount: the /settings/db page rewrites DATABASE_URL in this file and keeps a
       # .env.bak beside it. Bind-mount (not COPY) so the rewrite + backup persist on the host and
@@ -43,7 +36,7 @@ services:
     restart: unless-stopped
     networks:
       - caddy
-    # NO `ports:` block — host 3000 is taken by qtso-app; ingress is caddy-gen labels only.
+    # NO `ports:` block — ingress is via caddy-gen labels only (host 3000 may be taken by qtso-app).
 
 networks:
   caddy:

@@ -1,9 +1,7 @@
 # orderstock — production image (multi-stage, Next.js standalone output).
-# Serves the app behind caddy-gen at app.krs.co.th/orderstock. The subpath is baked at BUILD
-# time via the NEXT_PUBLIC_BASE_PATH build ARG (NEXT_PUBLIC_* vars are inlined by Next at build),
-# and MUST also be present at runtime (see docker-compose.prod.yml `environment:`) so server-side
-# reads match the client bundle. Prisma 7 uses the pure-JS driver-adapter (node-mssql/tedious) —
-# there is NO query-engine binary to fetch, only the generated client.
+# Serves the app behind caddy-gen at its own subdomain (orderstock.krs.co.th), at the domain root
+# (no basePath). Prisma 7 uses the pure-JS driver-adapter (node-mssql/tedious) — there is NO
+# query-engine binary to fetch, only the generated client.
 
 # ---------------------------------------------------------------------------- deps
 FROM node:22-slim AS deps
@@ -21,9 +19,6 @@ WORKDIR /app
 RUN corepack enable && corepack prepare pnpm@11.5.0 --activate
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-# Subpath baked into the client bundle at build time. Unset ⇒ bare-root build (regression-safe).
-ARG NEXT_PUBLIC_BASE_PATH
-ENV NEXT_PUBLIC_BASE_PATH=${NEXT_PUBLIC_BASE_PATH}
 # Throwaway BUILD-TIME placeholders (NOT real secrets). `next build` collects page data for the
 # /api/auth route, which imports auth.ts → db.ts; db.ts throws at module load if DATABASE_URL is
 # unset, and NextAuth needs AUTH_SECRET. The real values arrive ONLY at runtime via env_file:.env
