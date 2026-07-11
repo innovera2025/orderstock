@@ -48,8 +48,9 @@ never by build success — a mis-placed or mis-shaped `proxy.ts` still builds gr
 ADMIN-gates `/settings` in addition to the pre-existing `/admin` branch (defense-in-depth; the real
 boundary is still server-side `requireAuth("ADMIN")` in every settings action). `src/app/nav.tsx`
 renders the settings link only when `role === "ADMIN"` (same pattern as the admin-users nav link).
-`e2e/settings.spec.ts` proves the runtime redirect for all three cases (unauth, STAFF, ADMIN)
-against `/settings/db`.
+The `/settings/db` runtime DB-connection subroute (and its dedicated `e2e/settings.spec.ts` route
+probes) was **removed 11-07-26** (`remove-settings-db` plan) — `/settings` now resolves only to the
+establishment/display panel, still ADMIN-gated by the same `/settings` prefix rule above.
 
 ---
 

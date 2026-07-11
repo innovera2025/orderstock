@@ -1,9 +1,9 @@
 ---
 name: context:all-uxui
 description: "UI/UX context entrypoint for orderstock — pguard Design System tokens, semantic-alias contract, shared src/components/ui/* primitives, sidebar+topbar shell, dark mode, and print-font behavior"
-keywords: ui, ux, design, tokens, pguard, theme, dark mode, dark-mode, sidebar, topbar, nav, primitives, button, input, card, modal, toast, chip, switch, ibm plex, font, focus ring, radius, print font, order-matrix, matrix, topbar-actions, portal, app-settings, settings persistence, summary, history, bar chart, top shops, groupby, shop totals, mobile, responsive, breakpoint, bottom tab bar, touch target, mobile entry, mobile overlay
+keywords: ui, ux, design, tokens, pguard, theme, dark mode, dark-mode, sidebar, topbar, nav, primitives, button, input, card, modal, toast, chip, switch, ibm plex, font, focus ring, radius, print font, order-matrix, matrix, topbar-actions, portal, app-settings, settings persistence, summary, history, bar chart, top shops, groupby, shop totals, mobile, responsive, breakpoint, bottom tab bar, touch target, mobile entry, mobile overlay, drawer, sidebar drawer, hamburger, tablet, collapse, sidebar-shell, sidebar-drawer-store
 related: [context:all-tests]
-date: 08-07-26
+date: 11-07-26
 metadata:
   read_when: any UI/token/component/shell/theme work
 ---
@@ -141,28 +141,38 @@ current theme via `useSyncExternalStore` (hydration-safe — do not replace with
 
 ## Shell structure
 
-- `src/app/nav.tsx` — SERVER component, 216px fixed sidebar, `--bg-surface` + 1px `--border`
+- `src/app/nav.tsx` — SERVER component, 216px sidebar, `--bg-surface` + 1px `--border`
   right edge. Reads session/role via `await auth()`. Renders: green-gradient (`160deg
   #1FA971→#0E3B2E`) "ย" logo + product name at top; the client `NavLinks` component; a user card
   (avatar/name/role) + logout button at the bottom. The logout button's accessible name MUST stay
-  exactly "ออกจากระบบ" (asserted by `e2e/auth.spec.ts`).
+  exactly "ออกจากระบบ" (asserted by `e2e/auth.spec.ts`). Since `responsive-drawer-sidebar_11-07-26`
+  the `<aside>` also carries `id="app-sidebar"` (for the topbar hamburger's `aria-controls`) — all
+  positioning/visibility classes now live on the NEW `sidebar-shell.tsx` wrapper (below), not here;
+  `nav.tsx` itself is otherwise byte-identical and stays a server component.
 - `src/app/nav-links.tsx` — CLIENT component (`"use client"`, `usePathname`), owns ONLY
   active-link highlighting (active = `--green-50` bg + `--green-800` text). Receives `role` as a
   prop from the server shell — do NOT convert `nav.tsx` itself to a client component, or the
   server-side session read is lost. Three groups, Lucide icons (stroke 2):
   - **ปฏิบัติการ**: `/orders` (ออเดอร์รายวัน), `/summary` (สรุปยอดผลิต), `/history` (ประวัติออเดอร์)
   - **ข้อมูลหลัก**: `/shops` (จัดการร้านค้า), `/products` (จัดการสินค้า), `/admin/users` (ผู้ใช้, admin-only)
-  - **ระบบ**: `/settings/db` (ตั้งค่าระบบ, admin-only)
+  - **ระบบ**: `/settings` (ตั้งค่าระบบ, admin-only) — repointed from `/settings/db` (removed
+    11-07-26, `remove-settings-db` plan; the establishment/display panel below is now the sole
+    `/settings` surface)
   - `adminOnly` gating on nav items is COSMETIC ONLY — the real security boundary is server-side
     `requireAuth(role)`, unaffected by nav changes.
-- `src/app/topbar.tsx` — 62px, `--bg-surface` + 1px `--border` bottom edge. Left: route-derived
-  page title. Right: TH/EN toggle (EN not supported yet → toast "ยังไม่รองรับ EN"), dark-mode
-  toggle (sun/moon Lucide icons), and an EMPTY `#topbar-actions` slot/portal placeholder for
-  per-page controls. **Phase 02 fills this slot** with the order-matrix's print/save actions —
-  do not move existing Order Pad controls into it before Phase 02.
-- `src/app/(main)/layout.tsx` — composes sidebar (`nav.tsx`) + `topbar.tsx` + a scrollable
-  `<main>`. This is the layout every authenticated app route renders under (route group, no URL
-  segment — see root `all-context.md` for the route-group pattern rationale).
+- `src/app/topbar.tsx` — 62px, `--bg-surface` + 1px `--border` bottom edge. Left: (since
+  `responsive-drawer-sidebar_11-07-26`) a ☰ hamburger button (`hidden md:inline-flex`,
+  `aria-controls="app-sidebar"`) then route-derived page title. Right: TH/EN toggle (EN not
+  supported yet → toast "ยังไม่รองรับ EN"), dark-mode toggle (sun/moon Lucide icons), and an EMPTY
+  `#topbar-actions` slot/portal placeholder for per-page controls. **Phase 02 fills this slot**
+  with the order-matrix's print/save actions — do not move existing Order Pad controls into it
+  before Phase 02.
+- `src/app/(main)/layout.tsx` — composes sidebar (`nav.tsx`, wrapped in `sidebar-shell.tsx` since
+  `responsive-drawer-sidebar_11-07-26`) + `topbar.tsx` + a scrollable `<main>`. This is the layout
+  every authenticated app route renders under (route group, no URL segment — see root
+  `all-context.md` for the route-group pattern rationale).
+
+See § Responsive Drawer Sidebar Shell below for the full 3-tier breakpoint mechanism.
 
 ## Dark-mode mechanism
 
@@ -183,8 +193,10 @@ The `AppSetting` Prisma model existed since the original schema but was unused u
 `src/lib/app-settings.ts` exposes `get`/`set` helpers over `prisma.appSetting` (key/value rows) —
 **no schema change**. Established keys: `placeName` / `recorderName` / `recorderRole` /
 `hlFilled`. Consumed by `src/app/(main)/settings/actions.ts` + `settings-panels.tsx`
-(establishment + display panels, ADMIN-gated, additive alongside the existing `/settings/db`
-route — do NOT disturb that route or its heading). This is the reference pattern for any future
+(establishment + display panels, ADMIN-gated). This is now the SOLE `/settings` surface — the
+sibling `/settings/db` runtime DB-connection route was removed 11-07-26 (`remove-settings-db`
+plan; its dead "การเชื่อมต่อฐานข้อมูล" card was also removed from `settings-panels.tsx`). This is
+the reference pattern for any future
 small persisted app-wide setting: add a key to the `AppSetting` table via `get`/`set`, never a new
 schema column, unless the value needs to be queried/joined (in which case use a real column).
 
@@ -297,9 +309,13 @@ build is a Tailwind `md` (768px) breakpoint swap over the SAME components/state,
 route tree or a second save path.
 
 - **Shell breakpoint swap (`src/app/(main)/layout.tsx`):** now an `async` server component
-  reading `auth()` for `role`. Sidebar (`<Nav/>`) wrapped `hidden md:block`; `<BottomTabBar
-  role/>` (NEW `src/components/bottom-tab-bar.tsx`) renders below `md`; `<main>` gets `pb-16
-  md:pb-0` so the fixed bottom bar never covers content. CSS-breakpoint swap only.
+  reading `auth()` for `role`. Sidebar (`<Nav/>`) was originally wrapped `hidden md:block` here —
+  **superseded by `responsive-drawer-sidebar_11-07-26`**, which replaced that wrapper with
+  `<SidebarShell><Nav/></SidebarShell>` (see § Responsive Drawer Sidebar Shell below); the phone
+  tier (<768px) is still fully hidden, now via `sidebar-shell.tsx`'s own responsive classes rather
+  than the old `md:block` div. `<BottomTabBar role/>` (`src/components/bottom-tab-bar.tsx`) still
+  renders below `md`, unchanged; `<main>` still gets `pb-16 md:pb-0` so the fixed bottom bar never
+  covers content.
 - **Bottom tab bar** (`src/components/bottom-tab-bar.tsx`): 3 mobile-only tabs — ร้านค้า
   (`/orders`), สรุปยอด (`/summary`), ผู้ใช้ (`/admin/users`, **ADMIN-only** — hidden for STAFF via
   a `role` prop, mirrors the same server-side role boundary `nav-links.tsx` uses, not a separate
@@ -333,6 +349,63 @@ route tree or a second save path.
 
 **Reusable pattern for any future mobile-adjacent screen:** breakpoint-gate the SAME
 component/state at `md`; never fork a second route group, save path, or state store for mobile.
+
+## Responsive Drawer Sidebar Shell (`responsive-drawer-sidebar_11-07-26`, CODE DONE)
+
+Extends the Mobile responsive pattern above to a genuine 3-tier app shell (phone / tablet /
+desktop), fixing an iPad-portrait (768px) crowding problem where the old fixed 216px sidebar and
+the 20-col order-matrix competed for space.
+
+- **Three tiers, ONE shared store:** phone (<768px) — unchanged, no sidebar, no hamburger,
+  `BottomTabBar` only. Tablet (768–1023px) — sidebar becomes a hidden off-canvas drawer, opened by
+  a new topbar ☰ hamburger, closed by backdrop click / Escape / route change. Desktop (≥1024px) —
+  sidebar fixed and open by default, but the SAME ☰ hamburger can now genuinely collapse/reopen it
+  (this is a LOCKED design decision — the desktop hamburger is functional, not decorative).
+- **`src/lib/sidebar-drawer-store.ts`** (NEW) — a tri-state (`boolean | null`) external mutable
+  store mirroring `theme-toggle.tsx`'s exact pattern: module-level state + a `window` CustomEvent +
+  `useSyncExternalStore` (NOT React Context — this codebase's one established external-state
+  idiom). `null` = auto (pure-CSS responsive default: closed `<lg`, open `≥lg`, zero
+  SSR/hydration-mismatch risk since it's a static Tailwind class list, not a stored preference).
+  `true`/`false` = explicit force, set by `toggleDrawer()`/`openDrawer()`/`closeDrawer()`.
+  `toggleDrawer()` resolves "currently visible" via `window.matchMedia('(min-width: 1024px)')`
+  (the SAME technique `theme-toggle.tsx` uses for `prefers-color-scheme`) only when the state is
+  still `null`, then sets the explicit opposite. `closeDrawer()` always sets `false` explicitly
+  (never back to `null`), so an Escape-close at tablet width doesn't silently reopen the sidebar if
+  the viewport is later resized past 1024px. Two hooks exported: `useDrawerOpen()` (raw tri-state)
+  and `useDrawerVisible()` (resolved boolean — dual-subscribed to the store event AND a
+  `matchMedia` change listener, used for `aria-expanded` and any "is it ACTUALLY visible" branch).
+- **`src/app/(main)/sidebar-shell.tsx`** (NEW) — client wrapper that owns everything `nav.tsx`
+  itself does NOT: the width-reservation outer div (`lg:w-[216px]` open / `lg:w-0
+  lg:overflow-hidden` explicitly closed — this is what makes the desktop collapse actually reclaim
+  layout space, not just visually hide behind a blank gap), the backdrop (`fixed inset-0 z-40
+  bg-black/40`, tablet-only via `md:block lg:hidden`, conditionally MOUNTED not just
+  opacity-hidden so it never intercepts clicks when closed), and the transform/position wrapper
+  around `<Nav/>`'s server output (passed through as `children` — a server component CAN be a
+  client component's children without becoming client itself). `<aside>` gets `fixed inset-y-0
+  left-0 z-50 ... transition-transform duration-200 ease-[cubic-bezier(0.25,0.46,0.45,0.94)]
+  motion-reduce:transition-none lg:static lg:z-auto lg:transition-none` plus the state-dependent
+  translate classes.
+- **Focus + accessibility:** hamburger has `aria-expanded` (bound to `useDrawerVisible()`),
+  `aria-controls="app-sidebar"` (matches the `id` added to `nav.tsx`'s `<aside>`), `aria-label`.
+  On tablet-drawer open, focus moves into the drawer (gated `!isDesktopMatch` — no focus-steal on
+  the non-modal desktop collapse). Escape closes + returns focus to the hamburger.
+  `motion-reduce:transition-none` on both the drawer transform and backdrop opacity.
+- **Playwright dual-project wiring** (mirrors the existing `mobile` project pattern): a NEW
+  `tablet` project (820×1180, `playwright.config.ts`) runs ONLY `e2e/sidebar-drawer.spec.ts`
+  (`testMatch`); `chromium`'s `testIgnore` was widened to also exclude that spec
+  (`/mobile\.spec\.ts|sidebar-drawer\.spec\.ts/`) so it doesn't double-run at the wrong viewport.
+  `e2e/sidebar-desktop-collapse.spec.ts` needs no new project — it runs under `chromium`'s existing
+  default (~1280×720, already desktop-tier) viewport.
+- **Known-gap residuals (Agent-Probe only, pending-manual as of 11-07-26 UPDATE PROCESS):** iPad
+  768px/1024px real-viewport usability, dark-mode legibility with the drawer/backdrop open, and
+  `prefers-reduced-motion` OS-level behavior were NOT re-verified in this closeout session (no
+  browser/dev-server session available) — plan stays `CODE DONE`, not `VERIFIED`, until a short
+  manual pass confirms these three rows.
+
+**Reusable pattern for any future two-client-sibling-needs-shared-state case:** follow
+`sidebar-drawer-store.ts`'s exact shape (module-level state + CustomEvent +
+`useSyncExternalStore`, matching `theme-toggle.tsx`) rather than introducing React Context — this
+is now the codebase's established external-client-state idiom, proven twice.
 
 ## Update triggers
 

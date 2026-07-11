@@ -235,70 +235,57 @@ blank grid cell means the line is OMITTED entirely, never persisted as `qty = 0`
 or writing these tables must preserve this invariant — a `qty` of `0` should never appear in the DB
 for either table.
 
-## Runtime Connection Settings & Safe Env Write (Phase 06, LOAD-BEARING for any future DB-config work)
+## Runtime DB Connection Config — now manual (Phase 06 page REMOVED 11-07-26)
 
 The `DATABASE_URL` used by BOTH `src/lib/db.ts` (app runtime) and `prisma.config.ts` (CLI) has a
-single source of truth: the `.env` file. Phase 06 built an ADMIN-only runtime settings page that lets
-an admin repoint the app at a different SQL Server WITHOUT editing `.env` by hand.
+single source of truth: the `.env` file. Phase 06 originally built an ADMIN-only runtime settings
+page (`/settings/db`) that let an admin repoint the app at a different SQL Server without editing
+`.env` by hand — **this page was removed 11-07-26** (`remove-settings-db` plan) because it 500'd
+in the production Docker deploy: the app container runs as a non-root user and the bind-mounted
+`.env` file is root-owned, so the page's write step could never succeed there. Its two supporting
+libraries (`src/lib/connection-string.ts` — fields→JDBC URL builder — and `src/lib/env-write.ts` —
+the injection-safe `.env` rewrite helper) and their test files were deleted along with it.
 
-- **`src/lib/connection-string.ts`** — `buildDatabaseUrl(fields)` builds a JDBC-style
-  `sqlserver://` URL from individual fields (host, port, named instance, database, user, password
-  brace-escaped, encrypt, trustServerCertificate). `validateDbFields()` checks required fields.
-  `parseConnectionString()` is a best-effort ADO.NET/JDBC parser used ONLY for a paste-prefill
-  convenience in the UI — its output is always admin-reviewable before save and is NEVER
-  load-bearing for the actual write. `maskPassword()` masks the password for display.
-- **`src/lib/env-write.ts`** — `writeDatabaseUrl()` is the ONLY sanctioned way to change
-  `DATABASE_URL` at runtime. Invariants, all unit-tested against hostile inputs:
-  1. Copies `.env` → `.env.bak` IMMEDIATELY BEFORE mutating `.env` (one-command rollback).
-  2. Injection-safe serialization — truncates the value at the first CR/LF, so an embedded
-     `\nAUTH_SECRET=attacker` payload (or any `\nKEY=value` clobber) cannot inject or overwrite a
-     different `.env` key. Quotes/backslashes/Thai-character passwords are all covered by the same
-     serialization path.
-  3. Rewrites ONLY the `DATABASE_URL` line — every other `.env` line is left untouched.
-  4. Never logs the written value anywhere.
-  5. `.env.bak` is covered by the pre-existing `.gitignore` `.env*` pattern — regression-guarded by
-     a unit test asserting the gitignore match, so the backup is never accidentally committed.
-- **Save-gate invariant (security-critical):** the settings page's save action calls
-  `env-write` (and the subsequent `process.exit(0)` restart trigger) ONLY if a throwaway
-  `PrismaClient` + `SELECT 1` test-connection against the NEW config succeeded first. A bad
-  connection string can never reach `.env` — test-connection failure short-circuits before any
-  write. `process.exit` itself is gated behind `NODE_ENV !== "test" && ORDERSTOCK_NO_EXIT !== "1"`
-  so test/CI runs can drive the save pipeline up to (and including) the `.env` write without
-  killing the test server.
+**Changing the DB connection is now a manual ops procedure**, for any environment: edit the
+`DATABASE_URL` line directly in `.env` on the host, then restart the app process/container
+(`docker restart` in the Docker deploy, or the NSSM/Windows-service restart in the non-Docker
+path) — the same "apply = restart, not a hot swap" behavior as before, just triggered manually
+instead of by an in-app save button. `src/lib/resolve-database-url.ts` (below) is completely
+independent of the removed page and is unaffected by its removal.
+
 - **Apply = restart, NOT a hot singleton swap.** `src/lib/db.ts` reads the connection string once
-  at module init (via `resolveDatabaseUrl()` — see below), so a process restart (recommended: NSSM
-  auto-restart on Windows) genuinely picks up the new connection. Prisma 7 has no live-URL-swap API
-  on an existing `PrismaClient`; do not attempt one. **No auto-restart in local `pnpm dev`:** the
-  `/settings/db` save action's `process.exit(0)` only gets restarted automatically under Docker prod
-  (`restart: unless-stopped`) or an NSSM/Windows-service host — in local `pnpm dev` the process just
-  exits and you must manually re-run `pnpm dev` to apply a saved connection change.
-- **`$`-in-password dotenv-expand gotcha (fixed 11-07-26, `db-url-dollar-roundtrip` plan):** the
-  Next app loads `.env` via `@next/env`, which runs `dotenv-expand` internally — a literal `$` in
-  `DATABASE_URL` (e.g. in the password) gets silently mangled, breaking the connection ("Login
-  failed for user 'sa'") after a `/settings/db` restart-apply. `process.loadEnvFile()` (Node 22+,
-  used by `prisma/load-env.ts`→seed and `prisma.config.ts`→CLI) does **not** expand, so those paths
-  were never affected — only the `@next/env`-loaded app runtime (`src/lib/db.ts`) was broken. Fixed
-  by **`src/lib/resolve-database-url.ts`** (`resolveDatabaseUrl(envPath?)`): raw-reads the first
+  at module init (via `resolveDatabaseUrl()` — see below), so a process restart genuinely picks up
+  the new connection. Prisma 7 has no live-URL-swap API on an existing `PrismaClient`; do not
+  attempt one.
+- **`$`-in-password dotenv-expand gotcha (fixed 11-07-26, `db-url-dollar-roundtrip` plan — still
+  live, unaffected by the settings-page removal):** the Next app loads `.env` via `@next/env`,
+  which runs `dotenv-expand` internally — a literal `$` in `DATABASE_URL` (e.g. in the password)
+  gets silently mangled, breaking the connection ("Login failed for user 'sa'") after any
+  restart-apply of a manually edited `.env`. `process.loadEnvFile()` (Node 22+, used by
+  `prisma/load-env.ts`→seed and `prisma.config.ts`→CLI) does **not** expand, so those paths were
+  never affected — only the `@next/env`-loaded app runtime (`src/lib/db.ts`) was broken. Fixed by
+  **`src/lib/resolve-database-url.ts`** (`resolveDatabaseUrl(envPath?)`): raw-reads the first
   `DATABASE_URL=` line straight from `.env` (string ops, not dotenv), strips one matching quote
   pair, returns it verbatim — no expansion, no `$`-substitution — falling back to
   `process.env.DATABASE_URL` when the file is absent (Docker BUILD stage placeholder / CI). Both
-  `db.ts` and `prisma.config.ts` now import this ONE shared resolver instead of two independent
+  `db.ts` and `prisma.config.ts` import this ONE shared resolver instead of two independent
   env-reads. **Why raw-read instead of escaping `$` on write or preloading `process.env`:**
-  escaping is fragile (named-instance `\INST` edge cases, less human-readable `.env` for the
-  documented manual lockout-recovery edit); preloading `process.env` before Next boots does NOT
-  help — `@next/env` overrides any pre-set var with its own expanded file value. `env-write.ts`'s
-  write format is UNCHANGED (still literal/unquoted) — only the two readers changed.
+  escaping is fragile (named-instance `\INST` edge cases, less human-readable `.env` for a manual
+  edit); preloading `process.env` before Next boots does NOT help — `@next/env` overrides any
+  pre-set var with its own expanded file value.
 - **Lockout recovery is a documented MANUAL step, not an in-app authless bypass.** Because
-  `requireAuth()` re-reads the DB on every call, a bad saved connection string locks EVERY admin
+  `requireAuth()` re-reads the DB on every call, a bad `.env` connection string locks EVERY admin
   out (auth itself can't reach the DB to authenticate). The only recovery path is a manual `.env`
-  edit or `cp .env.bak .env` restore — documented in `docs/deployment-guide.md`. An authless
-  in-app bootstrap to "fix" this was explicitly considered and REJECTED during Phase 06 RESEARCH
-  as a trust-boundary hole.
-- **Delivery artifacts:** `docs/deployment-guide.md` (Thai) covers prereqs, `.env`/`AUTH_SECRET`
-  setup, SQL script run order, NSSM/IIS hosting, print instructions, backup guidance, and this
-  lockout-recovery procedure. `db/create-database-and-login.sql` is the hand-authored companion to
-  `db/create-orderstock-schema.sql` (CREATE DATABASE/LOGIN/USER/grants + a TODO-flagged
-  `COMPATIBILITY_LEVEL 140/150` pending the customer's actual SQL Server version).
+  edit or restore-from-backup — documented in `docs/deployment-guide.md`. An authless in-app
+  bootstrap to "fix" this was explicitly considered and REJECTED during Phase 06 RESEARCH as a
+  trust-boundary hole; the removed page's `.env.bak` backup-before-write behavior no longer exists
+  — take a manual backup of `.env` before editing it in production.
+- **Delivery artifacts:** `docs/deployment-guide.md` (Thai) and `docs/deployment-guide-docker.md`
+  document the manual `.env`-edit + restart procedure (updated 11-07-26, replacing the in-app-flow
+  description), prereqs, `AUTH_SECRET` setup, SQL script run order, NSSM/IIS/Docker hosting, print
+  instructions, backup guidance, and lockout-recovery. `db/create-database-and-login.sql` is the
+  hand-authored companion to `db/create-orderstock-schema.sql` (CREATE DATABASE/LOGIN/USER/grants +
+  a TODO-flagged `COMPATIBILITY_LEVEL 140/150` pending the customer's actual SQL Server version).
 
 ## ⚠ Production DB: shared ERP database `db_TCL` — DANGER guardrails (verified 11-07-26)
 
