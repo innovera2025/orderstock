@@ -7,7 +7,7 @@ metadata:
 ---
 # orderstock - All Context
 
-Last updated: 2026-07-08 (pguard-redesign PROGRAM COMPLETE — all 5 phases VERIFIED, archived to `completed/`; phase1-order-system remains PROGRAM COMPLETE, all 6 phases VERIFIED, archived to `completed/`)
+Last updated: 2026-07-11 (production Docker deploy kit built + hosting switched to subdomain `orderstock.krs.co.th` at domain root, no basePath; pguard-redesign PROGRAM COMPLETE — all 5 phases VERIFIED, archived to `completed/`; phase1-order-system remains PROGRAM COMPLETE, all 6 phases VERIFIED, archived to `completed/`)
 
 This file is the root context entrypoint for the repo.
 
@@ -188,7 +188,7 @@ When durable project knowledge changes:
 
 ## Repository Structure
 
-**Current state: phase1-order-system PROGRAM COMPLETE (all 6 phases VERIFIED); pguard-redesign PROGRAM COMPLETE (all 5 phases VERIFIED, archived to `completed/`).** The app is a real, buildable Next.js project wired to a Docker SQL Server sandbox via Prisma 7, with the full 9-model schema migrated, seeded, master-data CRUD (shops/products) wired, next-auth v5 credentials login + ADMIN/STAFF role-gating protecting every route, a daily order-sheet entry surface (create/edit/list by date+location) that recreates the 13/3/69 scan day with matching per-column totals and grand total (446), print routes (combined daily + per-shop) that render an A4-landscape mm-faithful form from a snapshot-only fetch, and an ADMIN-only runtime DB-connection settings page (fields → safe `.env` rewrite → restart-to-apply) plus the customer delivery package (vendor T-SQL schema script, hand-authored DB-creation/login script, Thai deployment guide). Authenticated app routes live under a `src/app/(main)/` route group so `/print` can render chrome-free. As of pguard-redesign Phase 01 (07-07-26), the app renders in the pguard Design System (IBM Plex fonts, token layer, dark mode, sidebar+topbar shell, `src/components/ui/*` primitives). **As of Phase 02 (07-07-26, VERIFIED), the daily order-sheet entry surface is the 20-column `order-matrix.tsx`** — it REPLACED the 4-file "Order Pad" (order-grid/shop-rail/shop-order-card/summary-bar, all deleted) and saves via the UNCHANGED `saveOrderSheet` payload; login/shops/products/admin-users/print-toolbar are reskinned and a new `/settings` establishment+display panel (backed by `src/lib/app-settings.ts`, an additive `AppSetting` read/write helper, no schema change) sits alongside the untouched `/settings/db` route — see `uxui/all-uxui.md`. The completed order-system program folder is archived at `process/features/order-system/completed/phase1-order-system_06-07-26/`.
+**Current state: phase1-order-system PROGRAM COMPLETE (all 6 phases VERIFIED); pguard-redesign PROGRAM COMPLETE (all 5 phases VERIFIED, archived to `completed/`).** The app is a real, buildable Next.js project wired to a Docker SQL Server sandbox via Prisma 7, with the full 9-model schema migrated, seeded, master-data CRUD (shops/products) wired, next-auth v5 credentials login + ADMIN/STAFF role-gating protecting every route, a daily order-sheet entry surface (create/edit/list by date+location) that recreates the 13/3/69 scan day with matching per-column totals and grand total (446), print routes (combined daily + per-shop) that render an A4-landscape mm-faithful form from a snapshot-only fetch, and an ADMIN-only runtime DB-connection settings page (fields → safe `.env` rewrite → restart-to-apply) plus the customer delivery package (vendor T-SQL schema script, hand-authored DB-creation/login script, Thai deployment guide). Authenticated app routes live under a `src/app/(main)/` route group so `/print` can render chrome-free. As of pguard-redesign Phase 01 (07-07-26), the app renders in the pguard Design System (IBM Plex fonts, token layer, dark mode, sidebar+topbar shell, `src/components/ui/*` primitives). **As of Phase 02 (07-07-26, VERIFIED), the daily order-sheet entry surface is the 20-column `order-matrix.tsx`** — it REPLACED the 4-file "Order Pad" (order-grid/shop-rail/shop-order-card/summary-bar, all deleted) and saves via the UNCHANGED `saveOrderSheet` payload; login/shops/products/admin-users/print-toolbar are reskinned and a new `/settings` establishment+display panel (backed by `src/lib/app-settings.ts`, an additive `AppSetting` read/write helper, no schema change) sits alongside the untouched `/settings/db` route — see `uxui/all-uxui.md`. The completed order-system program folder is archived at `process/features/order-system/completed/phase1-order-system_06-07-26/`. A production Docker deploy kit now exists (`Dockerfile`, `.dockerignore`, `docker-compose.prod.yml`, `docs/deployment-guide-docker.md`) and the app is hosted at its own subdomain, `orderstock.krs.co.th`, served at the domain root (no basePath), pointing at an external customer SQL Server database `db_TCL` — see `process/general-plans/active/orderstock-deploy_08-07-26/` for the deploy plan, feasibility verdict, and report.
 
 ```
 orderstock/
@@ -199,6 +199,9 @@ orderstock/
   next.config.ts / tsconfig.json / eslint.config.mjs / postcss.config.mjs
   vitest.config.ts
   docker-compose.yml          -- disposable SQL Server 2022 sandbox (dev only)
+  Dockerfile                  -- deploy: multi-stage prod image (deps/build/runner), Next.js standalone output, non-root user
+  .dockerignore                -- deploy: build-context exclusions (node_modules, .next, .env* except .env.example, compose files, process/)
+  docker-compose.prod.yml     -- deploy: production compose behind caddy-gen — virtual.host=orderstock.krs.co.th (subdomain, no path matcher), writable .env bind-mount, no published port
   prisma.config.ts            -- JDBC-style URL for the Prisma CLI (migrate/introspect)
   .env / .env.example         -- DATABASE_URL + MSSQL_SA_PASSWORD + AUTH_SECRET/AUTH_TRUST_HOST/SEED_ADMIN_PASSWORD (.env is gitignored)
   playwright.config.ts        -- Playwright E2E config (Phase 03) — setup+chromium projects, webServer=pnpm start
@@ -214,7 +217,8 @@ orderstock/
     create-orderstock-schema.sql -- generated vendor DDL export (offline, DDL-only)
     create-database-and-login.sql -- Phase 06: hand-authored CREATE DATABASE/LOGIN/USER/grants + COMPATIBILITY_LEVEL 140/150 TODO (customer version unconfirmed)
   docs/
-    deployment-guide.md         -- Phase 06: Thai customer deployment guide (prereqs, .env/AUTH_SECRET setup, SQL run order, NSSM/IIS hosting, print instructions, backup, lockout recovery)
+    deployment-guide.md         -- Phase 06: Thai customer deployment guide (prereqs, .env/AUTH_SECRET setup, SQL run order, NSSM/IIS hosting, print instructions, backup, lockout recovery) — Windows/NSSM/IIS variant
+    deployment-guide-docker.md  -- deploy: Thai Linux/Docker/caddy-gen deployment guide (subdomain orderstock.krs.co.th, incl. DNS A-record step)
   e2e/                         -- Playwright specs (Phase 03) — see auth/all-auth.md E2E fixtures section
     auth.setup.ts               -- produces reusable ADMIN/STAFF storage-state fixtures (.auth/*.json, gitignored)
     auth.spec.ts                -- login/role-gate/redirect/enum hybrid gates
@@ -307,7 +311,7 @@ orderstock/
 - **Language:** TypeScript throughout
 - **Database:** Microsoft SQL Server via **Prisma 7** driver-adapter pattern:
   - `prisma@7.8.0`, `@prisma/client@7.8.0`, `@prisma/adapter-mssql@7.8.0`, `mssql@^12.2.0`
-  - dev: sandbox SQL Server 2022 in Docker (`docker-compose.yml`, `mem_limit: 2g`, compat level 150); production: customer's SQL Server via runtime connection string (Phase 06, not yet built)
+  - dev: sandbox SQL Server 2022 in Docker (`docker-compose.yml`, `mem_limit: 2g`, compat level 150); production: an external customer SQL Server (database `db_TCL`, login `orderstock_app`) reachable via the ADMIN-only runtime `/settings/db` connection-string page (built Phase 06) and deployed via the production Docker image (`Dockerfile` + `docker-compose.prod.yml`) hosted at the subdomain `orderstock.krs.co.th`, domain root, no basePath
 - **CSS:** Tailwind 4 (`@tailwindcss/postcss`) via create-next-app default; print CSS (Phase 05) stays separate plain CSS
 - **Testing:** Vitest 3.2.6 (`pnpm test` → `vitest run`) — 88 tests across 16 files (smoke, variant-validation, correction-cascade, password, login-attempts, auth-guard-coverage, secret-leak, totals, be-date, order-save, connection-string, env-write, settings-secret-hygiene, order-payload, summary, product-names), current as of pguard-redesign Phase 05 — the FINAL phase (Phase 05 added `product-names.test.ts`, 6 tests, for the ตีลานนิ่ม/ตีลาน rename; Phase 03/04 baseline was 82/15; Phase 02 baseline was 75/14; phase1-order-system's own baseline was 70/12 at Phase 06). Playwright `@playwright/test@1.61.1` — installed Phase 03 (order-system); 25 E2E tests across `e2e/auth.spec.ts` + `e2e/orders.spec.ts` (rewritten pguard-redesign Phase 02 to drive the order-matrix) + `e2e/print.spec.ts` + `e2e/settings.spec.ts` + `e2e/summary-history.spec.ts` (pguard-redesign Phase 03) + `e2e/mobile.spec.ts` (pguard-redesign Phase 04, 390×844 `mobile` project) + `e2e/auth.setup.ts` fixtures — unchanged since Phase 04 (Phase 05's rename needed no new e2e spec). See `tests/all-tests.md`. **pguard-redesign PROGRAM COMPLETE (08-07-26).**
 - **Validation:** `zod@^4.4.3` — server-action input validation with Thai error messages (added Phase 02, decision 5); enforces `packSize`/`group`/`role` allowed values from `src/lib/product-order.ts` since SQL Server has no Prisma enums (see `database/all-database.md`)
@@ -372,10 +376,11 @@ orderstock/
 - Thai collation — deferred past delivery; integer ordering (`printOrder`/`rosterOrder`) used everywhere instead
 - On-site real-printer mm fidelity — agent-probe only so far; `docs/deployment-guide.md` instructs an on-site test print (Chrome/Edge, Scale 100%) before the customer relies on the layout
 - Hosting confirmation — NSSM Windows service recommended (auto-restart on `.env` apply), pending customer IT confirmation; IIS reverse-proxy is the documented alternative
+- Docker deploy on-host values — 4 items pending before the production Docker kit can go live: DNS A-record `orderstock.krs.co.th` → host IP, the caddy-gen external Docker network name, the TLS/ACME contact email, and the external SQL Server `COMPATIBILITY_LEVEL` (140/150/160) — see `docs/deployment-guide-docker.md` and `db/create-database-and-login.sql`
 
 ## Scan Metadata
 
-- Generated: 2026-07-08 (pguard-redesign Phase 05 / PROGRAM CLOSEOUT — UPDATE-PROCESS)
-- HEAD: f08dd85 (docs(pguard-redesign): phase-05 data-align report + closeout)
-- Mode: delta update (post-Phase-05 EXECUTE+EVL+UPDATE-PROCESS — Phase 05 VERIFIED, ALL 5 phases complete, program archived to `completed/`)
+- Generated: 2026-07-11 (deploy subdomain switch — UPDATE-PROCESS)
+- HEAD: 145855c (refactor(deploy): switch production deploy from subpath to subdomain (orderstock.krs.co.th))
+- Mode: delta update (deploy kit capture + subpath→subdomain switch)
 - Package manager: pnpm 11.5.0
