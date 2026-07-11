@@ -7,7 +7,7 @@ metadata:
 ---
 # orderstock - All Context
 
-Last updated: 2026-07-11 (db-url-dollar-roundtrip fix landed — `resolveDatabaseUrl()` raw-read resolver added; production Docker deploy kit built + hosting switched to subdomain `orderstock.krs.co.th` at domain root, no basePath; pguard-redesign PROGRAM COMPLETE — all 5 phases VERIFIED, archived to `completed/`; phase1-order-system remains PROGRAM COMPLETE, all 6 phases VERIFIED, archived to `completed/`)
+Last updated: 2026-07-11 (production DB reality captured: `db_TCL` verified as the customer's live shared ERP database, not a dedicated orderstock DB — see database/all-database.md DANGER guardrails; db-url-dollar-roundtrip fix landed — `resolveDatabaseUrl()` raw-read resolver added; production Docker deploy kit built + hosting switched to subdomain `orderstock.krs.co.th` at domain root, no basePath; pguard-redesign PROGRAM COMPLETE — all 5 phases VERIFIED, archived to `completed/`; phase1-order-system remains PROGRAM COMPLETE, all 6 phases VERIFIED, archived to `completed/`)
 
 This file is the root context entrypoint for the repo.
 
@@ -52,6 +52,13 @@ Start here before loading deeper context files.
 - Final target: **customer's SQL Server** (version unconfirmed, assumed mid-range, e.g. 2016–2019). We design the schema **from scratch**; at delivery we hand a SQL creation script to the customer's vendor to run.
 - During development: **Sandbox database** first (SQL Server in Docker preferred), switched to the customer DB later via the connection-string settings page.
 - Keep the schema compatible with mid-range SQL Server versions (avoid features newer than SQL Server 2016 unless confirmed).
+- **⚠ Production reality (verified 11-07-26):** the live production database `db_TCL` is NOT a
+  dedicated orderstock database — it is the customer's **live ERP/accounting database** (hundreds
+  of unrelated tables), and orderstock's 9 tables coexist inside it by the customer's own decision.
+  This carries hard safety guardrails (never `migrate reset`, never re-run
+  `create-database-and-login.sql` live, never alter `COMPATIBILITY_LEVEL`) — see
+  `database/all-database.md` § "Production DB: shared ERP database db_TCL — DANGER guardrails"
+  for the full detail before touching the live server.
 
 ---
 
@@ -96,7 +103,7 @@ For most substantial tasks:
 |---|---|
 | `process/context/all-context.md` | any substantial planning, research, review, or implementation task |
 | `process/context/auth/all-auth.md` | implementing or reviewing any authenticated route, server action, session/role logic, or auth-related test |
-| `process/context/database/all-database.md` | Database context entrypoint for orderstock — Prisma 7 + SQL Server schema, SQL Server-specific pitfalls (no enums, one-NULL-per-UNIQUE, NoAction cascades), historical-fidelity snapshot pattern, and seed/migration/export commands |
+| `process/context/database/all-database.md` | Database context entrypoint for orderstock — Prisma 7 + SQL Server schema, SQL Server-specific pitfalls (no enums, one-NULL-per-UNIQUE, NoAction cascades), historical-fidelity snapshot pattern, seed/migration/export commands, and production-DB shared-ERP-database danger guardrails |
 | `process/context/planning/all-planning.md` | creating or calibrating an implementation plan |
 | `process/context/tests/all-tests.md` | the task involves testing, verification, or test debugging |
 | `process/context/uxui/all-uxui.md` | any UI/token/component/shell/theme work |
@@ -106,7 +113,7 @@ For most substantial tasks:
 | Group | Entry point | Scope |
 |---|---|---|
 | `auth/` | `process/context/auth/all-auth.md` | Auth context entrypoint for orderstock — next-auth v5 split-config architecture, requireAuth server-side choke-point contract, session policy, lockout, admin user management, and E2E fixtures |
-| `database/` | `process/context/database/all-database.md` | Database context entrypoint for orderstock — Prisma 7 + SQL Server schema, SQL Server-specific pitfalls (no enums, one-NULL-per-UNIQUE, NoAction cascades), historical-fidelity snapshot pattern, and seed/migration/export commands |
+| `database/` | `process/context/database/all-database.md` | Database context entrypoint for orderstock — Prisma 7 + SQL Server schema, SQL Server-specific pitfalls (no enums, one-NULL-per-UNIQUE, NoAction cascades), historical-fidelity snapshot pattern, seed/migration/export commands, and production-DB shared-ERP-database danger guardrails |
 | `planning/` | `process/context/planning/all-planning.md` | Planning context entrypoint for orderstock — plan-shape calibration (SIMPLE vs COMPLEX), planning conventions, and example plan references |
 | `tests/` | `process/context/tests/all-tests.md` | Testing entrypoint for orderstock — Vitest 3.2.6 (88 tests/16 files) and Playwright E2E (25 tests, incl. mobile project) both real and wired, sandbox SQL Server constraint |
 | `uxui/` | `process/context/uxui/all-uxui.md` | UI/UX context entrypoint for orderstock — pguard Design System tokens, semantic-alias contract, shared src/components/ui/* primitives, sidebar+topbar shell, dark mode, and print-font behavior |

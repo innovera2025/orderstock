@@ -1,12 +1,12 @@
 ---
 name: context:all-database
-description: "Database context entrypoint for orderstock — Prisma 7 + SQL Server schema, SQL Server-specific pitfalls (no enums, one-NULL-per-UNIQUE, NoAction cascades), historical-fidelity snapshot pattern, and seed/migration/export commands"
-keywords: database, prisma, schema, sql server, mssql, migration, migrate, seed, enum, cascade, correction cascade, snapshot, printOrder, export, vendor sql, zod, tsx, dotenv-expand, resolveDatabaseUrl, connection string
+description: "Database context entrypoint for orderstock — Prisma 7 + SQL Server schema, SQL Server-specific pitfalls (no enums, one-NULL-per-UNIQUE, NoAction cascades), historical-fidelity snapshot pattern, seed/migration/export commands, and production-DB shared-ERP-database danger guardrails"
+keywords: database, prisma, schema, sql server, mssql, migration, migrate, seed, enum, cascade, correction cascade, snapshot, printOrder, export, vendor sql, zod, tsx, dotenv-expand, resolveDatabaseUrl, connection string, db_TCL, production database, shared ERP, migrate reset, danger, guardrails
 related: [context:all-tests]
 date: 11-07-26
 ---
 
-Last updated: 11-07-26 (db-url-dollar-roundtrip fix — resolveDatabaseUrl() raw-read resolver replaces direct process.env.DATABASE_URL reads in db.ts + prisma.config.ts; dotenv-expand `$` gotcha documented)
+Last updated: 11-07-26 (production DB reality captured: `db_TCL` is the customer's live shared ERP/accounting database, not a dedicated orderstock DB — added DANGER guardrails section)
 
 # Database Context
 
@@ -298,6 +298,46 @@ an admin repoint the app at a different SQL Server WITHOUT editing `.env` by han
   lockout-recovery procedure. `db/create-database-and-login.sql` is the hand-authored companion to
   `db/create-orderstock-schema.sql` (CREATE DATABASE/LOGIN/USER/grants + a TODO-flagged
   `COMPATIBILITY_LEVEL 140/150` pending the customer's actual SQL Server version).
+
+## ⚠ Production DB: shared ERP database `db_TCL` — DANGER guardrails (verified 11-07-26)
+
+**Read this before touching anything on the production server.** A read-only audit of the live
+production database (external SQL Server `43.229.134.162`, SQL Server 2019 Enterprise,
+`COMPATIBILITY_LEVEL 130`, collation `Thai_CI_AS`) confirmed `db_TCL` is **NOT a dedicated
+orderstock database** — it is the customer's **LIVE ERP / accounting database**, containing
+hundreds of unrelated tables (`Customer`, `Supplier`, `Employee`, `SalesInvoiceHdr/Dtl`,
+`PurchaseOrderHdr/Dtl`, `InventoryItem`, `AccountChart`, `GeneralJournal`, `PettyCash*`, `tblBom*`,
+`WithholdingTax*`, `Warehouse`, etc.). orderstock's own 9 tables (`HealthCheck`, `Shop`, `Product`,
+`ProductVariant`, `OrderSheet`, `OrderLine`, `NoteLine`, `User`, `AppSetting`) **COEXIST** inside
+this shared database. **The customer has decided to keep orderstock in `db_TCL` and only ever
+touch orderstock's own 9 tables — never the ERP tables.** orderstock's own data was verified
+complete and correct (admin user, 25 shops, 20 in-print-order variants + 8 off-list, ตีลานนิ่ม/ตีลาน
+rename applied, value domains valid). The app currently connects as `user=sa` (full sysadmin on a
+shared ERP DB — a flagged security concern; recommended future hardening is a limited login scoped
+to only the 9 orderstock tables, not yet done per the customer's "don't touch anything else"
+instruction).
+
+**Hard guardrails — these exist to prevent catastrophic ERP data loss:**
+
+1. **NEVER run `prisma migrate reset`, `prisma migrate dev`, or `prisma db push --force-reset`
+   against `db_TCL`.** These DROP ALL TABLES in the target database — against `db_TCL` this would
+   wipe the customer's entire live ERP, not just orderstock's 9 tables.
+2. **NEVER re-run `db/create-database-and-login.sql` against the live production server.** Its
+   `IF DB_ID('db_TCL') IS NULL` guard skips database creation (since `db_TCL` already exists), but
+   it would still execute `CREATE LOGIN orderstock_app` + `GRANT db_owner` against the live ERP
+   database — see the leading warning comment added to the script itself.
+3. **Schema changes to orderstock's own tables on `db_TCL` must go through hand-written SQL scoped
+   to only the 9 orderstock tables, or `prisma migrate resolve`** — never an auto-migrate command
+   against the live server.
+4. **SAFE operations** (these touch only the 9 orderstock tables and are fine): the runtime app
+   itself (the Prisma driver-adapter client only knows the 9 orderstock models), `prisma/seed.ts`
+   (idempotent, only upserts orderstock master data), and normal in-app use (shops/products/orders
+   CRUD via the UI).
+5. **`COMPATIBILITY_LEVEL` is 130 on the live server and MUST NOT be altered.** All Prisma queries
+   already succeed at level 130 (verified this session) — altering it would change query plans for
+   the customer's *entire* ERP system, not just orderstock. **This supersedes the
+   `COMPATIBILITY_LEVEL >= 140` TODO in `db/create-database-and-login.sql` for THIS deployment** —
+   that TODO applies only to the fresh-dedicated-DB scenario, not this shared-ERP production target.
 
 ## Known Gaps
 

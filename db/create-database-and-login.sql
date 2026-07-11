@@ -20,6 +20,31 @@
    COMPATIBILITY: this script assumes SQL Server 2017+ (Prisma 7 support floor).
    The customer's exact version is UNCONFIRMED — see the COMPATIBILITY_LEVEL TODO
    below and confirm before finalizing.
+
+   ============================================================================
+   *** WARNING — DO NOT RE-RUN THIS SCRIPT AGAINST THE LIVE PRODUCTION SERVER ***
+   ----------------------------------------------------------------------------
+   On the customer's actual production server, [db_TCL] ALREADY EXISTS as their
+   live ERP/accounting database (hundreds of unrelated tables — Customer,
+   Supplier, SalesInvoiceHdr/Dtl, InventoryItem, AccountChart, etc.). orderstock's
+   9 tables coexist inside that same database by the customer's own decision.
+
+   Because of the `IF DB_ID(N'db_TCL') IS NULL` guard below, re-running this
+   script against the live server will SKIP database creation (db_TCL already
+   exists) — but it will still attempt CREATE LOGIN [orderstock_app] and
+   GRANT db_owner. Re-running is therefore NOT a safe no-op on the live server.
+
+   This script is kept for the fresh-dedicated-database scenario (e.g. a new
+   sandbox, a future customer with their own dedicated DB) and as a reference
+   for what was run once during initial production setup. Do NOT re-run it
+   against the live production server.
+
+   Also do NOT alter COMPATIBILITY_LEVEL on the live server — it is already set
+   to 130 there and the app works correctly at that level; changing it would
+   affect query plans across the customer's entire ERP system, not just
+   orderstock. See process/context/database/all-database.md
+   "Production DB: shared ERP database db_TCL — DANGER guardrails" for the full
+   list of guardrails.
    ============================================================================ */
 
 /* ------------------------------------------------------------------ 1. DATABASE */
