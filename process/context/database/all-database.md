@@ -1,12 +1,12 @@
 ---
 name: context:all-database
 description: "Database context entrypoint for orderstock — Prisma 7 + SQL Server schema, SQL Server-specific pitfalls (no enums, one-NULL-per-UNIQUE, NoAction cascades), historical-fidelity snapshot pattern, and seed/migration/export commands"
-keywords: database, prisma, schema, sql server, mssql, migration, migrate, seed, enum, cascade, correction cascade, snapshot, printOrder, export, vendor sql, zod, tsx
+keywords: database, prisma, schema, sql server, mssql, migration, migrate, seed, enum, cascade, correction cascade, snapshot, printOrder, export, vendor sql, zod, tsx, dotenv-expand, resolveDatabaseUrl, connection string
 related: [context:all-tests]
-date: 07-07-26
+date: 11-07-26
 ---
 
-Last updated: 07-07-26 (Phase 06 / program closeout — runtime connection-string settings + safe env-write pattern added)
+Last updated: 11-07-26 (db-url-dollar-roundtrip fix — resolveDatabaseUrl() raw-read resolver replaces direct process.env.DATABASE_URL reads in db.ts + prisma.config.ts; dotenv-expand `$` gotcha documented)
 
 # Database Context
 
@@ -72,6 +72,9 @@ Read this entrypoint when:
 - `src/lib/correction-cascade.ts` — `cascadeShopNameCorrection()` / `cascadeVariantNameCorrection()`
   + the `CascadeDb` adapter interface
 - `src/lib/db.ts` — the `PrismaClient` driver-adapter singleton (do not construct a second client)
+- `src/lib/resolve-database-url.ts` — `resolveDatabaseUrl(envPath?)`, the shared raw-read
+  `DATABASE_URL` resolver used by both `db.ts` and `prisma.config.ts` (dotenv-expand-proof; see
+  "Runtime Connection Settings & Safe Env Write" below)
 - `scripts/export-schema-sql.ts` — vendor T-SQL DDL export → `db/create-orderstock-schema.sql`
 - `src/app/shops/**`, `src/app/products/**` — master-data CRUD (server actions + RSC forms)
 
@@ -261,10 +264,29 @@ an admin repoint the app at a different SQL Server WITHOUT editing `.env` by han
   write. `process.exit` itself is gated behind `NODE_ENV !== "test" && ORDERSTOCK_NO_EXIT !== "1"`
   so test/CI runs can drive the save pipeline up to (and including) the `.env` write without
   killing the test server.
-- **Apply = restart, NOT a hot singleton swap.** `src/lib/db.ts` is intentionally UNCHANGED by
-  Phase 06 — it already reads `process.env.DATABASE_URL` at module init, so a process restart
-  (recommended: NSSM auto-restart on Windows) genuinely picks up the new connection. Prisma 7 has
-  no live-URL-swap API on an existing `PrismaClient`; do not attempt one.
+- **Apply = restart, NOT a hot singleton swap.** `src/lib/db.ts` reads the connection string once
+  at module init (via `resolveDatabaseUrl()` — see below), so a process restart (recommended: NSSM
+  auto-restart on Windows) genuinely picks up the new connection. Prisma 7 has no live-URL-swap API
+  on an existing `PrismaClient`; do not attempt one. **No auto-restart in local `pnpm dev`:** the
+  `/settings/db` save action's `process.exit(0)` only gets restarted automatically under Docker prod
+  (`restart: unless-stopped`) or an NSSM/Windows-service host — in local `pnpm dev` the process just
+  exits and you must manually re-run `pnpm dev` to apply a saved connection change.
+- **`$`-in-password dotenv-expand gotcha (fixed 11-07-26, `db-url-dollar-roundtrip` plan):** the
+  Next app loads `.env` via `@next/env`, which runs `dotenv-expand` internally — a literal `$` in
+  `DATABASE_URL` (e.g. in the password) gets silently mangled, breaking the connection ("Login
+  failed for user 'sa'") after a `/settings/db` restart-apply. `process.loadEnvFile()` (Node 22+,
+  used by `prisma/load-env.ts`→seed and `prisma.config.ts`→CLI) does **not** expand, so those paths
+  were never affected — only the `@next/env`-loaded app runtime (`src/lib/db.ts`) was broken. Fixed
+  by **`src/lib/resolve-database-url.ts`** (`resolveDatabaseUrl(envPath?)`): raw-reads the first
+  `DATABASE_URL=` line straight from `.env` (string ops, not dotenv), strips one matching quote
+  pair, returns it verbatim — no expansion, no `$`-substitution — falling back to
+  `process.env.DATABASE_URL` when the file is absent (Docker BUILD stage placeholder / CI). Both
+  `db.ts` and `prisma.config.ts` now import this ONE shared resolver instead of two independent
+  env-reads. **Why raw-read instead of escaping `$` on write or preloading `process.env`:**
+  escaping is fragile (named-instance `\INST` edge cases, less human-readable `.env` for the
+  documented manual lockout-recovery edit); preloading `process.env` before Next boots does NOT
+  help — `@next/env` overrides any pre-set var with its own expanded file value. `env-write.ts`'s
+  write format is UNCHANGED (still literal/unquoted) — only the two readers changed.
 - **Lockout recovery is a documented MANUAL step, not an in-app authless bypass.** Because
   `requireAuth()` re-reads the DB on every call, a bad saved connection string locks EVERY admin
   out (auth itself can't reach the DB to authenticate). The only recovery path is a manual `.env`
