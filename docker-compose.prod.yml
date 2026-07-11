@@ -4,14 +4,14 @@
 # Deploy from /opt/orderstock.
 #
 # ============================================================================================
-#  REQUIRED-INPUT — replace these 2 __PLACEHOLDER__ tokens before `docker compose up` (see
-#  docs/deployment-guide-docker.md §"Required values"):
-#    __PLACEHOLDER_CADDY_NETWORK__  — the external Docker network the caddy-gen container is on
-#                                     (find via `docker network ls` / `docker inspect <caddy-gen>`).
-#    __PLACEHOLDER_TLS_EMAIL__      — ops email for Let's Encrypt / ACME cert issuance.
-#    (Two more Required-Inputs live outside this file: the external SQL Server version →
-#     COMPATIBILITY_LEVEL in db/create-database-and-login.sql, and a DNS A-record pointing
-#     orderstock.krs.co.th → this host's public IP — an infra step, see the deploy guide.)
+#  DEPLOY VALUES — filled in for the krs.co.th host (2026-07-11):
+#    caddy network  = caddy-gen-proxy_default  (networks.caddy.name, below)
+#    TLS/ACME email = limweb@hotmail.com       (virtual.tls-email label, below)
+#    subdomain host = orderstock.krs.co.th     (virtual.host label; DNS A-record → 141.98.17.91 done)
+#  DB NOTE: production points at the customer's EXTERNAL shared ERP database db_TCL — see
+#  process/context/database/all-database.md §DANGER guardrails (never migrate-reset that DB).
+#  The OrderSheet.active column (soft-delete) has been applied to db_TCL via
+#  db/alter-ordersheet-add-active.sql.
 # ============================================================================================
 services:
   app:
@@ -24,7 +24,7 @@ services:
       # forward or strip. (A DNS A-record orderstock.krs.co.th → this host must exist first.)
       virtual.host: "orderstock.krs.co.th"
       virtual.port: "3000"
-      virtual.tls-email: "__PLACEHOLDER_TLS_EMAIL__"
+      virtual.tls-email: "limweb@hotmail.com"
     # Runtime secrets + config from the host .env (gitignored, .dockerignore-excluded from the image).
     env_file:
       - .env
@@ -42,4 +42,4 @@ networks:
   caddy:
     external: true
     # The real external network name the caddy-gen container is attached to.
-    name: "__PLACEHOLDER_CADDY_NETWORK__"
+    name: "caddy-gen-proxy_default"
