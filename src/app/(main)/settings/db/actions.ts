@@ -81,9 +81,10 @@ export async function testConnection(
 
 /**
  * B3: validate → test-connection → (ONLY if ok) env-write (backup + injection-safe) → restart.
- * process.exit is gated for tests (E2/B3): skipped under NODE_ENV==="test" or ORDERSTOCK_NO_EXIT=1,
- * so the Hybrid gate can drive save up-to-and-including the `.env` write without killing the server.
- * Under NSSM the service auto-restarts (~2-5s); a manual-restart fallback is documented in the guide.
+ * process.exit fires ONLY in production (NODE_ENV==="production") and never when ORDERSTOCK_NO_EXIT=1,
+ * so tests + the Hybrid gate drive the `.env` write without killing the server, AND `next dev` no
+ * longer dies on save (dev has no auto-restart — the admin restarts manually). Under Docker
+ * (restart:unless-stopped) / NSSM the service auto-restarts (~2-5s) and db.ts re-reads DATABASE_URL.
  */
 export async function saveDbSettings(
   _prev: DbSettingsState,
@@ -104,11 +105,20 @@ export async function saveDbSettings(
 
   writeDatabaseUrl(url);
 
-  // Gate the restart so tests (and the Hybrid gate) can exercise the write without dying.
-  if (process.env.NODE_ENV !== "test" && process.env.ORDERSTOCK_NO_EXIT !== "1") {
-    // NSSM (or any process supervisor) restarts the service; db.ts re-reads DATABASE_URL at boot.
+  // Restart-to-apply: exit so a supervisor (Docker restart:unless-stopped / NSSM) reloads the new
+  // DATABASE_URL at boot. PRODUCTION ONLY — in dev (`next dev`) nothing auto-restarts, so exiting
+  // just kills the dev server and surfaces a confusing "Failed to fetch"; there we tell the admin
+  // to restart manually. Tests + the Hybrid gate opt out via ORDERSTOCK_NO_EXIT=1.
+  const willRestart =
+    process.env.NODE_ENV === "production" && process.env.ORDERSTOCK_NO_EXIT !== "1";
+  if (willRestart) {
     process.exit(0);
   }
 
-  return { success: "บันทึกแล้ว กำลังรีสตาร์ท...", tested: true };
+  return {
+    success: willRestart
+      ? "บันทึกแล้ว กำลังรีสตาร์ท..."
+      : "บันทึกแล้ว — กรุณารีสตาร์ทเซิร์ฟเวอร์เพื่อใช้การเชื่อมต่อใหม่ (dev ไม่รีสตาร์ทอัตโนมัติ)",
+    tested: true,
+  };
 }
