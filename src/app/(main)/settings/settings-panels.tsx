@@ -1,7 +1,6 @@
 "use client";
 
 import { useActionState, useState } from "react";
-import Link from "next/link";
 import {
   saveEstablishment,
   saveDisplay,
@@ -13,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 
-// Establishment + display settings panels (Phase 02). Siblings to the untouched /settings/db panel.
+// Establishment + display settings panels (Phase 02).
 export function SettingsPanels({ settings }: { settings: AppSettings }) {
   const [estState, estAction, estPending] = useActionState(
     saveEstablishment,
@@ -102,24 +101,6 @@ export function SettingsPanels({ settings }: { settings: AppSettings }) {
             </Button>
           </div>
         </form>
-      </Card>
-
-      {/* Link to the untouched DB-connection panel. */}
-      <Card className="flex items-center justify-between p-5">
-        <div>
-          <h2 className="text-[var(--t-lg)] font-semibold text-[var(--text-strong)]">
-            การเชื่อมต่อฐานข้อมูล
-          </h2>
-          <p className="text-[var(--t-sm)] text-[var(--text-muted)]">
-            ตั้งค่าการเชื่อมต่อ SQL Server
-          </p>
-        </div>
-        <Link
-          href="/settings/db"
-          className="inline-flex h-10 items-center rounded-[var(--r-md)] border-[1.5px] border-[var(--border-strong)] px-4 text-[var(--t-sm)] text-[var(--text)]"
-        >
-          เปิดการตั้งค่า
-        </Link>
       </Card>
     </div>
   );

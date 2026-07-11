@@ -38,7 +38,7 @@ const GROUPS: Group[] = [
   },
   {
     label: "ระบบ",
-    items: [{ href: "/settings/db", label: "ตั้งค่าระบบ", icon: Settings, adminOnly: true }],
+    items: [{ href: "/settings", label: "ตั้งค่าระบบ", icon: Settings, adminOnly: true }],
   },
 ];
 

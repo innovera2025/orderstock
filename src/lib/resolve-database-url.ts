@@ -2,13 +2,13 @@
 // used by BOTH `src/lib/db.ts` (Next app runtime) AND `prisma.config.ts` (Prisma CLI).
 //
 // WHY THIS EXISTS: the Next app loads `.env` via `@next/env`, which runs dotenv-expand — a
-// literal `$` in the value gets expanded/corrupted, so a saved SQL Server password containing
-// `$` breaks the connection after a `/settings/db` restart-apply ("Login failed for user 'sa'").
+// literal `$` in the value gets expanded/corrupted, so a SQL Server password containing `$`
+// breaks the connection after a manual env-file edit + restart ("Login failed for user 'sa'").
 // `process.loadEnvFile()` (Node 22+) does NOT expand, but the app path never uses it. This
 // helper raw-reads the value straight from the file, bypassing any expansion, so the literal
 // value (including `$`, `${...}`, and named-instance `\INST` forms) round-trips verbatim.
 //
-// CONTRACT (mirrors `env-write.ts`'s raw/literal/unquoted write format — do NOT add unescaping):
+// CONTRACT (raw/literal/unquoted read format — do NOT add unescaping):
 //  1. Read the target env file (defaults to `<cwd>/.env`; `envPath` param is for test fixtures
 //     only — production call sites never pass it). Take the FIRST `^DATABASE_URL=` line, strip a
 //     single matching pair of surrounding quotes, return the rest VERBATIM (no expansion, no
@@ -16,8 +16,7 @@
 //  2. If the file is absent or has no matching line, fall back to `process.env.DATABASE_URL`
 //     (covers the Docker BUILD stage's `ENV` placeholder and CI/inline-env runs with no `.env`).
 //  3. If neither yields a non-empty value, throw the same clear error `db.ts` threw before.
-//  4. NEVER log/print the resolved value anywhere in this module (secret-hygiene, mirrors
-//     `env-write.ts`).
+//  4. NEVER log/print the resolved value anywhere in this module (secret-hygiene).
 
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
@@ -49,7 +48,7 @@ export function resolveDatabaseUrl(envPath?: string): string {
 
   if (existsSync(targetPath)) {
     const content = readFileSync(targetPath, "utf8");
-    // Mirror `env-write.ts`'s `/\r?\n/` split so CRLF fixtures parse correctly.
+    // Split on `/\r?\n/` so CRLF fixtures parse correctly.
     const lines = content.split(/\r?\n/);
     for (const line of lines) {
       if (line.startsWith(KEY_PREFIX)) {

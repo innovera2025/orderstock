@@ -6,8 +6,7 @@ import { setAppSetting } from "@/lib/app-settings";
 
 // Establishment + display settings actions (Phase 02, decision 2). ADMIN-gated via
 // requireAuthState (the server guard is the real boundary — proxy.ts gates the PAGE only). These
-// write NON-SECRET display values to the AppSetting key/value store. The separate /settings/db
-// secret path is UNTOUCHED by this file.
+// write NON-SECRET display values to the AppSetting key/value store.
 
 export interface SettingsActionState {
   error?: string;

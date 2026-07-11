@@ -3,7 +3,7 @@ import { getAppSettings } from "@/lib/app-settings";
 import { SettingsPanels } from "./settings-panels";
 
 // Settings hub (Phase 02). ADMIN-only; server guard is the real boundary. Hosts the establishment
-// + display panels and links to the untouched /settings/db connection panel.
+// + display panels. (DB connection is changed by editing the env file on the host + restart.)
 export const dynamic = "force-dynamic";
 
 export default async function SettingsPage() {

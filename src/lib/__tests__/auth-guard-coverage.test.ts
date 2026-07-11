@@ -42,18 +42,11 @@ const MODULES: ActionModule[] = [
     file: "src/app/(main)/orders/actions.ts",
     expected: ["createOrderSheet", "saveOrderSheet", "softDeleteOrderSheet"],
   },
-  {
-    // Phase 06 (B4): the ADMIN-only DB-settings actions module. A raw POST from a STAFF user must be
-    // rejected server-side, so every settings action re-checks requireAuth("ADMIN").
-    file: "src/app/(main)/settings/db/actions.ts",
-    expected: ["testConnection", "saveDbSettings"],
-  },
 ];
 
 // ADMIN-only action modules — every exported action must gate on the ADMIN role specifically (B4).
 const ADMIN_MODULES = [
   "src/app/(main)/admin/users/actions.ts",
-  "src/app/(main)/settings/db/actions.ts",
 ];
 
 /** Split a module source into { name, body } chunks, one per `export async function`. */
@@ -99,19 +92,6 @@ describe("requireAuth coverage over all server actions (ELEV-guard)", () => {
       expect(/requireAuth\(/.test(source), `${file} must call requireAuth()`).toBe(true);
     });
   }
-
-  // B4: the settings page is `export default async function` (not the action shape), so it needs its
-  // own grep path — it must call requireAuth("ADMIN") server-side, not rely on proxy.ts alone.
-  it("settings page src/app/(main)/settings/db/page.tsx calls requireAuth(ADMIN)", () => {
-    const source = readFileSync(resolve(ROOT, "src/app/(main)/settings/db/page.tsx"), "utf8");
-    expect(/export default async function/.test(source), "settings page is a default async page").toBe(
-      true,
-    );
-    expect(
-      /requireAuth\(\s*"ADMIN"\s*\)/.test(source),
-      "settings page must call requireAuth(\"ADMIN\")",
-    ).toBe(true);
-  });
 
   for (const file of ADMIN_MODULES) {
     it(`actions in ${file} require the ADMIN role specifically`, () => {

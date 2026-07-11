@@ -8,10 +8,11 @@ import { resolveDatabaseUrl } from "./resolve-database-url";
 // object. See db-auth-feasibility_REF §1 (VERIFIED CONFIRMED pattern).
 //
 // SANDBOX ONLY: DATABASE_URL must point at localhost:1433 (the Docker SQL Server)
-// during development — never a customer/remote host (Phase 06 owns the runtime swap).
+// during development — never a customer/remote host. The production connection is
+// changed by editing the env file on the host and restarting the app.
 //
 // Raw-read the literal value (bypassing `@next/env`'s dotenv-expand) so a saved password
-// containing `$` round-trips verbatim after a `/settings/db` restart-apply. `resolveDatabaseUrl()`
+// containing `$` round-trips verbatim after a manual env-file edit + restart. `resolveDatabaseUrl()`
 // owns the "not set" throw. `db.ts` is server-only/Node (imported only by `src/auth.ts`, never by
 // the edge-split `auth.config.ts`/`proxy.ts`), so the helper's `node:fs` read is safe here.
 const connectionString = resolveDatabaseUrl();
