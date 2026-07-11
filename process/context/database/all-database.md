@@ -6,7 +6,8 @@ related: [context:all-tests]
 date: 11-07-26
 ---
 
-Last updated: 11-07-26 (production DB reality captured: `db_TCL` is the customer's live shared ERP/accounting database, not a dedicated orderstock DB — added DANGER guardrails section)
+Last updated: 11-07-26 (`ordersheet-soft-delete` plan VERIFIED and archived: `OrderSheet` gains
+`active` soft-delete column, matching `Shop`/`Product`/`User`; new db_TCL delivery ALTER script)
 
 # Database Context
 
@@ -101,7 +102,7 @@ Update this group when:
 | `Shop` | Customer shop (ร้านค้า) | `rosterOrder Int @unique` (append-only/immutable once referenced by any sheet), `active` soft-delete, `needsConfirmation` |
 | `Product` | Base product | `group String` ("GOODS"/"SEASONING"), `isOffList`, `active` soft-delete |
 | `ProductVariant` | Product × pack-size/flavor | `packSize String`, `printOrder Int?` (NOT `@unique`), `weightKg`/`pipConversion Decimal(10,3)?`, `name` (snapshot source) |
-| `OrderSheet` | Daily order sheet | `date @db.Date` (CE; BE display is Phase 04+), `location` |
+| `OrderSheet` | Daily order sheet | `date @db.Date` (CE; BE display is Phase 04+), `location`, `active Boolean @default(true)` soft-delete (added 11-07-26, `ordersheet-soft-delete` plan — mirrors `Shop`/`Product`/`User`) |
 | `OrderLine` | One shop×variant order cell | `qty Int`, `shopNameAtEntry`/`variantNameAtEntry` snapshots |
 | `NoteLine` | Free-text remark row | nullable `shopId`/`productVariantId`, `text @db.NVarChar(Max)`, `qty Int?`, snapshots |
 | `User` | App user (Phase 03 owns auth logic + admin seed) | `role String` default `"STAFF"` — no rows seeded in Phase 02 |
@@ -338,6 +339,36 @@ instruction).
    the customer's *entire* ERP system, not just orderstock. **This supersedes the
    `COMPATIBILITY_LEVEL >= 140` TODO in `db/create-database-and-login.sql` for THIS deployment** —
    that TODO applies only to the fresh-dedicated-DB scenario, not this shared-ERP production target.
+
+## OrderSheet Soft-Delete (added 11-07-26, `ordersheet-soft-delete` plan — VERIFIED)
+
+`OrderSheet` now carries `active Boolean @default(true)`, the same soft-delete pattern already used
+by `Shop`/`Product`/`User`. ADMIN-only server action `softDeleteOrderSheet(id)`
+(`src/app/(main)/orders/actions.ts`) sets `active = false`; no cascade, `OrderLine`/`NoteLine` rows
+are never touched or deleted.
+
+**Every read/write path touching `OrderSheet` must exclude inactive rows** (or reject writes to
+them) — this is now the reference pattern any future `OrderSheet`-adjacent feature must follow:
+
+| Site | Rule |
+|---|---|
+| `orders/page.tsx` list | `where: { active: true }` |
+| `orders/[id]/page.tsx` editor | `!sheet.active` → `notFound()` |
+| `src/lib/get-sheet-for-print.ts` (both print routes) | `where: { active: true }` in the shared `findFirst` |
+| `history/page.tsx` | `where: { active: true }` on the primary `orderSheet.findMany` only — the two `groupBy` calls are unfiltered but harmless (their aggregate map is only ever looked up for sheets already present in the filtered list) |
+| `summary/page.tsx` | `active: true` on BOTH `orderSheet.findFirst` branches (`?date=` lookup and "most recent") |
+| `orders/actions.ts` `createOrderSheet` dup-check | `active: true` — otherwise a soft-deleted sheet at the same date+location traps a new save in a redirect-to-404 loop |
+| `orders/actions.ts` `saveOrderSheet` | `if (!sheet || !sheet.active)` — rejects a direct write to a soft-deleted sheet id |
+
+**db_TCL delivery:** `db/alter-ordersheet-add-active.sql` is the hand-authored, idempotency-guarded
+(`IF NOT EXISTS ... sys.columns`) ALTER script for the shared live production DB — never executed by
+any agent, delivery artifact only for the customer's DBA, exactly like `db/create-database-and-login.sql`
+in Phase 06. **Deploy-ordering constraint: this ALTER must be applied to db_TCL BEFORE or
+ATOMICALLY WITH deploying the app code** — every `OrderSheet` query in the app assumes the `active`
+column exists; deploying code first breaks every one of the 7 sites above.
+
+Known non-blocking gap: no `deletedBy`/`deletedAt` audit trail on this or any soft-deletable model —
+see `process/features/order-system/backlog/soft-delete-audit-trail_NOTE_11-07-26.md`.
 
 ## Known Gaps
 
