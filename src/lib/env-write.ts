@@ -17,6 +17,10 @@ export interface WriteEnvOptions {
   envPath?: string;
 }
 
+// WRITE FORMAT CONTRACT: the value is written raw/literal/unquoted. `src/lib/resolve-database-url.ts`
+// raw-reads this line back VERBATIM (it only strips one optional surrounding quote pair; it does NOT
+// unescape). Do NOT add quoting or backslash-escaping here — the reader is not designed to reverse it,
+// and a literal `$` in the password must round-trip unchanged (that is the whole point of the resolver).
 const KEY = "DATABASE_URL";
 
 /**

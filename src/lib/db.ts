@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { PrismaMssql } from "@prisma/adapter-mssql";
+import { resolveDatabaseUrl } from "./resolve-database-url";
 
 // Prisma 7 removed the `datasourceUrl` / `datasources` constructor options; the
 // Rust-free client requires an explicit driver adapter. `PrismaMssql` accepts a
@@ -8,10 +9,12 @@ import { PrismaMssql } from "@prisma/adapter-mssql";
 //
 // SANDBOX ONLY: DATABASE_URL must point at localhost:1433 (the Docker SQL Server)
 // during development — never a customer/remote host (Phase 06 owns the runtime swap).
-const connectionString = process.env.DATABASE_URL;
-if (!connectionString) {
-  throw new Error("DATABASE_URL is not set — cannot construct the Prisma SQL Server adapter.");
-}
+//
+// Raw-read the literal value (bypassing `@next/env`'s dotenv-expand) so a saved password
+// containing `$` round-trips verbatim after a `/settings/db` restart-apply. `resolveDatabaseUrl()`
+// owns the "not set" throw. `db.ts` is server-only/Node (imported only by `src/auth.ts`, never by
+// the edge-split `auth.config.ts`/`proxy.ts`), so the helper's `node:fs` read is safe here.
+const connectionString = resolveDatabaseUrl();
 
 // The connection binds per PrismaClient instance (owns an mssql connection pool),
 // so we keep a module-level singleton and never create per-request clients.
