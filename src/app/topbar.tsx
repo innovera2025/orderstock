@@ -2,8 +2,10 @@
 
 import * as React from "react";
 import { usePathname } from "next/navigation";
+import { Menu, X } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Toast } from "@/components/ui/toast";
+import { useDrawerVisible, toggleDrawer } from "@/lib/sidebar-drawer-store";
 
 // Topbar (Phase 01, C3). Left = page title derived from the route; right = TH/EN toggle
 // (EN → "ยังไม่รองรับ EN" toast, TH-only for now), dark-mode toggle, and an EMPTY per-page
@@ -27,12 +29,28 @@ function titleFor(pathname: string): string {
 export function Topbar() {
   const pathname = usePathname();
   const [toastOpen, setToastOpen] = React.useState(false);
+  const drawerVisible = useDrawerVisible();
 
   return (
     <header className="flex h-[62px] shrink-0 items-center justify-between border-b border-[var(--border)] bg-[var(--bg-surface)] px-6">
-      <h1 className="th text-[var(--t-lg)] font-semibold text-[var(--text-strong)]">
-        {titleFor(pathname)}
-      </h1>
+      <div className="flex items-center gap-2">
+        {/* Sidebar toggle — hidden on phone (BottomTabBar is the phone nav); shown at md+ to drive
+            the tablet drawer and the desktop fixed-sidebar collapse (same store). */}
+        <button
+          id="sidebar-hamburger"
+          type="button"
+          onClick={() => toggleDrawer()}
+          aria-label="เปิด/ปิดเมนู"
+          aria-controls="app-sidebar"
+          aria-expanded={drawerVisible}
+          className="hidden h-9 w-9 items-center justify-center rounded-[var(--r-md)] text-[var(--text-muted)] transition-colors duration-100 hover:bg-[var(--bg-sunken)] hover:text-[var(--text)] outline-none focus-visible:shadow-[0_0_0_4px_var(--focus-ring)] md:inline-flex"
+        >
+          {drawerVisible ? <X size={18} strokeWidth={2} /> : <Menu size={18} strokeWidth={2} />}
+        </button>
+        <h1 className="th text-[var(--t-lg)] font-semibold text-[var(--text-strong)]">
+          {titleFor(pathname)}
+        </h1>
+      </div>
 
       <div className="flex items-center gap-2">
         {/* Per-page action slot (empty placeholder — Phase 02 fills it). */}

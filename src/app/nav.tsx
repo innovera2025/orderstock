@@ -17,7 +17,10 @@ export async function Nav() {
   const initial = name.trim().charAt(0) || "ผ";
 
   return (
-    <aside className="flex h-full w-[216px] shrink-0 flex-col border-r border-[var(--border)] bg-[var(--bg-surface)]">
+    <aside
+      id="app-sidebar"
+      className="flex h-full w-[216px] shrink-0 flex-col border-r border-[var(--border)] bg-[var(--bg-surface)]"
+    >
       {/* Logo */}
       <div className="flex items-center gap-3 px-5 py-4">
         <span

@@ -29,8 +29,10 @@ export default defineConfig({
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
       dependencies: ["setup"],
-      // Desktop project runs every spec EXCEPT the mobile-viewport one.
-      testIgnore: /mobile\.spec\.ts/,
+      // Desktop project runs every spec EXCEPT the mobile-viewport one and the tablet-only drawer
+      // spec (the tablet spec's assertions only hold at the tablet tier — running it at the desktop
+      // viewport would false-fail). The desktop-collapse spec DOES run here (desktop tier).
+      testIgnore: /mobile\.spec\.ts|sidebar-drawer\.spec\.ts/,
     },
     {
       // Phase 04 mobile project — 390×844 viewport reusing the STAFF storage state so the mobile
@@ -42,6 +44,18 @@ export default defineConfig({
         viewport: { width: 390, height: 844 },
         isMobile: true,
         hasTouch: true,
+      },
+      dependencies: ["setup"],
+    },
+    {
+      // responsive-drawer-sidebar plan — tablet project (820×1180, iPad-portrait-ish) reusing the
+      // storage state so the drawer e2e runs headless. Only picks up sidebar-drawer.spec.ts, the
+      // same "add a project rather than inline setViewportSize" pattern as the mobile project.
+      name: "tablet",
+      testMatch: /sidebar-drawer\.spec\.ts/,
+      use: {
+        ...devices["Desktop Chrome"],
+        viewport: { width: 820, height: 1180 },
       },
       dependencies: ["setup"],
     },
