@@ -5,7 +5,9 @@
 #
 # ============================================================================================
 #  DEPLOY VALUES — filled in for the krs.co.th host (2026-07-11):
-#    caddy network  = caddy-gen-proxy_default  (networks.caddy.name, below)
+#    caddy network  = proxy-network            (networks.caddy.name, below; the external network
+#                                               caddy-gen-proxy is attached to — verify via
+#                                               `docker inspect caddy-gen-proxy`)
 #    TLS/ACME email = limweb@hotmail.com       (virtual.tls-email label, below)
 #    subdomain host = orderstock.krs.co.th     (virtual.host label; DNS A-record → 141.98.17.91 done)
 #  DB NOTE: production points at the customer's EXTERNAL shared ERP database db_TCL — see
@@ -42,4 +44,4 @@ networks:
   caddy:
     external: true
     # The real external network name the caddy-gen container is attached to.
-    name: "caddy-gen-proxy_default"
+    name: "proxy-network"
