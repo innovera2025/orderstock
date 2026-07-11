@@ -40,7 +40,7 @@ const MODULES: ActionModule[] = [
   },
   {
     file: "src/app/(main)/orders/actions.ts",
-    expected: ["createOrderSheet", "saveOrderSheet"],
+    expected: ["createOrderSheet", "saveOrderSheet", "softDeleteOrderSheet"],
   },
   {
     // Phase 06 (B4): the ADMIN-only DB-settings actions module. A raw POST from a STAFF user must be
@@ -123,4 +123,19 @@ describe("requireAuth coverage over all server actions (ELEV-guard)", () => {
       expect(notAdminGated, `actions not gated on ADMIN in ${file}`).toEqual([]);
     });
   }
+
+  // P4: orders/actions.ts is a MIXED module — createOrderSheet/saveOrderSheet allow any authed user,
+  // so it can't join ADMIN_MODULES. softDeleteOrderSheet is the ONE ADMIN-only action there; assert
+  // per-function that it gates on the ADMIN role specifically (guards against a future accidental
+  // removal of the "ADMIN" arg that the whole-module check would miss).
+  it("softDeleteOrderSheet in orders/actions.ts requires the ADMIN role specifically", () => {
+    const source = readFileSync(resolve(ROOT, "src/app/(main)/orders/actions.ts"), "utf8");
+    const actions = extractExportedActions(source);
+    const target = actions.find((a) => a.name === "softDeleteOrderSheet");
+    expect(target, "softDeleteOrderSheet action present").toBeTruthy();
+    expect(
+      /requireAuth(State)?\(\s*"ADMIN"\s*\)/.test(target!.body),
+      "softDeleteOrderSheet must call requireAuthState(\"ADMIN\")",
+    ).toBe(true);
+  });
 });

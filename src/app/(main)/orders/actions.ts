@@ -59,7 +59,9 @@ export async function createOrderSheet(
   const location = parsed.data.location;
 
   const result = await prisma.$transaction(async (tx) => {
-    const existing = await tx.orderSheet.findFirst({ where: { date, location } });
+    // P2: exclude soft-deleted sheets from the dup-check — otherwise re-opening a new sheet for a
+    // date+location whose prior sheet was soft-deleted would redirect to the (now 404-ing) deleted id.
+    const existing = await tx.orderSheet.findFirst({ where: { date, location, active: true } });
     if (existing) return { id: existing.id, existed: true };
     const created = await tx.orderSheet.create({ data: { date, location } });
     return { id: created.id, existed: false };
@@ -86,7 +88,9 @@ export async function saveOrderSheet(
   if (denied) return denied;
 
   const sheet = await prisma.orderSheet.findUnique({ where: { id: sheetId } });
-  if (!sheet) return { error: "ไม่พบใบออเดอร์" };
+  // P3: reject a direct/raw POST against a soft-deleted sheet (the UI can't reach this — the editor
+  // 404s first — but a hand-crafted POST would otherwise silently write to an invisible sheet).
+  if (!sheet || !sheet.active) return { error: "ไม่พบใบออเดอร์" };
 
   // Parse grid cells (cell:{shopId}:{variantId}) and note rows (note:{shopId}).
   const incoming: IncomingCell[] = [];
@@ -175,4 +179,43 @@ export async function saveOrderSheet(
   revalidatePath(`/orders/${sheetId}`);
   revalidatePath("/orders");
   return { ok: true, savedAt: new Date().toISOString() };
+}
+
+export interface DeleteSheetActionState {
+  error?: string;
+  ok?: boolean;
+}
+
+/**
+ * ADMIN-only soft-delete of a daily order sheet. Sets `active = false` — keeps every
+ * OrderLine/NoteLine row untouched (no cascade, fully reversible via a direct DB update). This is
+ * the ONLY order action gated on the ADMIN role specifically (create/save allow any authed user);
+ * requireAuthState("ADMIN") is the real server-side boundary (a raw STAFF POST is rejected here
+ * regardless of UI state). Idempotent: an already-inactive / missing sheet returns ok (not an
+ * error) so a double-submit never surfaces a spurious race error.
+ */
+export async function softDeleteOrderSheet(
+  _prev: DeleteSheetActionState,
+  formData: FormData,
+): Promise<DeleteSheetActionState> {
+  const denied = await requireAuthState("ADMIN");
+  if (denied) return denied;
+
+  const id = Number(formData.get("id"));
+  if (!Number.isInteger(id) || id <= 0) {
+    return { error: "รหัสใบออเดอร์ไม่ถูกต้อง" };
+  }
+
+  const sheet = await prisma.orderSheet.findUnique({
+    where: { id },
+    select: { id: true, active: true },
+  });
+  if (!sheet || !sheet.active) {
+    revalidatePath("/orders");
+    return { ok: true };
+  }
+
+  await prisma.orderSheet.update({ where: { id }, data: { active: false } });
+  revalidatePath("/orders");
+  return { ok: true };
 }

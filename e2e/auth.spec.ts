@@ -1,5 +1,6 @@
 import { test, expect } from "@playwright/test";
 import { resolve } from "node:path";
+import { prisma } from "../src/lib/db";
 
 const ADMIN_STATE = resolve(__dirname, ".auth/admin.json");
 const STAFF_STATE = resolve(__dirname, ".auth/staff.json");
@@ -68,6 +69,52 @@ test.describe("role gating (DoD#3-rolegate)", () => {
     await page.goto("/admin/users");
     await expect(page).toHaveURL(/\/admin\/users/);
     await expect(page.getByRole("heading", { name: "จัดการผู้ใช้" })).toBeVisible();
+    await ctx.close();
+  });
+});
+
+// AC4 (ordersheet-soft-delete): the /orders per-row delete button is ADMIN-only. STAFF sees no
+// delete button (server-side action is additionally ADMIN-gated — proven by the P4 unit test).
+test.describe("soft-delete button is ADMIN-only (AC4)", () => {
+  const DEL_LOCATION = "E2E-DEL-AUTH";
+  let sheetId = 0;
+
+  test.beforeAll(async () => {
+    const stale = await prisma.orderSheet.findMany({
+      where: { location: DEL_LOCATION },
+      select: { id: true },
+    });
+    const ids = stale.map((s) => s.id);
+    if (ids.length) await prisma.orderSheet.deleteMany({ where: { id: { in: ids } } });
+    const sheet = await prisma.orderSheet.create({
+      data: { date: new Date(Date.UTC(2026, 2, 20)), location: DEL_LOCATION },
+    });
+    sheetId = sheet.id;
+  });
+  test.afterAll(async () => {
+    await prisma.orderSheet.deleteMany({ where: { location: DEL_LOCATION } });
+    await prisma.$disconnect();
+  });
+
+  test("STAFF sees NO delete button on the /orders row", async ({ browser }) => {
+    const ctx = await browser.newContext({ storageState: STAFF_STATE });
+    const page = await ctx.newPage();
+    await page.goto("/orders");
+    await expect(page.getByTestId(`sheet-row-${sheetId}`)).toBeVisible();
+    await expect(
+      page.getByTestId(`sheet-row-${sheetId}`).getByRole("button", { name: "ลบ" }),
+    ).toHaveCount(0);
+    await ctx.close();
+  });
+
+  test("ADMIN sees the delete button on the /orders row", async ({ browser }) => {
+    const ctx = await browser.newContext({ storageState: ADMIN_STATE });
+    const page = await ctx.newPage();
+    await page.goto("/orders");
+    await expect(page.getByTestId(`sheet-row-${sheetId}`)).toBeVisible();
+    await expect(
+      page.getByTestId(`sheet-row-${sheetId}`).getByRole("button", { name: "ลบ" }),
+    ).toHaveCount(1);
     await ctx.close();
   });
 });

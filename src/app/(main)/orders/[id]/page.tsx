@@ -23,7 +23,8 @@ export default async function OrderSheetPage({
   if (!Number.isInteger(sheetId)) notFound();
 
   const sheet = await prisma.orderSheet.findUnique({ where: { id: sheetId } });
-  if (!sheet) notFound();
+  // A soft-deleted sheet is treated as "does not exist" — not editable.
+  if (!sheet || !sheet.active) notFound();
 
   const [shops, variants, orderLines, noteLines] = await Promise.all([
     prisma.shop.findMany({ orderBy: { rosterOrder: "asc" } }),

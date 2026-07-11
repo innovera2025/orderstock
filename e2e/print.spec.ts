@@ -196,6 +196,37 @@ test("G4: snapshot-render — rename the shop, print STILL shows the old snapsho
   }
 });
 
+test("AC3c: a soft-deleted sheet's print routes render not-found", async ({ page }) => {
+  const DEL_DATE = "2026-04-05";
+  const DEL_LOCATION = "E2E-PRINT-DEL";
+  const variant = await prisma.productVariant.findFirst({ where: { printOrder: 1 } });
+  const shop = await prisma.shop.findFirst({ where: { rosterOrder: 1 } });
+  const sheet = await prisma.orderSheet.create({
+    data: { date: toDbDate(DEL_DATE), location: DEL_LOCATION, active: false },
+  });
+  await prisma.orderLine.create({
+    data: {
+      sheetId: sheet.id,
+      shopId: shop!.id,
+      variantId: variant!.id,
+      qty: 2,
+      shopNameAtEntry: shop!.name,
+      variantNameAtEntry: variant!.name,
+    },
+  });
+
+  try {
+    await page.goto(`/print/daily/${DEL_DATE}?location=${DEL_LOCATION}`);
+    await expect(page.getByText("ไม่พบใบออเดอร์ของวันที่นี้")).toBeVisible();
+
+    await page.goto(`/print/shops/${DEL_DATE}?location=${DEL_LOCATION}`);
+    await expect(page.getByText("ไม่พบร้านค้าที่มีออเดอร์ในวันที่นี้")).toBeVisible();
+  } finally {
+    await prisma.orderLine.deleteMany({ where: { sheetId: sheet.id } });
+    await prisma.orderSheet.delete({ where: { id: sheet.id } });
+  }
+});
+
 test("G7 (hybrid): test-side page.pdf() yields a valid A4-landscape PDF", async ({ page }) => {
   await page.goto(dailyUrl);
   await page.evaluate(() => document.fonts.ready);

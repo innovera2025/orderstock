@@ -72,6 +72,24 @@ test("G6: /summary shows grand total 446 + 20 product bars for the seeded day", 
   await expect(page.getByTestId("bar-8")).toHaveAttribute("data-qty", "82");
 });
 
+test("AC3a: a soft-deleted sheet is excluded from /summary for its date", async ({ page }) => {
+  const sheet = await seedSheet("2026-04-01", "E2E-DEL-SUMMARY");
+  await prisma.orderSheet.update({ where: { id: sheet.id }, data: { active: false } });
+
+  // The only sheet for this date is soft-deleted → /summary falls through to the not-found render.
+  await page.goto(`/summary?date=2026-04-01&location=E2E-DEL-SUMMARY`);
+  await expect(page.getByText("ยังไม่มีใบออเดอร์")).toBeVisible();
+  await expect(page.getByTestId("grand-total")).toHaveCount(0);
+});
+
+test("AC3b: a soft-deleted sheet is excluded from the /history list", async ({ page }) => {
+  const sheet = await seedSheet("2026-04-02", "E2E-DEL-HIST");
+  await prisma.orderSheet.update({ where: { id: sheet.id }, data: { active: false } });
+
+  await page.goto("/history");
+  await expect(page.getByTestId(`history-row-${sheet.id}`)).toHaveCount(0);
+});
+
 test("G7: /history lists today (live) + past (closed) with weight dash", async ({ page }) => {
   const n = new Date();
   const todayIso = `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, "0")}-${String(

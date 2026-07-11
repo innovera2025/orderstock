@@ -101,6 +101,7 @@ model OrderSheet {
   id        Int      @id @default(autoincrement())
   date      DateTime @db.Date
   location  String?  @db.NVarChar(200)
+  active    Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

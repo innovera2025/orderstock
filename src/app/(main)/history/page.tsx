@@ -26,7 +26,7 @@ export default async function HistoryPage() {
   await requireAuth();
 
   const [sheets, lineGroups, noteGroups] = await Promise.all([
-    prisma.orderSheet.findMany({ orderBy: [{ date: "desc" }, { id: "desc" }] }),
+    prisma.orderSheet.findMany({ where: { active: true }, orderBy: [{ date: "desc" }, { id: "desc" }] }),
     prisma.orderLine.groupBy({ by: ["sheetId", "shopId"], _sum: { qty: true } }),
     prisma.noteLine.groupBy({
       by: ["sheetId", "shopId"],

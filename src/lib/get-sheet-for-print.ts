@@ -89,7 +89,7 @@ export async function getSheetForPrint(
   const date = parseDbDate(dateStr);
 
   const sheet = await prisma.orderSheet.findFirst({
-    where: { date, ...(location != null ? { location } : {}) },
+    where: { date, active: true, ...(location != null ? { location } : {}) },
     orderBy: { id: "asc" },
   });
 

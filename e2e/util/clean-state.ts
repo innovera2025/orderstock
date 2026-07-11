@@ -9,6 +9,8 @@ export const E2E_LOCATIONS = [
   "E2E-HIST-TODAY",
   "E2E-HIST-PAST",
   "E2E-MOBILE",
+  "E2E-DEL-SUMMARY",
+  "E2E-DEL-HIST",
 ];
 
 /** Drop E2E-located sheets + restore shops renamed with a " TEST" suffix. */

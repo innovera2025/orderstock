@@ -1,7 +1,9 @@
 import Link from "next/link";
+import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { ceToBeDisplay } from "@/lib/be-date";
 import { NewSheetForm } from "./new-sheet-form";
+import { DeleteSheetButton } from "./delete-sheet-button";
 
 export const dynamic = "force-dynamic";
 
@@ -11,7 +13,11 @@ function normalizeDbDate(d: Date): Date {
 }
 
 export default async function OrdersPage() {
+  const session = await auth();
+  const role = session?.user?.role;
+
   const sheets = await prisma.orderSheet.findMany({
+    where: { active: true },
     orderBy: [{ date: "desc" }, { id: "desc" }],
     include: { _count: { select: { orderLines: true } } },
   });
@@ -43,7 +49,7 @@ export default async function OrdersPage() {
             </tr>
           )}
           {sheets.map((sheet) => (
-            <tr key={sheet.id} className="border-b border-[var(--border)]">
+            <tr key={sheet.id} data-testid={`sheet-row-${sheet.id}`} className="border-b border-[var(--border)]">
               <td className="py-2 pr-2 font-[var(--font-mono)]">{ceToBeDisplay(normalizeDbDate(sheet.date))}</td>
               <td className="py-2 pr-2">{sheet.location ?? "-"}</td>
               <td className="py-2 pr-2 text-right font-[var(--font-mono)]">{sheet._count.orderLines}</td>
@@ -51,6 +57,12 @@ export default async function OrdersPage() {
                 <Link href={`/orders/${sheet.id}`} className="text-[var(--brand-int)] hover:underline">
                   เปิด/แก้ไข
                 </Link>
+                {role === "ADMIN" && (
+                  <DeleteSheetButton
+                    sheetId={sheet.id}
+                    dateLabel={ceToBeDisplay(normalizeDbDate(sheet.date))}
+                  />
+                )}
               </td>
             </tr>
           ))}

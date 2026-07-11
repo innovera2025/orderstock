@@ -45,10 +45,11 @@ export default async function SummaryPage({
 
   const sheet = date
     ? await prisma.orderSheet.findFirst({
-        where: { date: parseDbDate(date), ...(location != null ? { location } : {}) },
+        where: { date: parseDbDate(date), active: true, ...(location != null ? { location } : {}) },
         orderBy: { id: "desc" },
       })
     : await prisma.orderSheet.findFirst({
+        where: { active: true },
         orderBy: [{ date: "desc" }, { id: "desc" }],
       });
 

@@ -114,3 +114,108 @@ test("D2: rename a confirmed shop, re-save — pre-existing cell snapshot is pre
   await prisma.shop.update({ where: { id: shop!.id }, data: { name: originalName } });
   await prisma.$disconnect();
 });
+
+// ADMIN-only soft-delete gates (ordersheet-soft-delete plan). The delete button + confirm modal are
+// ADMIN-only, so this block runs under the admin storage state. Each test uses a dedicated
+// date+location so it is isolated; afterAll drops every DEL-* sheet (lines + notes + sheet).
+test.describe("ADMIN soft-delete of an OrderSheet", () => {
+  test.use({ storageState: "e2e/.auth/admin.json" });
+
+  const DEL_LOCATIONS = ["E2E-DEL-A", "E2E-DEL-P2", "E2E-DEL-P3"];
+
+  async function dropByLocation(location: string) {
+    const sheets = await prisma.orderSheet.findMany({ where: { location }, select: { id: true } });
+    const ids = sheets.map((s) => s.id);
+    if (ids.length) {
+      await prisma.orderLine.deleteMany({ where: { sheetId: { in: ids } } });
+      await prisma.noteLine.deleteMany({ where: { sheetId: { in: ids } } });
+      await prisma.orderSheet.deleteMany({ where: { id: { in: ids } } });
+    }
+  }
+
+  test.beforeAll(async () => {
+    for (const loc of DEL_LOCATIONS) await dropByLocation(loc);
+  });
+  test.afterAll(async () => {
+    for (const loc of DEL_LOCATIONS) await dropByLocation(loc);
+    await prisma.$disconnect();
+  });
+
+  test("AC1+AC2: soft-delete via the modal removes the row; lines retained with active=false", async ({
+    page,
+  }) => {
+    await openSheet(page, "2026-03-16", "E2E-DEL-A");
+    const sheetId = Number(page.url().match(/\/orders\/(\d+)$/)![1]);
+    // Enter one cell so the sheet has an OrderLine to prove retention.
+    await enterCell(page, 1, 2, 5);
+    await page.click('button:has-text("บันทึก")');
+    await expect(page.getByText(/บันทึกล่าสุด/)).toBeVisible();
+
+    // Delete via the confirm modal (NO native confirm()).
+    await page.goto("/orders");
+    await expect(page.getByTestId(`sheet-row-${sheetId}`)).toBeVisible();
+    await page.getByTestId(`sheet-row-${sheetId}`).getByRole("button", { name: "ลบ" }).click();
+    const dialog = page.getByRole("dialog");
+    await expect(dialog).toBeVisible();
+    await dialog.getByRole("button", { name: "ลบ" }).click();
+
+    // Row disappears from the list (revalidatePath refresh — no manual reload).
+    await expect(page.getByTestId(`sheet-row-${sheetId}`)).toHaveCount(0);
+
+    // DB: sheet soft-deleted, OrderLine rows NOT hard-deleted.
+    const sheet = await prisma.orderSheet.findUnique({ where: { id: sheetId } });
+    expect(sheet?.active).toBe(false);
+    const lineCount = await prisma.orderLine.count({ where: { sheetId } });
+    expect(lineCount).toBeGreaterThan(0);
+  });
+
+  test("AC3d: a soft-deleted sheet's editor route 404s", async ({ page }) => {
+    await openSheet(page, "2026-03-17", "E2E-DEL-A");
+    const sheetId = Number(page.url().match(/\/orders\/(\d+)$/)![1]);
+    await prisma.orderSheet.update({ where: { id: sheetId }, data: { active: false } });
+
+    const resp = await page.goto(`/orders/${sheetId}`);
+    expect(resp?.status()).toBe(404);
+  });
+
+  test("AC7 (P2): re-opening a date+location whose prior sheet was soft-deleted creates a fresh sheet", async ({
+    page,
+  }) => {
+    await openSheet(page, "2026-03-18", "E2E-DEL-P2");
+    const firstId = Number(page.url().match(/\/orders\/(\d+)$/)![1]);
+    await prisma.orderSheet.update({ where: { id: firstId }, data: { active: false } });
+
+    // Same date+location again → must create a genuinely NEW sheet, not redirect to the 404-ing one.
+    await openSheet(page, "2026-03-18", "E2E-DEL-P2");
+    const secondId = Number(page.url().match(/\/orders\/(\d+)$/)![1]);
+    expect(secondId).not.toBe(firstId);
+    // The new sheet's editor loads (not a 404).
+    const resp = await page.goto(`/orders/${secondId}`);
+    expect(resp?.status()).toBe(200);
+  });
+
+  test("AC8 (P3): the editor is unreachable for a soft-deleted sheet and its lines stay frozen", async ({
+    page,
+  }) => {
+    // The UI can never reach saveOrderSheet for a soft-deleted sheet (the editor 404s first — proven
+    // here) and the P3 server guard rejects a raw POST against a deleted id (source-asserted, since a
+    // Next server action cannot be invoked by a raw fetch without its encrypted action id). Together
+    // these prove a soft-deleted sheet's lines can never be mutated post-delete.
+    await openSheet(page, "2026-03-19", "E2E-DEL-P3");
+    const sheetId = Number(page.url().match(/\/orders\/(\d+)$/)![1]);
+    await enterCell(page, 1, 2, 4);
+    await page.click('button:has-text("บันทึก")');
+    await expect(page.getByText(/บันทึกล่าสุด/)).toBeVisible();
+    const before = await prisma.orderLine.count({ where: { sheetId } });
+    expect(before).toBeGreaterThan(0);
+
+    await prisma.orderSheet.update({ where: { id: sheetId }, data: { active: false } });
+
+    // Editor unreachable → save UI cannot be reached.
+    const resp = await page.goto(`/orders/${sheetId}`);
+    expect(resp?.status()).toBe(404);
+    // Lines are unchanged (nothing written).
+    const after = await prisma.orderLine.count({ where: { sheetId } });
+    expect(after).toBe(before);
+  });
+});
