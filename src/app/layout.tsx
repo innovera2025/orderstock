@@ -21,8 +21,11 @@ export default function RootLayout({
   // IBM Plex (Thai/Latin/Mono) CSS-var classes applied here on <html> (next/font). lang="th"
   // for correct Thai line-breaking + tone-mark shaping. The app shell/nav lives in the (main)
   // route group layout so /print and /login structurally have no app chrome.
+  // suppressHydrationWarning: the NO_FLASH_THEME script intentionally sets data-theme on <html>
+  // pre-hydration (server HTML has no data-theme), so React 19 would warn on that attribute;
+  // suppression is one-level-deep only — children still hydrate strictly.
   return (
-    <html lang="th" className={`h-full antialiased ${fontVariables}`}>
+    <html lang="th" className={`h-full antialiased ${fontVariables}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: NO_FLASH_THEME }} />
       </head>
