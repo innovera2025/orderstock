@@ -132,6 +132,13 @@
   --accent:          var(--amber-500);
   --accent-hover:    var(--amber-600);
   --focus-ring:      rgba(31,169,113,.45);
+
+  /* Theme-aware focused-cell surface (order-matrix qty/notes inputs) + seasoning band.
+     LIGHT: white-ish focus surface (matches the prior focus:bg-white behavior); seasoning band
+     keeps the current amber-800 look with white text. */
+  --surface-focus:     var(--n-0);
+  --seasoning-band:    var(--amber-800);
+  --seasoning-band-fg: #FFFFFF;
 }
 
 /* ===================== DARK MODE (explicit toggle) ===================== */
@@ -168,6 +175,13 @@
   --sh-md: 0 4px 14px rgba(0,0,0,.5);
   --sh-lg: 0 14px 32px rgba(0,0,0,.55);
   --sh-xl: 0 26px 60px rgba(0,0,0,.6);
+
+  /* DARK: focus surface is a raised-but-distinct shade (NOT white, NOT equal to --text
+     #DCE5E0) so typed digits stay legible; seasoning band brightens to a mid amber that
+     reads against the dark canvas while keeping white band text. */
+  --surface-focus:     #1C2521;
+  --seasoning-band:    var(--amber-700);
+  --seasoning-band-fg: #FFFFFF;
 }
 
 /* First-paint fallback: honor OS dark preference ONLY when no explicit theme is set. */
@@ -205,6 +219,10 @@
     --sh-md: 0 4px 14px rgba(0,0,0,.5);
     --sh-lg: 0 14px 32px rgba(0,0,0,.55);
     --sh-xl: 0 26px 60px rgba(0,0,0,.6);
+
+    --surface-focus:     #1C2521;
+    --seasoning-band:    var(--amber-700);
+    --seasoning-band-fg: #FFFFFF;
   }
 }
 
@@ -255,6 +273,7 @@
   --color-bg-raised:   var(--bg-raised);
   --color-bg-sunken:   var(--bg-sunken);
   --color-bg-inverse:  var(--bg-inverse);
+  --color-surface-focus: var(--surface-focus);
   --color-border:        var(--border);
   --color-border-strong: var(--border-strong);
   --color-text-strong:   var(--text-strong);

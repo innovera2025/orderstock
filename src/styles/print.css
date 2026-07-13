@@ -126,12 +126,28 @@
 .print-footer {
   display: flex;
   justify-content: space-between;
-  margin-top: 2mm;
-  font-size: 8pt;
+  align-items: flex-start;
+  gap: 6mm;
+  margin-top: 1mm;
+  /* 7pt (was 8pt) + tight leading: the smaller secondary levers that, together with the
+     multi-column tally layout below, keep a full ~13-note day inside the ~20mm footer headroom
+     on ONE A4 page. */
+  font-size: 7pt;
+  line-height: 1.15;
 }
 
+/* Tally list flows into 4 columns so many หมายเหตุ lines fit vertically without a page-2
+   spill. `flex: 1` claims the width freed up by the narrower weight-col (below). The
+   "หมายเหตุ" heading spans all columns; each tally line is kept intact across the column break. */
 .print-footer .tally-col {
-  min-width: 60mm;
+  flex: 1 1 auto;
+  min-width: 0;
+  column-count: 4;
+  column-gap: 5mm;
+}
+
+.print-footer .tally-col > .font-semibold {
+  column-span: all;
 }
 
 .print-footer .tally-line {
@@ -139,11 +155,13 @@
   justify-content: space-between;
   gap: 4mm;
   border-bottom: 0.5pt dotted #999;
+  break-inside: avoid;
 }
 
 .print-footer .weight-col {
+  flex: 0 0 auto;
   text-align: right;
-  min-width: 60mm;
+  min-width: 40mm;
 }
 
 .print-footer .weight-line {

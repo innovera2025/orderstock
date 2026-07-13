@@ -236,6 +236,31 @@ test("G7 (hybrid): test-side page.pdf() yields a valid A4-landscape PDF", async 
   expect(pdf.length).toBeGreaterThan(1000);
 });
 
+// Count top-level page objects in a Chromium page.pdf() buffer. Each printed page is a
+// `/Type /Page` object; the pages-tree root is `/Type /Pages` and label dicts are
+// `/Type /PageLabels` — the negative lookahead `(?![s\w])` excludes both so only real page
+// objects are counted. `\s*` tolerates Chromium emitting `/Type/Page` with or without a space.
+function countPdfPages(pdf: Buffer): number {
+  const matches = pdf.toString("latin1").match(/\/Type\s*\/Page(?![s\w])/g);
+  return matches ? matches.length : 0;
+}
+
+test("G9: combined daily print with the 13-note fixture is exactly 1 PDF page, all notes kept", async ({
+  page,
+}) => {
+  await page.goto(dailyUrl);
+  await page.evaluate(() => document.fonts.ready);
+  // Notes are KEPT: the footer renders the full aggregated tally (get-sheet-for-print dedups the
+  // 13 fixture NoteLines by text → 7 unique lines, then appends 4 STANDING_REMINDERS = 11 lines).
+  // This is the dense-footer overflow scenario the one-page fix targets; the multi-column CSS must
+  // not drop or truncate any of them.
+  await expect(page.getByTestId("tally-line")).toHaveCount(11);
+  const pdf = await page.pdf({ preferCSSPageSize: true, printBackground: true });
+  expect(pdf.subarray(0, 5).toString("latin1")).toBe("%PDF-");
+  // The actual printed page count (not a DOM-height heuristic) must be exactly one A4 page.
+  expect(countPdfPages(pdf)).toBe(1);
+});
+
 test.describe("G8 (hybrid): unauthenticated /print request redirects to /login", () => {
   test.use({ storageState: { cookies: [], origins: [] } });
   test("logged-out user hitting /print/daily is redirected to /login", async ({ page }) => {

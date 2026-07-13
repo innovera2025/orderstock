@@ -287,7 +287,7 @@ export function OrderMatrix({
   const inputCls =
     "h-full w-full border-none bg-transparent text-center font-[var(--font-mono)] " +
     "text-[13px] tabular-nums text-[var(--text)] outline-none " +
-    "focus:bg-white focus:shadow-[inset_0_0_0_2px_var(--brand-int)]";
+    "focus:bg-[var(--surface-focus)] focus:shadow-[inset_0_0_0_2px_var(--brand-int)]";
 
   // The save button lives in the topbar via a portal — OUTSIDE this form's DOM subtree — so it is
   // associated back to the form by id (`form="order-sheet-form"`), which HTML form-association
@@ -457,8 +457,8 @@ export function OrderMatrix({
               สินค้า
             </div>
             <div
-              className="flex items-center justify-center text-[12px] font-semibold text-white"
-              style={{ gridColumn: "19 / 23", gridRow: "1", backgroundColor: "var(--amber-800)" }}
+              className="flex items-center justify-center text-[12px] font-semibold text-[var(--seasoning-band-fg)]"
+              style={{ gridColumn: "19 / 23", gridRow: "1", backgroundColor: "var(--seasoning-band)" }}
             >
               เครื่องปรุง
             </div>
@@ -547,7 +547,7 @@ export function OrderMatrix({
                       value={notes[row.shopId as number] ?? ""}
                       onChange={(e) => setNote(row.shopId as number, e.target.value)}
                       placeholder=""
-                      className="h-full w-full border-none bg-transparent px-2 text-[12px] text-[var(--text)] outline-none focus:bg-white focus:shadow-[inset_0_0_0_2px_var(--brand-int)]"
+                      className="h-full w-full border-none bg-transparent px-2 text-[12px] text-[var(--text)] outline-none focus:bg-[var(--surface-focus)] focus:shadow-[inset_0_0_0_2px_var(--brand-int)]"
                     />
                   )}
                 </div>

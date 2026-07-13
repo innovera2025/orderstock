@@ -41,11 +41,6 @@ export default async function ShopsPage() {
               <td className="py-2 pr-2 font-[var(--font-mono)] text-[var(--text-muted)]">{shop.rosterOrder}</td>
               <td className="py-2 pr-2 text-[var(--text)]">
                 {shop.name}
-                {shop.needsConfirmation && (
-                  <span className="ml-2 rounded-[var(--r-sm)] bg-[var(--warning-bg)] px-1.5 py-0.5 text-[var(--t-xs)] text-[var(--warning)]">
-                    รอยืนยัน
-                  </span>
-                )}
               </td>
               <td className="py-2 pr-2 text-[var(--text-muted)]">{shop.active ? "ใช้งาน" : "ลบแล้ว"}</td>
               <td className="py-2 pr-2 text-right">
