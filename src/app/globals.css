@@ -139,6 +139,9 @@
   --surface-focus:     var(--n-0);
   --seasoning-band:    var(--amber-800);
   --seasoning-band-fg: #FFFFFF;
+
+  /* Resting "highlight filled cells" background (order-matrix). LIGHT: keep light-mint. */
+  --cell-filled:       #E9F6F0;
 }
 
 /* ===================== DARK MODE (explicit toggle) ===================== */
@@ -182,6 +185,10 @@
   --surface-focus:     #1C2521;
   --seasoning-band:    var(--amber-700);
   --seasoning-band-fg: #FFFFFF;
+
+  /* DARK: subtle dark-green tint — distinct from empty-cell #0A0F0D, dark enough that
+     --text #DCE5E0 digits stay legible. */
+  --cell-filled:       #152A20;
 }
 
 /* First-paint fallback: honor OS dark preference ONLY when no explicit theme is set. */
@@ -223,6 +230,8 @@
     --surface-focus:     #1C2521;
     --seasoning-band:    var(--amber-700);
     --seasoning-band-fg: #FFFFFF;
+
+    --cell-filled:       #152A20;
   }
 }
 

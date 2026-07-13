@@ -286,7 +286,7 @@ export function OrderMatrix({
   };
 
   const cellBg = (raw: string | undefined) =>
-    hlFilled && hasQty(raw) ? "#E9F6F0" : "transparent";
+    hlFilled && hasQty(raw) ? "var(--cell-filled)" : "transparent";
 
   const inputCls =
     "h-full w-full border-none bg-transparent text-center font-[var(--font-mono)] " +
