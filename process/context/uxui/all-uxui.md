@@ -1,9 +1,9 @@
 ---
 name: context:all-uxui
 description: "UI/UX context entrypoint for orderstock — pguard Design System tokens, semantic-alias contract, shared src/components/ui/* primitives, sidebar+topbar shell, dark mode, and print-font behavior"
-keywords: ui, ux, design, tokens, pguard, theme, dark mode, dark-mode, sidebar, topbar, nav, primitives, button, input, card, modal, toast, chip, switch, ibm plex, font, focus ring, radius, print font, order-matrix, matrix, topbar-actions, portal, app-settings, settings persistence, summary, history, bar chart, top shops, groupby, shop totals, mobile, responsive, breakpoint, bottom tab bar, touch target, mobile entry, mobile overlay, drawer, sidebar drawer, hamburger, tablet, collapse, sidebar-shell, sidebar-drawer-store
+keywords: ui, ux, design, tokens, pguard, theme, dark mode, dark-mode, sidebar, topbar, nav, primitives, button, input, card, modal, toast, chip, switch, ibm plex, font, focus ring, radius, print font, order-matrix, matrix, topbar-actions, portal, app-settings, settings persistence, summary, history, bar chart, top shops, groupby, shop totals, mobile, responsive, breakpoint, bottom tab bar, touch target, mobile entry, mobile overlay, drawer, sidebar drawer, hamburger, tablet, collapse, sidebar-shell, sidebar-drawer-store, surface-focus, seasoning-band, dark-mode contrast, print footer, one-page print, tally-col, print pagination
 related: [context:all-tests]
-date: 11-07-26
+date: 13-07-26
 metadata:
   read_when: any UI/token/component/shell/theme work
 ---
@@ -15,7 +15,10 @@ Entrypoint for the pguard Design System introduced in `pguard-redesign` Phase 01
 `#topbar-actions` portal pattern), Phase 03 (08-07-26, ✅ VERIFIED — สรุปยอดผลิต bar-chart
 pattern, ประวัติออเดอร์ groupBy-aggregate pattern), Phase 04 (08-07-26, ✅ VERIFIED — mobile
 responsive breakpoint pattern, bottom tab bar, mobile order-matrix branch), and Phase 05 (08-07-26,
-✅ VERIFIED — ตีลานนิ่ม/ตีลาน display renames, no UI-pattern changes). Read this before
+✅ VERIFIED — ตีลานนิ่ม/ตีลาน display renames, no UI-pattern changes). Post-program,
+`matrix-print-darkmode-fixes_13-07-26` (✅ VERIFIED at code level, commit `c87dccc`) added the
+`--surface-focus` and `--seasoning-band`/`--seasoning-band-fg` tokens and the print one-page-fit
+footer pattern — see the two dedicated sections below. Read this before
 touching `src/app/globals.css`, `src/components/ui/*`, the sidebar/topbar shell,
 `src/lib/app-settings.ts`, or any dark-mode/theme/topbar-portal/mobile-responsive logic.
 **pguard-redesign is PROGRAM COMPLETE (08-07-26)** — all 5 phases verified, folder archived to
@@ -87,9 +90,19 @@ Components MUST reference the SEMANTIC aliases below, never the raw palette vars
 | `--brand` / `--brand-int` / `--brand-int-hover` | `var(--green-900)` / `var(--green-500)` / `var(--green-600)` | brand anchor vs interactive (buttons/links) vs its hover |
 | `--accent` / `--accent-hover` | `var(--amber-500)` / `var(--amber-600)` | amber accent, sparingly |
 | `--focus-ring` | `rgba(31,169,113,.45)` | the green focus ring — apply as `0 0 0 4px var(--focus-ring)` on `:focus-visible` |
+| `--surface-focus` | `var(--n-0)` (white-ish) | qty-cell / notes-input focus BACKGROUND (added `matrix-print-darkmode-fixes_13-07-26`) — dark-mode value is a distinct near-canvas shade, deliberately NOT white and NOT equal to `--text`, so typed digits stay legible while focused |
+| `--seasoning-band` / `--seasoning-band-fg` | `var(--amber-800)` / `#FFFFFF` | เครื่องปรุง column-group header band background/text (added `matrix-print-darkmode-fixes_13-07-26`) — dark-mode override lightens/saturates the band so it isn't muddy against the dark canvas; `--amber-800` itself is UNCHANGED (still consumed directly by `chip.tsx`'s accent variant) |
 
 Dark-mode values for every alias above live in the `[data-theme="dark"]` block in
 `globals.css` — do not add a new alias without adding both light and dark values.
+
+**Gotcha — `focus:bg-white` is a dark-mode trap:** any Tailwind utility that hardcodes a literal
+color (`bg-white`, `text-white`, etc.) on a `focus:`/`hover:` state silently breaks dark mode even
+if the resting state is fully token-driven — the fix found in `matrix-print-darkmode-fixes_13-07-26`
+was that `order-matrix.tsx`'s qty-cell and notes-input `focus:bg-white` forced a white background
+under dark-mode near-white text, making typed digits invisible. Always route focus/hover/active
+state colors through a semantic token (`--surface-focus` etc.), never a literal Tailwind color
+utility, even for states that "only show briefly."
 
 **Tailwind v4 wiring:** `@theme inline` in `globals.css` maps the palette + semantic aliases to
 Tailwind color utilities (`--color-*`) and `--font-sans` (Thai)/`--font-mono`. Prefer Tailwind
@@ -406,6 +419,25 @@ the 20-col order-matrix competed for space.
 `sidebar-drawer-store.ts`'s exact shape (module-level state + CustomEvent +
 `useSyncExternalStore`, matching `theme-toggle.tsx`) rather than introducing React Context — this
 is now the codebase's established external-client-state idiom, proven twice.
+
+## Print one-page-fit footer pattern (`matrix-print-darkmode-fixes_13-07-26`)
+
+The combined-daily print footer's note-tally list (`src/app/print/print-table.tsx` +
+`src/styles/print.css` `.print-footer`/`.tally-col`) was overflowing to a 2nd A4-landscape page
+once a day had more than a handful of หมายเหตุ notes. Fixed WITHOUT removing/truncating any note:
+
+- `.tally-col` switched from a single vertical list to a 4-column CSS layout (`column-count: 4`)
+  with the column widened (reallocated from `.weight-col`, which only needs two short lines) and
+  font-size tightened to 7pt.
+- The table/header/body/totals-row mm contract (`<colgroup>`, 29 rows, totals-row-as-last-tbody-row)
+  is completely UNTOUCHED — only the footer block below the table changed.
+- New e2e gate `G9` in `e2e/print.spec.ts` asserts the ACTUAL rendered `page.pdf()` page count is
+  1 (by counting `/Type /Page` object occurrences in the PDF byte buffer) rather than a DOM-height
+  heuristic — Chromium's on-screen flow layout and `@page` print pagination are separate layout
+  passes, so a DOM-height proxy can diverge from the real printed page count. Any future
+  print-layout fix needing a "does it fit" gate should follow this same PDF-page-count pattern.
+- Real Chrome print-preview visual confirmation remains Agent-Probe only (not yet re-verified with
+  a live browser) — see `process/general-plans/backlog/matrix-darkmode-print-agent-probe-residuals_NOTE_13-07-26.md`.
 
 ## Update triggers
 
