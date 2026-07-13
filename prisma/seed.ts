@@ -174,6 +174,13 @@ async function main(): Promise<void> {
     });
   }
 
+  // 0b. Location backfill (shop-location-roster): existing shops predate the `location` column, so
+  // stamp the default establishment onto any row still NULL. Idempotent — a 2nd run matches 0 rows.
+  await prisma.shop.updateMany({
+    where: { location: null },
+    data: { location: "ยิ่งเจริญ" },
+  });
+
   // 1. The 20 in-order product-variants (C3–C22) in fixed print order.
   for (const v of PRINT_VARIANTS) {
     const productId = await upsertProduct(v.productName, v.group, false, v.needsConfirmation);

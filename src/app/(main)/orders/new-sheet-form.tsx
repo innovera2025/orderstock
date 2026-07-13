@@ -4,12 +4,13 @@ import { useActionState } from "react";
 import { createOrderSheet, type OrderSheetActionState } from "./actions";
 import { ceToBeDisplay, parseDateInputValue, toDateInputValue } from "@/lib/be-date";
 import { useState } from "react";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
 // Create a new daily sheet: native CE date input + read-only BE label + "วันนี้" shortcut, plus
-// an optional สถานที่. Submit runs createOrderSheet (dup-check → redirect to the grid editor).
-export function NewSheetForm() {
+// a สถานที่ picker (a <select> of distinct existing shop locations, server-fed). Submit runs
+// createOrderSheet (dup-check → redirect to the grid editor); the action still receives a plain
+// string, so its zod validation is unchanged in shape.
+export function NewSheetForm({ locations = [] }: { locations?: string[] }) {
   const [state, formAction, pending] = useActionState(
     createOrderSheet,
     {} as OrderSheetActionState,
@@ -52,7 +53,18 @@ export function NewSheetForm() {
 
       <label className="flex flex-col gap-1.5 text-[var(--t-sm)] text-[var(--text)]">
         <span>สถานที่ (ไม่บังคับ)</span>
-        <Input name="location" className="h-10" />
+        <select
+          name="location"
+          defaultValue=""
+          className="h-10 rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--bg-surface)] px-3 text-[var(--text)] outline-none focus-visible:border-[var(--brand-int)] focus-visible:shadow-[0_0_0_4px_var(--focus-ring)]"
+        >
+          <option value="">ทุกสถานที่</option>
+          {locations.map((loc) => (
+            <option key={loc} value={loc}>
+              {loc}
+            </option>
+          ))}
+        </select>
       </label>
 
       <Button type="submit" disabled={pending}>

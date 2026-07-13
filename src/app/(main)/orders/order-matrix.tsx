@@ -33,7 +33,10 @@ export interface GridColumn {
 }
 
 export interface GridRow {
+  /** Global, stable, unique DB roster slot — identity/testid/React-key. Never renumbered. */
   rosterOrder: number;
+  /** Per-location 1..N visible row number (from buildLocationRoster) — display-only. */
+  displayNo: number;
   shopId: number | null;
   shopName: string | null;
 }
@@ -238,6 +241,7 @@ export function OrderMatrix({
       out.push({
         rowIdx: idx,
         rosterOrder: row.rosterOrder,
+        displayNo: row.displayNo,
         shopName: row.shopName,
         total,
         note,
@@ -505,8 +509,11 @@ export function OrderMatrix({
                   display: visible ? "grid" : "none",
                 }}
               >
-                <div className="flex items-center justify-center text-[11px] text-[var(--text-faint)]">
-                  {row.rosterOrder}
+                <div
+                  className="flex items-center justify-center text-[11px] text-[var(--text-faint)]"
+                  data-testid={`rownum-${row.rosterOrder}`}
+                >
+                  {row.displayNo}
                 </div>
                 <div
                   className={
@@ -611,9 +618,9 @@ export function OrderMatrix({
           <OrderMobileEntry
             formId={FORM_ID}
             shopName={
-              currentRow?.shopName ?? `ช่องว่าง (แถว ${currentRow?.rosterOrder ?? shopIdx + 1})`
+              currentRow?.shopName ?? `ช่องว่าง (แถว ${currentRow?.displayNo ?? shopIdx + 1})`
             }
-            entryNo={currentRow?.rosterOrder ?? shopIdx + 1}
+            entryNo={currentRow?.displayNo ?? shopIdx + 1}
             totalCount={rows.length}
             entryUnits={entryUnits}
             isBlank={isBlankRow}

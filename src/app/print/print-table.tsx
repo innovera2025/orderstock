@@ -77,7 +77,7 @@ export function PrintTable({
           <tbody>
             {rows.map((row) => (
               <tr key={row.rosterOrder} className="data-row">
-                <td>{row.rosterOrder}</td>
+                <td>{row.displayNo}</td>
                 <td className="shop-cell">{row.shopName ?? ""}</td>
                 {columns.map((c) => (
                   <td key={c.printOrder} className={dataCellClass(c.printOrder)}>

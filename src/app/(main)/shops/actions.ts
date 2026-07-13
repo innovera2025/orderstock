@@ -13,6 +13,12 @@ import {
 // Thai-message zod schema colocated with the action (decision 5).
 const shopSchema = z.object({
   name: z.string().trim().min(1, "กรุณากรอกชื่อร้านค้า").max(200, "ชื่อร้านค้ายาวเกินไป"),
+  location: z
+    .string()
+    .trim()
+    .max(200, "สถานที่ยาวเกินไป")
+    .optional()
+    .transform((v) => (v && v.length > 0 ? v : null)),
   rosterOrder: z.coerce
     .number({ message: "ลำดับต้องเป็นตัวเลข" })
     .int("ลำดับต้องเป็นจำนวนเต็ม")
@@ -54,6 +60,7 @@ export async function createShop(
 
   const parsed = shopSchema.safeParse({
     name: formData.get("name"),
+    location: formData.get("location"),
     rosterOrder: formData.get("rosterOrder"),
     needsConfirmation: formData.get("needsConfirmation") === "on",
   });
@@ -83,6 +90,7 @@ export async function updateShop(
 
   const parsed = shopSchema.safeParse({
     name: formData.get("name"),
+    location: formData.get("location"),
     rosterOrder: formData.get("rosterOrder"),
     needsConfirmation: formData.get("needsConfirmation") === "on",
   });
@@ -121,6 +129,7 @@ export async function updateShop(
     where: { id: shopId },
     data: {
       name: parsed.data.name,
+      location: parsed.data.location,
       rosterOrder: parsed.data.rosterOrder,
       needsConfirmation: parsed.data.needsConfirmation,
     },

@@ -16,11 +16,23 @@ export default async function OrdersPage() {
   const session = await auth();
   const role = session?.user?.role;
 
-  const sheets = await prisma.orderSheet.findMany({
-    where: { active: true },
-    orderBy: [{ date: "desc" }, { id: "desc" }],
-    include: { _count: { select: { orderLines: true } } },
-  });
+  const [sheets, locationRows] = await Promise.all([
+    prisma.orderSheet.findMany({
+      where: { active: true },
+      orderBy: [{ date: "desc" }, { id: "desc" }],
+      include: { _count: { select: { orderLines: true } } },
+    }),
+    // Distinct, active-filtered shop locations for the new-sheet picker (never soft-deleted-only).
+    prisma.shop.findMany({
+      where: { location: { not: null }, active: true },
+      distinct: ["location"],
+      select: { location: true },
+      orderBy: { location: "asc" },
+    }),
+  ]);
+  const locations = locationRows
+    .map((r) => r.location)
+    .filter((l): l is string => l != null);
 
   return (
     <main className="mx-auto w-full max-w-4xl p-6">
@@ -28,7 +40,7 @@ export default async function OrdersPage() {
 
       <section className="mb-8 rounded-[var(--r-lg)] border border-[var(--border)] bg-[var(--bg-surface)] p-4">
         <h2 className="mb-3 text-[var(--t-sm)] font-medium text-[var(--text-muted)]">เปิดใบออเดอร์ใหม่</h2>
-        <NewSheetForm />
+        <NewSheetForm locations={locations} />
       </section>
 
       <table className="w-full border-collapse text-[var(--t-sm)]">

@@ -22,10 +22,19 @@ const fixture = JSON.parse(
   readFileSync(resolve(__dirname, "../test-fixtures/sheet-13-03-69.json"), "utf8"),
 ) as Fixture;
 
+/** UTC-midnight Date for a @db.Date column (matches createOrderSheet's toDbDate). */
+function toDbDate(isoDate: string): Date {
+  const [y, m, d] = isoDate.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d));
+}
+
+// The สถานที่ picker is now a <select> of distinct existing shop locations (shop-location-roster):
+// `location` must be an existing option ("ยิ่งเจริญ") or "" (ทุกสถานที่ → null, full-roster fallback).
+// Arbitrary free-text isolation strings are no longer possible — tests isolate by a unique DATE.
 async function openSheet(page: import("@playwright/test").Page, isoDate: string, location = "") {
   await page.goto("/orders");
   await page.fill('input[name="date"]', isoDate);
-  if (location) await page.fill('input[name="location"]', location);
+  await page.selectOption('select[name="location"]', location);
   await page.click('button:has-text("เปิดใบออเดอร์")');
   await page.waitForURL(/\/orders\/\d+$/);
 }
@@ -43,7 +52,7 @@ async function enterCell(
 test("D1: enter the 13/3/69 fixture, save, reload — column totals + grand 446 persist", async ({
   page,
 }) => {
-  await openSheet(page, fixture.date, "E2E-D1");
+  await openSheet(page, fixture.date, "ยิ่งเจริญ");
 
   for (const cell of fixture.cells) {
     await enterCell(page, cell.rosterOrder, cell.printOrder, cell.qty);
@@ -75,7 +84,7 @@ test("D2: rename a confirmed shop, re-save — pre-existing cell snapshot is pre
   const originalName = shop!.name;
 
   // 1. Fresh sheet, enter one cell for the confirmed shop (printOrder 1), save → snapshot = originalName.
-  await openSheet(page, "2026-03-14", "E2E-D2");
+  await openSheet(page, "2026-03-14");
   const sheetUrl = page.url();
   const sheetId = Number(sheetUrl.match(/\/orders\/(\d+)$/)![1]);
   await enterCell(page, slot, 1, 7);
@@ -115,16 +124,65 @@ test("D2: rename a confirmed shop, re-save — pre-existing cell snapshot is pre
   await prisma.$disconnect();
 });
 
+// G4 (shop-location-roster): a sheet whose location matches N shops shows exactly those shops,
+// visibly renumbered 1..N via displayNo, and a shop assigned a DIFFERENT location is ABSENT — while
+// cell entry still targets the correct shop by the UNCHANGED global rosterOrder-keyed testid.
+test("G4: per-location roster shows only that location's shops, displayNo 1..N, others absent", async ({
+  page,
+}) => {
+  // Move roster slot 28 to a DIFFERENT location so it must drop out of the ยิ่งเจริญ roster.
+  const moved = await prisma.shop.findUnique({ where: { rosterOrder: 28 } });
+  expect(moved, "seeded shop at roster slot 28").toBeTruthy();
+  await prisma.shop.update({ where: { id: moved!.id }, data: { location: "คลอง 2" } });
+  try {
+    await openSheet(page, "2026-03-20", "ยิ่งเจริญ");
+
+    // A ยิ่งเจริญ shop (slot 1) is present; the moved shop (slot 28, now คลอง 2) is ABSENT.
+    await expect(page.getByTestId("cell-1-2")).toHaveCount(1);
+    await expect(page.getByTestId("cell-28-2")).toHaveCount(0);
+
+    // displayNo renumbering: rosterOrder 1 → displayNo "1"; rosterOrder 5 (4th roster slot: 1,2,3,5)
+    // → displayNo "4" — the visible number differs from the gapped global rosterOrder.
+    await expect(page.getByTestId("rownum-1")).toHaveText("1");
+    await expect(page.getByTestId("rownum-5")).toHaveText("4");
+
+    // Cell entry still keys on the global rosterOrder testid (unchanged save path).
+    await page.getByTestId("cell-1-2").fill("3");
+    await page.click('button:has-text("บันทึก")');
+    await expect(page.getByText(/บันทึกล่าสุด/)).toBeVisible();
+  } finally {
+    // Restore slot 28 to ยิ่งเจริญ so the sandbox stays close to the seed.
+    await prisma.shop.update({ where: { id: moved!.id }, data: { location: "ยิ่งเจริญ" } });
+    await prisma.$disconnect();
+  }
+});
+
+// G5 (shop-location-roster): a legacy/null-location sheet falls back to the FULL active-shop list
+// (no location restriction) — proven directly, not via the canonical fixture.
+test("G5: null-location sheet falls back to the full active-shop roster", async ({ page }) => {
+  // "" = ทุกสถานที่ → location null → fallback roster = every active shop (incl. slot 28).
+  await openSheet(page, "2026-03-21", "");
+  await expect(page.getByTestId("cell-1-2")).toHaveCount(1);
+  await expect(page.getByTestId("cell-28-2")).toHaveCount(1);
+  // Full-roster renumber: rosterOrder 5 is the 4th active slot → displayNo "4".
+  await expect(page.getByTestId("rownum-5")).toHaveText("4");
+});
+
 // ADMIN-only soft-delete gates (ordersheet-soft-delete plan). The delete button + confirm modal are
 // ADMIN-only, so this block runs under the admin storage state. Each test uses a dedicated
 // date+location so it is isolated; afterAll drops every DEL-* sheet (lines + notes + sheet).
 test.describe("ADMIN soft-delete of an OrderSheet", () => {
   test.use({ storageState: "e2e/.auth/admin.json" });
 
-  const DEL_LOCATIONS = ["E2E-DEL-A", "E2E-DEL-P2", "E2E-DEL-P3"];
+  // Isolation is now by unique DATE (the location picker is a <select> of real locations only, so
+  // free-text isolation tags are gone). Each DEL test owns one date; cleanup drops those dates.
+  const DEL_DATES = ["2026-03-16", "2026-03-17", "2026-03-18", "2026-03-19"];
 
-  async function dropByLocation(location: string) {
-    const sheets = await prisma.orderSheet.findMany({ where: { location }, select: { id: true } });
+  async function dropByDate(isoDate: string) {
+    const sheets = await prisma.orderSheet.findMany({
+      where: { date: toDbDate(isoDate) },
+      select: { id: true },
+    });
     const ids = sheets.map((s) => s.id);
     if (ids.length) {
       await prisma.orderLine.deleteMany({ where: { sheetId: { in: ids } } });
@@ -134,17 +192,17 @@ test.describe("ADMIN soft-delete of an OrderSheet", () => {
   }
 
   test.beforeAll(async () => {
-    for (const loc of DEL_LOCATIONS) await dropByLocation(loc);
+    for (const d of DEL_DATES) await dropByDate(d);
   });
   test.afterAll(async () => {
-    for (const loc of DEL_LOCATIONS) await dropByLocation(loc);
+    for (const d of DEL_DATES) await dropByDate(d);
     await prisma.$disconnect();
   });
 
   test("AC1+AC2: soft-delete via the modal removes the row; lines retained with active=false", async ({
     page,
   }) => {
-    await openSheet(page, "2026-03-16", "E2E-DEL-A");
+    await openSheet(page, "2026-03-16");
     const sheetId = Number(page.url().match(/\/orders\/(\d+)$/)![1]);
     // Enter one cell so the sheet has an OrderLine to prove retention.
     await enterCell(page, 1, 2, 5);
@@ -170,7 +228,7 @@ test.describe("ADMIN soft-delete of an OrderSheet", () => {
   });
 
   test("AC3d: a soft-deleted sheet's editor route 404s", async ({ page }) => {
-    await openSheet(page, "2026-03-17", "E2E-DEL-A");
+    await openSheet(page, "2026-03-17");
     const sheetId = Number(page.url().match(/\/orders\/(\d+)$/)![1]);
     await prisma.orderSheet.update({ where: { id: sheetId }, data: { active: false } });
 
@@ -181,12 +239,12 @@ test.describe("ADMIN soft-delete of an OrderSheet", () => {
   test("AC7 (P2): re-opening a date+location whose prior sheet was soft-deleted creates a fresh sheet", async ({
     page,
   }) => {
-    await openSheet(page, "2026-03-18", "E2E-DEL-P2");
+    await openSheet(page, "2026-03-18");
     const firstId = Number(page.url().match(/\/orders\/(\d+)$/)![1]);
     await prisma.orderSheet.update({ where: { id: firstId }, data: { active: false } });
 
     // Same date+location again → must create a genuinely NEW sheet, not redirect to the 404-ing one.
-    await openSheet(page, "2026-03-18", "E2E-DEL-P2");
+    await openSheet(page, "2026-03-18");
     const secondId = Number(page.url().match(/\/orders\/(\d+)$/)![1]);
     expect(secondId).not.toBe(firstId);
     // The new sheet's editor loads (not a 404).
@@ -201,7 +259,7 @@ test.describe("ADMIN soft-delete of an OrderSheet", () => {
     // here) and the P3 server guard rejects a raw POST against a deleted id (source-asserted, since a
     // Next server action cannot be invoked by a raw fetch without its encrypted action id). Together
     // these prove a soft-deleted sheet's lines can never be mutated post-delete.
-    await openSheet(page, "2026-03-19", "E2E-DEL-P3");
+    await openSheet(page, "2026-03-19");
     const sheetId = Number(page.url().match(/\/orders\/(\d+)$/)![1]);
     await enterCell(page, 1, 2, 4);
     await page.click('button:has-text("บันทึก")');

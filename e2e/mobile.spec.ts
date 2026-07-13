@@ -31,10 +31,12 @@ function cellsByShop(): Map<number, { printOrder: number; qty: number }[]> {
   return m;
 }
 
-async function openSheet(page: Page, isoDate: string, location: string) {
+// The สถานที่ picker is a <select> now (shop-location-roster). "" = ทุกสถานที่ → location null →
+// full active-shop roster (all shops present), which is what the mobile 446 flow needs.
+async function openSheet(page: Page, isoDate: string, location = "") {
   await page.goto("/orders");
   await page.fill('input[name="date"]', isoDate);
-  await page.fill('input[name="location"]', location);
+  await page.selectOption('select[name="location"]', location);
   await page.click('button:has-text("เปิดใบออเดอร์")');
   await page.waitForURL(/\/orders\/\d+$/);
 }
@@ -50,7 +52,7 @@ test.describe("mobile order entry (staff)", () => {
   test("enter 13/3/69 via mobile steppers → save → reload reconstructs grand total 446", async ({
     page,
   }) => {
-    await openSheet(page, fixture.date, "E2E-MOBILE");
+    await openSheet(page, fixture.date);
 
     const byShop = cellsByShop();
     // Enter every shop's cells through the per-shop stepper overlay (cumulative React state — no
@@ -78,7 +80,7 @@ test.describe("mobile order entry (staff)", () => {
   });
 
   test("per-shop entry overlay is full-viewport (covers the bottom tab bar)", async ({ page }) => {
-    await openSheet(page, fixture.date, "E2E-MOBILE");
+    await openSheet(page, fixture.date);
 
     // Tab bar visible on the list screen.
     await expect(page.getByTestId("tab-orders")).toBeVisible();

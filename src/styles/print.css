@@ -82,7 +82,9 @@
   text-align: center;
   vertical-align: middle;
   overflow: hidden;
-  height: 5mm; /* 29 body rows × 5mm = 145mm (single-page fit) */
+  height: 5mm; /* fixed 5mm/row; page-height budget now FLEXES with the per-location row count
+                  (shop-location-roster) — a location with ≤~29 shops still fits one page; a >29-shop
+                  location overflows (documented Known-Gap, on-site fidelity agent-probe only). */
 }
 
 /* Header band + totals band: ~1.5pt solid rules. */

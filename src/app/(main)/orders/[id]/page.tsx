@@ -2,12 +2,9 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { OrderMatrix, type GridColumn, type GridRow, type PrintLink } from "../order-matrix";
 import { ceToBeDisplay, toDateInputValue } from "@/lib/be-date";
+import { buildLocationRoster } from "@/lib/roster";
 
 export const dynamic = "force-dynamic";
-
-// The whole 29-slot roster is always rendered (incl. blank gaps 4/6/20/29). Max seeded slot is 28;
-// slot 29 is a trailing blank gap.
-const ROSTER_SLOTS = 29;
 
 function normalizeDbDate(d: Date): Date {
   return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
@@ -27,7 +24,7 @@ export default async function OrderSheetPage({
   if (!sheet || !sheet.active) notFound();
 
   const [shops, variants, orderLines, noteLines] = await Promise.all([
-    prisma.shop.findMany({ orderBy: { rosterOrder: "asc" } }),
+    prisma.shop.findMany({ where: { active: true }, orderBy: { rosterOrder: "asc" } }),
     prisma.productVariant.findMany({
       where: { printOrder: { not: null } },
       orderBy: { printOrder: "asc" },
@@ -48,16 +45,14 @@ export default async function OrderSheetPage({
     labelVariant: v.labelVariant,
   }));
 
-  const shopBySlot = new Map(shops.map((s) => [s.rosterOrder, s]));
-  const rows: GridRow[] = [];
-  for (let slot = 1; slot <= ROSTER_SLOTS; slot++) {
-    const shop = shopBySlot.get(slot);
-    rows.push({
-      rosterOrder: slot,
-      shopId: shop?.id ?? null,
-      shopName: shop?.name ?? null,
-    });
-  }
+  // Per-location roster: filter the active shops to this sheet's location (fallback to all active
+  // shops when null/no-match), renumbered 1..N via displayNo. Single source of truth = roster.ts.
+  const rows: GridRow[] = buildLocationRoster(shops, sheet.location).map((r) => ({
+    rosterOrder: r.rosterOrder,
+    displayNo: r.displayNo,
+    shopId: r.shopId,
+    shopName: r.shopName,
+  }));
 
   // Initial cell values: `${shopId}:${variantId}` → qty. Notes: shopId → first note text.
   const initialCells: Record<string, number> = {};

@@ -46,6 +46,7 @@ model Shop {
   id                Int      @id @default(autoincrement())
   name              String   @db.NVarChar(200)
   rosterOrder       Int      @unique // one shop per roster slot; append-only / immutable once referenced
+  location          String?  @db.NVarChar(200) // สถานที่ — per-location roster grouping (nullable; backfilled to "ยิ่งเจริญ")
   needsConfirmation Boolean  @default(false)
   active            Boolean  @default(true)
   createdAt         DateTime @default(now())

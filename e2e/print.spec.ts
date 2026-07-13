@@ -110,11 +110,15 @@ test("G1: colgroup has 24 physical cols AND 20 semantic data cols", async ({ pag
   await expect(page.locator("thead tr").nth(1).locator("th")).toHaveCount(20);
 });
 
-test("G2: 29 rows + 3-tier header + totals-last-tbody with column totals and grand 446", async ({
+test("G2: variable rows (active shops) + 3-tier header + totals-last-tbody with column totals and grand 446", async ({
   page,
 }) => {
   await page.goto(dailyUrl);
-  await expect(page.locator("tbody tr.data-row")).toHaveCount(29);
+  // shop-location-roster: E2E-PRINT matches no shop location → fallback to the FULL active-shop
+  // roster (25 seeded active shops), renumbered 1..N — the old fixed 29-slot list (with blank gaps
+  // 4/6/20/29) is gone. Assert the live active-shop count so the gate tracks the seed, not a constant.
+  const activeShopCount = await prisma.shop.count({ where: { active: true } });
+  await expect(page.locator("tbody tr.data-row")).toHaveCount(activeShopCount);
   await expect(page.locator("thead tr")).toHaveCount(3);
   await expect(page.getByTestId("pgrand")).toHaveText(String(fixture.expectedGrandTotal)); // 446
   await expect(page.getByTestId("ptotal-4")).toHaveText("137");
@@ -193,6 +197,54 @@ test("G4: snapshot-render — rename the shop, print STILL shows the old snapsho
   } finally {
     // Restore the live name so the shared sandbox is never poisoned for later specs (E4).
     await prisma.shop.update({ where: { id: shop!.id }, data: { name: originalName } });
+  }
+});
+
+// G6 (shop-location-roster): both print routes render the per-location filtered, VARIABLE-row,
+// displayNo-numbered 1..N roster — a shop in a different location is absent, and the printed row
+// numbers are contiguous displayNo (not the gapped global rosterOrder).
+test("G6: print renders the per-location filtered roster, variable rows, displayNo 1..N", async ({
+  page,
+}) => {
+  const G6_DATE = "2026-04-08";
+  const G6_LOCATION = "ยิ่งเจริญ";
+  const moved = await prisma.shop.findUnique({ where: { rosterOrder: 28 } });
+  const variant = await prisma.productVariant.findFirst({ where: { printOrder: 1 } });
+  const shop1 = await prisma.shop.findFirst({ where: { rosterOrder: 1 } });
+
+  // Move slot 28 to a DIFFERENT location so the ยิ่งเจริญ roster excludes it.
+  await prisma.shop.update({ where: { id: moved!.id }, data: { location: "คลอง 2" } });
+  const sheet = await prisma.orderSheet.create({
+    data: { date: toDbDate(G6_DATE), location: G6_LOCATION },
+  });
+  await prisma.orderLine.create({
+    data: {
+      sheetId: sheet.id,
+      shopId: shop1!.id,
+      variantId: variant!.id,
+      qty: 4,
+      shopNameAtEntry: shop1!.name,
+      variantNameAtEntry: variant!.name,
+    },
+  });
+
+  try {
+    await page.goto(`/print/daily/${G6_DATE}?location=${encodeURIComponent(G6_LOCATION)}`);
+    // Variable row count = ยิ่งเจริญ active shops (all active shops minus the one moved to คลอง 2).
+    const yingcharoenCount = await prisma.shop.count({
+      where: { active: true, location: G6_LOCATION },
+    });
+    await expect(page.locator("tbody tr.data-row")).toHaveCount(yingcharoenCount);
+    // The moved shop's name is absent from the printed roster.
+    await expect(page.getByText(moved!.name, { exact: true })).toHaveCount(0);
+    // displayNo is contiguous 1..N: first printed row number = "1"; 4th data row (rosterOrder 5)
+    // prints displayNo "4" — proving renumbering off the gapped global rosterOrder (1,2,3,5,…).
+    await expect(page.locator("tbody tr.data-row").first().locator("td").first()).toHaveText("1");
+    await expect(page.locator("tbody tr.data-row").nth(3).locator("td").first()).toHaveText("4");
+  } finally {
+    await prisma.orderLine.deleteMany({ where: { sheetId: sheet.id } });
+    await prisma.orderSheet.delete({ where: { id: sheet.id } });
+    await prisma.shop.update({ where: { id: moved!.id }, data: { location: "ยิ่งเจริญ" } });
   }
 });
 

@@ -2,7 +2,7 @@
   "_description": "Canonical 13/3/69 (13/3/2026 CE) scan-day gate fixture (Phase 04 order entry). Shared with Phase 05 print tests. cells = OrderLine grid only (printOrder 1..20). GRAND=446 counts ONLY OrderLine cells; NoteLine qty (r9=1, r16=20) is EXCLUDED. Column/grand totals independently verified at PVL 06-07-26.",
   "date": "2026-03-13",
   "dateBE": "13/3/69",
-  "location": null,
+  "location": "ยิ่งเจริญ",
   "cells": [
     { "rosterOrder": 1, "printOrder": 4, "qty": 15 },
     { "rosterOrder": 1, "printOrder": 5, "qty": 5 },

@@ -34,6 +34,7 @@ export default async function EditShopPage({
         action={boundUpdate}
         defaultValues={{
           name: shop.name,
+          location: shop.location,
           rosterOrder: shop.rosterOrder,
           needsConfirmation: shop.needsConfirmation,
         }}

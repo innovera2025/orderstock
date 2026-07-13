@@ -1,0 +1,34 @@
+-- ============================================================================================
+-- orderstock — เพิ่มคอลัมน์ `location` (สถานที่) ให้ตาราง Shop บนฐานข้อมูล db_TCL
+-- Add the `location` (สถานที่) column to the Shop table on the live db_TCL database.
+--
+-- ⚠ วิธีใช้ / USAGE:
+--   * รันสคริปต์นี้ครั้งเดียวบน db_TCL (ผ่าน DBA ของลูกค้า) *ก่อน* หรือ *พร้อมกับ* การดีพลอยโค้ดใหม่.
+--     Run ONCE on db_TCL (by the customer's DBA) BEFORE or ATOMICALLY WITH deploying the new app code.
+--   * ปลอดภัยกับข้อมูลจริง: คอลัมน์เป็น NULL ได้ (nullable) — แถวเดิมทั้งหมดจะได้ location = NULL
+--     ซึ่งแอปจะ fallback ไปแสดงร้านค้าทั้งหมด (พฤติกรรมเดิม) จนกว่าจะเติมค่า. ไม่มีช่วงที่แอป error.
+--     Safe against live data: the column is NULLABLE — existing rows get location = NULL and the app
+--     falls back to the full active-shop roster (unchanged behavior) until values are filled in. No
+--     window where the app errors between this ALTER and the backfill.
+--   * มี guard ให้รันซ้ำได้แบบ no-op (idempotent). Idempotent — re-running is a harmless no-op.
+--   * ขอบเขต: แตะเฉพาะตาราง Shop ของ orderstock เท่านั้น — ห้ามแตะตาราง ERP อื่นใน db_TCL.
+--     Scope: touches ONLY orderstock's own Shop table — never the customer's ERP tables.
+--
+-- 📋 ลำดับการดีพลอย / DEPLOY ORDER:
+--   (1) DBA รันสคริปต์นี้บน db_TCL.  DBA runs this script on db_TCL.
+--   (2) ดีพลอยโค้ดแอปใหม่.          Deploy the new app code.
+--   (3) เติมค่า location เริ่มต้นให้ร้านค้าเดิม (เลือกวิธีใดวิธีหนึ่ง / pick ONE):
+--       Backfill the default establishment onto existing shops (choose ONE):
+--       • แนะนำสำหรับ prod / RECOMMENDED for prod — one-off UPDATE scoped to the Shop table only:
+--           UPDATE [dbo].[Shop] SET [location] = N'ยิ่งเจริญ' WHERE [location] IS NULL;
+--       • หรือ / OR — the idempotent seed's backfill block (broader than needed against live prod):
+--           pnpm tsx prisma/seed.ts
+--
+-- ⚠ ห้ามเด็ดขาด / NEVER: อย่ารัน prisma migrate reset/dev/deploy หรือ db push กับ db_TCL —
+--   คำสั่งเหล่านั้นจะลบตารางทั้งหมดในฐานข้อมูล ERP ของลูกค้า. This script is the ONLY sanctioned
+--   schema change path for db_TCL (see process/context/database/all-database.md §DANGER guardrails).
+--   ปลอดภัยกับ COMPATIBILITY_LEVEL 130 (SQL Server 2019 ของ server จริง) — ไม่ใช้ฟีเจอร์ที่ผูกกับ compat level.
+-- ============================================================================================
+
+IF COL_LENGTH('dbo.Shop', 'location') IS NULL
+    ALTER TABLE [dbo].[Shop] ADD [location] NVARCHAR(200) NULL;

@@ -7,9 +7,12 @@ import { Search, ChevronRight } from "lucide-react";
 // second save path). Tapping a card opens the per-shop entry overlay for that roster slot.
 
 export interface MobileListRow {
-  /** Index into the full 29-slot rows array — the entry overlay navigates by this. */
+  /** Index into the full rows array — the entry overlay navigates by this. */
   rowIdx: number;
+  /** Global unique roster slot — React key + data-testid (never renumbered). */
   rosterOrder: number;
+  /** Per-location 1..N visible number shown in the card circle. */
+  displayNo: number;
   shopName: string;
   total: number;
   note: string;
@@ -96,7 +99,7 @@ export function OrderMobileList({
                   : "bg-[var(--bg-sunken)] text-[var(--text-faint)]")
               }
             >
-              {s.rosterOrder}
+              {s.displayNo}
             </span>
             <span className="min-w-0 flex-1">
               <span className="block text-[14px] font-semibold text-[var(--text)]">

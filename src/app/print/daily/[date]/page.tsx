@@ -6,7 +6,8 @@ import { PrintControls } from "../../print-controls";
 
 export const dynamic = "force-dynamic";
 
-// Combined daily sheet: all 29 roster slots in ONE table on ONE page. Reads snapshot columns via
+// Combined daily sheet: the sheet-location's shops (variable row count, displayNo 1..N) in ONE
+// table on ONE page. Reads snapshot columns via
 // getSheetForPrint (never live names). E1a: requireAuth() is called explicitly — proxy.ts gates
 // the route, but a raw request path must still hit the real server-side boundary. E1c: requireAuth
 // throws AuthError; we map it to a graceful /login redirect rather than the error boundary.

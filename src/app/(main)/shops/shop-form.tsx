@@ -10,6 +10,7 @@ interface ShopFormProps {
   action: (prev: ShopActionState, formData: FormData) => Promise<ShopActionState>;
   defaultValues?: {
     name: string;
+    location: string | null;
     rosterOrder: number;
     needsConfirmation: boolean;
   };
@@ -30,6 +31,11 @@ export function ShopForm({ action, defaultValues, submitLabel }: ShopFormProps) 
       <label className="flex flex-col gap-1.5 text-[var(--t-sm)] text-[var(--text)]">
         <span>ชื่อร้านค้า</span>
         <Input name="name" defaultValue={defaultValues?.name} required />
+      </label>
+
+      <label className="flex flex-col gap-1.5 text-[var(--t-sm)] text-[var(--text)]">
+        <span>สถานที่ (ไม่บังคับ)</span>
+        <Input name="location" defaultValue={defaultValues?.location ?? ""} maxLength={200} />
       </label>
 
       <label className="flex flex-col gap-1.5 text-[var(--t-sm)] text-[var(--text)]">

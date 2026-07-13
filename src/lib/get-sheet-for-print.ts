@@ -4,8 +4,9 @@
 // `Shop.name` / `ProductVariant.name`. This is why a shop renamed AFTER a sheet was recorded
 // still prints under its original name (Phase-02 decision 6 historical fidelity; gate G4).
 //
-// The daily view returns ALL 29 roster slots (including the blank gaps 4/6/20/29); the per-shop
-// view filters this same result in memory (decision 8) — one fetch, two renderings.
+// The daily view returns the sheet-location's shops (variable row count, displayNo 1..N, via the
+// shared buildLocationRoster helper — same as the editor); the per-shop view filters this same
+// result in memory by the global rosterOrder (decision 8) — one fetch, two renderings.
 import { prisma } from "@/lib/db";
 import { ceToBeDisplay } from "@/lib/be-date";
 import {
@@ -14,10 +15,7 @@ import {
   type OrderLineCell,
 } from "@/lib/totals";
 import { PRODUCT_GROUPS } from "@/lib/product-order";
-
-// The paper form always renders the full 29-slot roster (max seeded slot is 28; slot 29 is a
-// trailing blank gap). Mirrors `orders/[id]/page.tsx` ROSTER_SLOTS.
-const ROSTER_SLOTS = 29;
+import { buildLocationRoster } from "@/lib/roster";
 
 export interface PrintColumn {
   printOrder: number;
@@ -28,7 +26,10 @@ export interface PrintColumn {
 }
 
 export interface PrintRow {
+  /** Global unique DB roster slot — identity + the per-shop print `?slots=` filter key. */
   rosterOrder: number;
+  /** Per-location 1..N printed row number (display-only). */
+  displayNo: number;
   shopId: number | null;
   /** Snapshot shop name when the shop ordered on this sheet; else live name; null for a blank gap. */
   shopName: string | null;
@@ -169,18 +170,19 @@ export async function getSheetForPrint(
     if (!noteByRoster.has(rosterOrder)) noteByRoster.set(rosterOrder, note.text);
   }
 
-  const rows: PrintRow[] = [];
-  const shopByRoster = new Map(shops.map((s) => [s.rosterOrder, s]));
-  for (let slot = 1; slot <= ROSTER_SLOTS; slot++) {
-    const shop = shopByRoster.get(slot);
-    rows.push({
-      rosterOrder: slot,
-      shopId: shop?.id ?? null,
-      shopName: shop ? snapshotShopName.get(shop.id) ?? shop.name : null,
-      note: noteByRoster.get(slot) ?? null,
-      cells: cellsByRoster.get(slot) ?? {},
-    });
-  }
+  // Per-location roster (variable row count, displayNo 1..N) — SAME helper the editor uses, so the
+  // printed roster matches the on-screen one. `rosterByShopId` above is still built from ALL shops
+  // so a cell from a soft-deleted shop still maps into totals; the DISPLAYED rows are active-only.
+  const rosterLocation = sheet?.location ?? location ?? null;
+  const activeShops = shops.filter((s) => s.active);
+  const rows: PrintRow[] = buildLocationRoster(activeShops, rosterLocation).map((r) => ({
+    rosterOrder: r.rosterOrder,
+    displayNo: r.displayNo,
+    shopId: r.shopId,
+    shopName: snapshotShopName.get(r.shopId) ?? r.shopName,
+    note: noteByRoster.get(r.rosterOrder) ?? null,
+    cells: cellsByRoster.get(r.rosterOrder) ?? {},
+  }));
 
   // Footer tally: aggregate this sheet's NoteLines by text (sum qty; null when all null), then
   // append the standing reminder lines that are not already present.
