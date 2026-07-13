@@ -2,7 +2,7 @@
 name: context:all-uxui
 description: "UI/UX context entrypoint for orderstock — pguard Design System tokens, semantic-alias contract, shared src/components/ui/* primitives, sidebar+topbar shell, dark mode, and print-font behavior"
 keywords: ui, ux, design, tokens, pguard, theme, dark mode, dark-mode, sidebar, topbar, nav, primitives, button, input, card, modal, toast, chip, switch, ibm plex, font, focus ring, radius, print font, order-matrix, matrix, topbar-actions, portal, app-settings, settings persistence, summary, history, bar chart, top shops, groupby, shop totals, mobile, responsive, breakpoint, bottom tab bar, touch target, mobile entry, mobile overlay, drawer, sidebar drawer, hamburger, tablet, collapse, sidebar-shell, sidebar-drawer-store, surface-focus, seasoning-band, dark-mode contrast, print footer, one-page print, tally-col, print pagination
-related: [context:all-tests]
+related: [context:all-tests, context:all-database]
 date: 13-07-26
 metadata:
   read_when: any UI/token/component/shell/theme work
@@ -419,6 +419,21 @@ the 20-col order-matrix competed for space.
 `sidebar-drawer-store.ts`'s exact shape (module-level state + CustomEvent +
 `useSyncExternalStore`, matching `theme-toggle.tsx`) rather than introducing React Context — this
 is now the codebase's established external-client-state idiom, proven twice.
+
+## Order-matrix location picker + variable-row roster (`shop-location-roster_13-07-26`, ✅ VERIFIED AT CODE LEVEL)
+
+No new tokens or primitives — this is a data-driven behavior change layered on the existing
+components. `orders/new-sheet-form.tsx`'s location field changed from free text to a `<select>`
+populated by a server query of distinct, `active:true`-filtered shop locations. `order-matrix.tsx`
+(desktop + mobile branches) and both print routes now render a VARIABLE row count (no more fixed
+29-row roster) — the visible row-number label switched from `rosterOrder` to a new per-location
+`displayNo` (1..N), while `data-testid`/React `key`/print `?slots=` filtering keep using the
+unchanged, globally-unique `rosterOrder` — see `database/all-database.md` §Per-Location Shop Roster
+for the full field-split rationale (`src/lib/roster.ts` `buildLocationRoster` is the single source
+of truth both surfaces import). `print.css`'s page-height budget now flexes with row count (a
+comment was added noting this; no rule change was required). Any future roster-adjacent screen
+should import `buildLocationRoster` directly rather than re-deriving the filter/fallback/renumber
+logic — same "one shared helper, no forked logic" discipline as `order-payload.ts` and `totals.ts`.
 
 ## Print one-page-fit footer pattern (`matrix-print-darkmode-fixes_13-07-26`)
 

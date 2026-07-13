@@ -1,13 +1,15 @@
 ---
 name: context:all-database
 description: "Database context entrypoint for orderstock — Prisma 7 + SQL Server schema, SQL Server-specific pitfalls (no enums, one-NULL-per-UNIQUE, NoAction cascades), historical-fidelity snapshot pattern, seed/migration/export commands, and production-DB shared-ERP-database danger guardrails"
-keywords: database, prisma, schema, sql server, mssql, migration, migrate, seed, enum, cascade, correction cascade, snapshot, printOrder, export, vendor sql, zod, tsx, dotenv-expand, resolveDatabaseUrl, connection string, db_TCL, production database, shared ERP, migrate reset, danger, guardrails
+keywords: database, prisma, schema, sql server, mssql, migration, migrate, seed, enum, cascade, correction cascade, snapshot, printOrder, export, vendor sql, zod, tsx, dotenv-expand, resolveDatabaseUrl, connection string, db_TCL, production database, shared ERP, migrate reset, danger, guardrails, location, shop location, roster, buildLocationRoster, displayNo, rosterOrder
 related: [context:all-tests]
-date: 11-07-26
+date: 13-07-26
 ---
 
-Last updated: 11-07-26 (`ordersheet-soft-delete` plan VERIFIED and archived: `OrderSheet` gains
-`active` soft-delete column, matching `Shop`/`Product`/`User`; new db_TCL delivery ALTER script)
+Last updated: 13-07-26 (`shop-location-roster` plan ✅ VERIFIED AT CODE LEVEL and archived: `Shop`
+gains `location`, per-location roster via `src/lib/roster.ts` `buildLocationRoster`, new db_TCL
+delivery ALTER script; prior: `ordersheet-soft-delete` plan VERIFIED — `OrderSheet` gains `active`
+soft-delete column)
 
 # Database Context
 
@@ -99,7 +101,7 @@ Update this group when:
 | Model | Purpose | Notable fields |
 |---|---|---|
 | `HealthCheck` | Phase 01 migration-pipeline probe | `id`, `checkedAt` |
-| `Shop` | Customer shop (ร้านค้า) | `rosterOrder Int @unique` (append-only/immutable once referenced by any sheet), `active` soft-delete, `needsConfirmation` |
+| `Shop` | Customer shop (ร้านค้า) | `rosterOrder Int @unique` (append-only/immutable once referenced by any sheet), `location String? @db.NVarChar(200)` (added 13-07-26, `shop-location-roster` plan — nullable, optional in the shop form), `active` soft-delete, `needsConfirmation` |
 | `Product` | Base product | `group String` ("GOODS"/"SEASONING"), `isOffList`, `active` soft-delete |
 | `ProductVariant` | Product × pack-size/flavor | `packSize String`, `printOrder Int?` (NOT `@unique`), `weightKg`/`pipConversion Decimal(10,3)?`, `name` (snapshot source) |
 | `OrderSheet` | Daily order sheet | `date @db.Date` (CE; BE display is Phase 04+), `location`, `active Boolean @default(true)` soft-delete (added 11-07-26, `ordersheet-soft-delete` plan — mirrors `Shop`/`Product`/`User`) |
@@ -357,6 +359,58 @@ column exists; deploying code first breaks every one of the 7 sites above.
 Known non-blocking gap: no `deletedBy`/`deletedAt` audit trail on this or any soft-deletable model —
 see `process/features/order-system/backlog/soft-delete-audit-trail_NOTE_11-07-26.md`.
 
+## Per-Location Shop Roster (added 13-07-26, `shop-location-roster` plan — ✅ VERIFIED AT CODE LEVEL)
+
+`Shop.location` (nullable `NVARCHAR(200)`) replaces the old fixed `ROSTER_SLOTS = 29` roster with a
+per-location, variable-row roster. The single source of truth is the pure helper
+**`src/lib/roster.ts`** — `buildLocationRoster(activeShops, sheetLocation)` — imported by BOTH
+`orders/[id]/page.tsx` (editor) and `src/lib/get-sheet-for-print.ts` (both print routes), replacing
+the two former `ROSTER_SLOTS=29` hardcodes. Callers do exactly ONE query each
+(`prisma.shop.findMany({ where: { active: true }, orderBy: { rosterOrder: "asc" } })`) and pass the
+full result + `sheet.location` into the helper, which internally:
+
+1. filters `activeShops` down to `sheetLocation`'s shops;
+2. falls back to the FULL `activeShops` list when `sheetLocation` is null/empty OR the filter yields
+   0 matches (backward-compat for legacy/no-match sheets — no code branch needed at call sites);
+3. sorts by `rosterOrder asc` and assigns a NEW `displayNo` field, 1..N.
+
+**`displayNo` vs. `rosterOrder` — never conflate these two fields:**
+
+| Field | Scope | Used for |
+|---|---|---|
+| `rosterOrder` | Global, `@unique`, stable, immutable once referenced | `data-testid`, React `key`, the print `?slots=` filter (`selected.has(row.rosterOrder)`) — identity |
+| `displayNo` | Per-location, recomputed at render time, 1..N | The VISIBLE row number only (matrix row-label, mobile `entryNo`, printed row `<td>`) |
+
+`rosterOrder`'s global `@unique` constraint is UNCHANGED by this feature — no composite unique, no
+schema break. `saveOrderSheet`/`buildOrderPayload` key writes by `shopId`+`variantId`, never by
+`displayNo` — the renumbered display position never reaches the save payload.
+
+**Seed backfill pattern:** `prisma/seed.ts` runs an idempotent
+`updateMany({ where: { location: null }, data: { location: "ยิ่งเจริญ" } })` block (placed alongside
+the existing product-rename backfill, before the `PRINT_VARIANTS` loop) — re-running it is a no-op
+once every shop has a location. Any future "backfill a new nullable column" need should follow this
+same `updateMany({ where: { field: null } })` idempotent-block pattern, not a one-off script.
+
+**db_TCL delivery (`db/alter-shop-add-location.sql`, NEW):** hand-authored, idempotent
+(`IF COL_LENGTH('dbo.Shop', 'location') IS NULL ... ADD`) delivery script for the shared production
+ERP database — never executed by any agent, delivery artifact only for the customer's DBA, same
+pattern as `db/alter-ordersheet-add-active.sql`. **Deploy-ordering:** (1) DBA runs the ALTER script
+on `db_TCL` BEFORE or atomically with deploying the app code, (2) deploy app code, (3) run the
+backfill (either `pnpm tsx prisma/seed.ts`, which is idempotent, or the narrower one-off
+`UPDATE dbo.Shop SET location = N'ยิ่งเจริญ' WHERE location IS NULL;`). Between steps (1) and (3) the
+app runs safely because `location` is null on every row → every query hits the documented fallback
+path (full active-shop list) — there is no window where the app errors. As of this UPDATE PROCESS
+session, this delivery script has **NOT yet been run against `db_TCL`** — it is a pending customer
+deploy step (see Known Gaps below).
+
+Sandbox migration note: `prisma/migrations/20260713000000_shop_location/migration.sql` is a
+hand-authored `ALTER TABLE [dbo].[Shop] ADD [location] NVARCHAR(200)` (the sandbox `orderstock` DB
+is an ERP-shaped clone with unrelated ERP tables like `krs_log`, so `prisma migrate dev`'s
+shadow-diff is unusable there — see `tests/all-tests.md` Test Infra Gaps for the same finding);
+applied via an idempotent `IF COL_LENGTH(...) IS NULL` sqlcmd ALTER + `prisma generate`, not
+`migrate dev` directly. Any future schema change against THIS sandbox should use the same hand-SQL
++ `prisma generate` path rather than `migrate dev`.
+
 ## Known Gaps
 
 - **Thai collation** — deferred past delivery; integer ordering (`printOrder`/`rosterOrder`)
@@ -377,3 +431,12 @@ see `process/features/order-system/backlog/soft-delete-audit-trail_NOTE_11-07-26
 - **OrderSheet duplicate-sheet TOCTOU** — backlogged
   (`process/features/order-system/backlog/order-sheet-dup-index_NOTE_06-07-26.md`); accepted
   residual, no DB unique constraint on `(date, location)`.
+- **`db/alter-shop-add-location.sql` not yet run against `db_TCL`** — pending customer/DBA deploy
+  step (13-07-26); until it runs, `db_TCL`'s `Shop` table has no `location` column and the app must
+  stay on the pre-deploy code, or every roster query hits the documented null-location fallback.
+- **User confirmation of live per-location roster behavior on a real sheet** — the
+  `shop-location-roster` plan's own Phase Completion Rules call for explicit user sign-off beyond
+  the green Fully-Automated + Hybrid gates before calling the feature fully verified; pending-manual
+  as of 13-07-26 archival (see the archived plan's Archival note). On-site >29-shop-location print
+  fidelity is the same pre-existing agent-probe-only residual pattern as the rest of this project's
+  print surface.
