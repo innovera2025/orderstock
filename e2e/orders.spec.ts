@@ -2,6 +2,7 @@ import { test, expect } from "@playwright/test";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { prisma } from "../src/lib/db";
+import { LOCATIONS_KEY } from "../src/lib/locations-core";
 
 // Phase 02 hybrid gates — the 20-column MATRIX replaces the Order Pad. Cells are driven directly by
 // their testid `cell-{rosterOrder}-{printOrder}` (the matrix maps rosterOrder→shopId, printOrder→
@@ -166,6 +167,235 @@ test("G5: null-location sheet falls back to the full active-shop roster", async 
   await expect(page.getByTestId("cell-28-2")).toHaveCount(1);
   // Full-roster renumber: rosterOrder 5 is the 4th active slot → displayNo "4".
   await expect(page.getByTestId("rownum-5")).toHaveText("4");
+});
+
+// location-management plan hybrid gate: the full managed-list ↔ shop wiring loop —
+// create a location on /locations → it appears as a shop-form <select> option → assign it to a
+// shop → rename it on /locations → the shop's location follows the rename (cascade) → delete while
+// still in use is BLOCKED with the Thai error → unassign the shop → delete now succeeds and the row
+// disappears. A unique TESTLOC- prefixed name isolates each run; a best-effort afterEach/afterAll
+// purges the test location from the managed list and restores the shop even if an assertion throws.
+test.describe("location-management: create → assign → rename-cascade → delete-guard → delete", () => {
+  test.use({ storageState: "e2e/.auth/staff.json" });
+
+  const PREFIX = "TESTLOC-";
+  let shopId: number;
+  let originalLoc: string | null;
+
+  test.beforeAll(async () => {
+    const shop = await prisma.shop.findUnique({ where: { rosterOrder: 27 } });
+    expect(shop, "seeded shop at roster slot 27").toBeTruthy();
+    shopId = shop!.id;
+    originalLoc = shop!.location;
+  });
+
+  async function purge() {
+    const row = await prisma.appSetting.findUnique({ where: { key: LOCATIONS_KEY } });
+    if (row) {
+      let list: string[] = [];
+      try {
+        const p = JSON.parse(row.value);
+        if (Array.isArray(p)) list = p.filter((x): x is string => typeof x === "string");
+      } catch {
+        /* malformed — leave as empty, will be overwritten below only if it had TESTLOC entries */
+      }
+      const cleaned = list.filter((l) => !l.startsWith(PREFIX));
+      if (cleaned.length !== list.length) {
+        await prisma.appSetting.update({
+          where: { key: LOCATIONS_KEY },
+          data: { value: JSON.stringify(cleaned) },
+        });
+      }
+    }
+    if (shopId != null) {
+      const s = await prisma.shop.findUnique({ where: { id: shopId } });
+      if (s && s.location?.startsWith(PREFIX)) {
+        await prisma.shop.update({ where: { id: shopId }, data: { location: originalLoc } });
+      }
+    }
+  }
+
+  test.afterEach(async () => {
+    await purge();
+  });
+  test.afterAll(async () => {
+    await purge();
+    await prisma.$disconnect();
+  });
+
+  test("full managed-list loop: create, select-wiring, rename cascade, delete-in-use guard, delete", async ({
+    page,
+  }) => {
+    const ts = Date.now();
+    const loc = `${PREFIX}${ts}`;
+    const renamed = `${PREFIX}${ts}-R`;
+
+    // 1. Create a new location on /locations.
+    await page.goto("/locations");
+    await page.fill('input[name="name"]', loc);
+    await page.click('button:has-text("เพิ่ม")');
+    await expect(page.getByTestId(`location-row-${loc}`)).toBeVisible();
+
+    // 2. It appears as a shop-form <select> option; assign it to the shop.
+    await page.goto(`/shops/${shopId}/edit`);
+    await expect(page.locator(`select[name="location"] option[value="${loc}"]`)).toHaveCount(1);
+    await page.selectOption('select[name="location"]', loc);
+    await page.click('button:has-text("บันทึก")');
+    await page.waitForURL(/\/shops$/);
+    expect((await prisma.shop.findUnique({ where: { id: shopId } }))?.location).toBe(loc);
+
+    // 3. Rename on /locations → the shop's location follows (cascade).
+    await page.goto("/locations");
+    const row = page.getByTestId(`location-row-${loc}`);
+    await row.getByRole("button", { name: "แก้ไข" }).click();
+    await row.locator('input[name="newName"]').fill(renamed);
+    await row.getByRole("button", { name: "บันทึก" }).click();
+    await expect(page.getByTestId(`location-row-${renamed}`)).toBeVisible();
+    expect((await prisma.shop.findUnique({ where: { id: shopId } }))?.location).toBe(renamed);
+
+    // 4. Delete while still in use → blocked with the Thai error, list unchanged.
+    const inUseRow = page.getByTestId(`location-row-${renamed}`);
+    await inUseRow.getByRole("button", { name: "ลบ" }).click();
+    const dialog = page.getByRole("dialog");
+    await dialog.getByRole("button", { name: "ลบ" }).click();
+    await expect(dialog.getByText(/ยังมีร้านค้าใช้สถานที่นี้อยู่/)).toBeVisible();
+    await dialog.getByRole("button", { name: "ยกเลิก" }).click();
+    await expect(page.getByTestId(`location-row-${renamed}`)).toBeVisible();
+
+    // 5. Unassign the shop, then delete succeeds and the row disappears.
+    await page.goto(`/shops/${shopId}/edit`);
+    await page.selectOption('select[name="location"]', originalLoc ?? "");
+    await page.click('button:has-text("บันทึก")');
+    await page.waitForURL(/\/shops$/);
+
+    await page.goto("/locations");
+    const freeRow = page.getByTestId(`location-row-${renamed}`);
+    await freeRow.getByRole("button", { name: "ลบ" }).click();
+    const dialog2 = page.getByRole("dialog");
+    await dialog2.getByRole("button", { name: "ลบ" }).click();
+    await expect(page.getByTestId(`location-row-${renamed}`)).toHaveCount(0);
+  });
+});
+
+// location-management code-review fixes (location-management plan, fix cycle):
+//   Fix C — createLocationAction surfaces a Thai duplicate error instead of a silent no-op.
+//   Fix B — deleteLocationAction blocks while a SOFT-DELETED shop still references the location.
+//   Finding #6 — shop-form defensively keeps a shop's current location even when it is neither in
+//     the managed list nor in getEffectiveLocationOptions (soft-deleted shop → excluded there).
+// TESTLOC- prefixed names isolate each run; purge restores the shop + prunes the managed list.
+test.describe("location-management fixes: duplicate feedback, soft-delete guard, form fallback", () => {
+  test.use({ storageState: "e2e/.auth/staff.json" });
+
+  const PREFIX = "TESTLOC-FIX-";
+  let shopId: number;
+  let originalLoc: string | null;
+  let originalActive: boolean;
+
+  test.beforeAll(async () => {
+    const shop = await prisma.shop.findUnique({ where: { rosterOrder: 25 } });
+    expect(shop, "seeded shop at roster slot 25").toBeTruthy();
+    shopId = shop!.id;
+    originalLoc = shop!.location;
+    originalActive = shop!.active;
+  });
+
+  async function purge() {
+    const row = await prisma.appSetting.findUnique({ where: { key: LOCATIONS_KEY } });
+    if (row) {
+      let list: string[] = [];
+      try {
+        const p = JSON.parse(row.value);
+        if (Array.isArray(p)) list = p.filter((x): x is string => typeof x === "string");
+      } catch {
+        /* malformed — leave as empty */
+      }
+      const cleaned = list.filter((l) => !l.startsWith(PREFIX));
+      if (cleaned.length !== list.length) {
+        await prisma.appSetting.update({
+          where: { key: LOCATIONS_KEY },
+          data: { value: JSON.stringify(cleaned) },
+        });
+      }
+    }
+    if (shopId != null) {
+      // Always restore the shop to its seeded location + active state.
+      await prisma.shop.update({
+        where: { id: shopId },
+        data: { location: originalLoc, active: originalActive },
+      });
+    }
+  }
+
+  test.afterEach(async () => {
+    await purge();
+  });
+  test.afterAll(async () => {
+    await purge();
+    await prisma.$disconnect();
+  });
+
+  test("Fix C: creating an already-existing location surfaces the Thai duplicate error, list unchanged", async ({
+    page,
+  }) => {
+    const loc = `${PREFIX}${Date.now()}`;
+
+    await page.goto("/locations");
+    await page.fill('input[name="name"]', loc);
+    await page.click('button:has-text("เพิ่ม")');
+    await expect(page.getByTestId(`location-row-${loc}`)).toBeVisible();
+
+    // Attempt to create the same name again → duplicate error, still exactly one row.
+    await page.fill('input[name="name"]', loc);
+    await page.click('button:has-text("เพิ่ม")');
+    await expect(page.getByText("มีสถานที่นี้อยู่แล้ว")).toBeVisible();
+    await expect(page.getByTestId(`location-row-${loc}`)).toHaveCount(1);
+  });
+
+  test("Fix B: delete is blocked when the ONLY referencing shop is soft-deleted", async ({
+    page,
+  }) => {
+    const loc = `${PREFIX}${Date.now()}`;
+
+    // Create the location + assign it to the shop, then soft-delete the shop (via prisma).
+    await page.goto("/locations");
+    await page.fill('input[name="name"]', loc);
+    await page.click('button:has-text("เพิ่ม")');
+    await expect(page.getByTestId(`location-row-${loc}`)).toBeVisible();
+
+    await prisma.shop.update({
+      where: { id: shopId },
+      data: { location: loc, active: false },
+    });
+
+    // Attempt to delete the location → blocked because a soft-deleted shop still references it.
+    await page.goto("/locations");
+    const row = page.getByTestId(`location-row-${loc}`);
+    await row.getByRole("button", { name: "ลบ" }).click();
+    const dialog = page.getByRole("dialog");
+    await dialog.getByRole("button", { name: "ลบ" }).click();
+    await expect(dialog.getByText(/ยังมีร้านค้าใช้สถานที่นี้อยู่/)).toBeVisible();
+    await dialog.getByRole("button", { name: "ยกเลิก" }).click();
+    await expect(page.getByTestId(`location-row-${loc}`)).toBeVisible();
+  });
+
+  test("Finding #6: shop-form keeps a soft-deleted shop's current location even if unmanaged", async ({
+    page,
+  }) => {
+    const ghost = `${PREFIX}${Date.now()}-GHOST`;
+
+    // Ghost location: set directly on the shop, NOT added to the managed list, and soft-delete the
+    // shop so getEffectiveLocationOptions (active:true only) excludes it. Only the shop-form's own
+    // defensive fallback can surface it as a <select> option.
+    await prisma.shop.update({
+      where: { id: shopId },
+      data: { location: ghost, active: false },
+    });
+
+    await page.goto(`/shops/${shopId}/edit`);
+    const option = page.locator(`select[name="location"] option[value="${ghost}"]`);
+    await expect(option).toHaveCount(1);
+    await expect(page.locator('select[name="location"]')).toHaveValue(ghost);
+  });
 });
 
 // ADMIN-only soft-delete gates (ordersheet-soft-delete plan). The delete button + confirm modal are

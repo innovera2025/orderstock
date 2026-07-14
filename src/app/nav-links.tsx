@@ -7,6 +7,7 @@ import {
   BarChart3,
   History,
   Store,
+  MapPin,
   Package,
   Users,
   Settings,
@@ -32,6 +33,7 @@ const GROUPS: Group[] = [
     label: "ข้อมูลหลัก",
     items: [
       { href: "/shops", label: "จัดการร้านค้า", icon: Store },
+      { href: "/locations", label: "จัดการสถานที่", icon: MapPin },
       { href: "/products", label: "จัดการสินค้า", icon: Package },
       { href: "/admin/users", label: "ผู้ใช้", icon: Users, adminOnly: true },
     ],

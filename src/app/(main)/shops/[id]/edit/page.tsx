@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db";
 import { updateShop, type ShopActionState } from "../../actions";
 import { ShopForm } from "../../shop-form";
+import { getEffectiveLocationOptions } from "@/lib/locations";
 
 export const dynamic = "force-dynamic";
 
@@ -16,6 +17,8 @@ export default async function EditShopPage({
 
   const shop = await prisma.shop.findUnique({ where: { id: shopId } });
   if (!shop) notFound();
+
+  const locations = await getEffectiveLocationOptions();
 
   // Bind the shop id to the update action (server actions cannot take arbitrary args
   // from the client, so we partially apply it here).
@@ -32,6 +35,7 @@ export default async function EditShopPage({
       <h1 className="mb-6 text-2xl font-bold">แก้ไขร้านค้า</h1>
       <ShopForm
         action={boundUpdate}
+        locations={locations}
         defaultValues={{
           name: shop.name,
           location: shop.location,

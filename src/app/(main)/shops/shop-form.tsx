@@ -14,11 +14,18 @@ interface ShopFormProps {
     rosterOrder: number;
     needsConfirmation: boolean;
   };
+  locations?: string[];
   submitLabel: string;
 }
 
-export function ShopForm({ action, defaultValues, submitLabel }: ShopFormProps) {
+export function ShopForm({ action, defaultValues, locations = [], submitLabel }: ShopFormProps) {
   const [state, formAction, pending] = useActionState(action, {} as ShopActionState);
+
+  const current = defaultValues?.location ?? "";
+  // Defensively surface the shop's CURRENT location even if it was deleted from the managed list,
+  // so an existing value is never silently reset to "ไม่ระบุ" on save.
+  const options =
+    current !== "" && !locations.includes(current) ? [...locations, current] : locations;
 
   return (
     <form action={formAction} className="flex flex-col gap-4">
@@ -35,7 +42,18 @@ export function ShopForm({ action, defaultValues, submitLabel }: ShopFormProps) 
 
       <label className="flex flex-col gap-1.5 text-[var(--t-sm)] text-[var(--text)]">
         <span>สถานที่ (ไม่บังคับ)</span>
-        <Input name="location" defaultValue={defaultValues?.location ?? ""} maxLength={200} />
+        <select
+          name="location"
+          defaultValue={current}
+          className="h-10 rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--bg-surface)] px-3 text-[var(--text)] outline-none focus-visible:border-[var(--brand-int)] focus-visible:shadow-[0_0_0_4px_var(--focus-ring)]"
+        >
+          <option value="">ไม่ระบุ</option>
+          {options.map((loc) => (
+            <option key={loc} value={loc}>
+              {loc}
+            </option>
+          ))}
+        </select>
       </label>
 
       <label className="flex flex-col gap-1.5 text-[var(--t-sm)] text-[var(--text)]">
