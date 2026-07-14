@@ -1,12 +1,15 @@
 ---
 name: context:all-database
 description: "Database context entrypoint for orderstock — Prisma 7 + SQL Server schema, SQL Server-specific pitfalls (no enums, one-NULL-per-UNIQUE, NoAction cascades), historical-fidelity snapshot pattern, seed/migration/export commands, and production-DB shared-ERP-database danger guardrails"
-keywords: database, prisma, schema, sql server, mssql, migration, migrate, seed, enum, cascade, correction cascade, snapshot, printOrder, export, vendor sql, zod, tsx, dotenv-expand, resolveDatabaseUrl, connection string, db_TCL, production database, shared ERP, migrate reset, danger, guardrails, location, shop location, roster, buildLocationRoster, displayNo, rosterOrder
+keywords: database, prisma, schema, sql server, mssql, migration, migrate, seed, enum, cascade, correction cascade, snapshot, printOrder, export, vendor sql, zod, tsx, dotenv-expand, resolveDatabaseUrl, connection string, db_TCL, production database, shared ERP, migrate reset, danger, guardrails, location, shop location, roster, buildLocationRoster, displayNo, rosterOrder, locations, managed location list, appsetting, location management, rename cascade, transaction
 related: [context:all-tests]
-date: 13-07-26
+date: 15-07-26
 ---
 
-Last updated: 13-07-26 (`shop-location-roster` plan ✅ VERIFIED AT CODE LEVEL and archived: `Shop`
+Last updated: 15-07-26 (`location-management` plan ✅ VERIFIED AT CODE LEVEL — pending commit:
+managed `/locations` list stored as ONE JSON `AppSetting` row (`key: "locations"`, ZERO schema
+change), atomic rename cascade to `Shop.location`, delete guard extended to soft-deleted shops;
+prior: `shop-location-roster` plan ✅ VERIFIED AT CODE LEVEL and archived: `Shop`
 gains `location`, per-location roster via `src/lib/roster.ts` `buildLocationRoster`, new db_TCL
 delivery ALTER script; prior: `ordersheet-soft-delete` plan VERIFIED — `OrderSheet` gains `active`
 soft-delete column)
@@ -410,6 +413,36 @@ shadow-diff is unusable there — see `tests/all-tests.md` Test Infra Gaps for t
 applied via an idempotent `IF COL_LENGTH(...) IS NULL` sqlcmd ALTER + `prisma generate`, not
 `migrate dev` directly. Any future schema change against THIS sandbox should use the same hand-SQL
 + `prisma generate` path rather than `migrate dev`.
+
+## Managed Location List (added 15-07-26, `location-management` plan — ✅ VERIFIED AT CODE LEVEL)
+
+The list of valid สถานที่ (location) values is stored as a single JSON array under ONE
+`AppSetting` row (`key: "locations"`, existing `AppSetting.value @db.NVarChar(Max)` column) —
+**ZERO schema change**, same "no new table on `db_TCL`" pattern as the establishment/display
+settings (`app-settings.ts`, pguard-redesign Phase 02). `src/lib/locations.ts` owns the DB
+read/write side: `getManagedLocations()` lazy-seeds the row on first read (queries `distinct`
+active, non-null `Shop.location` values if the key is absent — idempotent, checked by row
+EXISTENCE not array contents, so an empty-but-present `"[]"` never re-triggers seeding);
+`setManagedLocations()` normalizes + upserts; `getEffectiveLocationOptions()` returns the managed
+list unioned with any distinct active-shop `location` values not already in it (legacy stragglers,
+appended `asc` after the managed list). `src/lib/locations-core.ts` holds the pure list transforms
+(`normalizeLocations`/`addLocation`/`renameLocation`/`removeLocation` — case-sensitive exact match
+only, matching `roster.ts`'s `s.location === loc` contract exactly).
+
+**Rename cascade is atomic:** `renameLocationAction` wraps the managed-list update and the
+`prisma.shop.updateMany({ where: { location: oldName }, data: { location: newName } })` cascade in
+ONE `prisma.$transaction`, with a graceful error path — a page reload never shows a transient
+mismatch between the list and `Shop.location` values. **Delete guard:** blocked (Thai error naming
+the shop count) while any shop — active OR soft-deleted — still references the location; this was
+tightened from an active-shops-only count during EVL adversarial review (a soft-deleted shop
+retains its historical `location` value and re-referencing a deleted location name would
+re-fragment the roster). This cross-references §Per-Location Shop Roster above — `roster.ts`'s
+`buildLocationRoster` and its exact-match filter are completely untouched; this feature only
+changes WHERE the `location` string values staff pick from come from.
+
+Accepted known-gap: concurrent read-modify-write race on the single `AppSetting` "locations" row
+(two staff editing locations simultaneously) — mirrors the already-accepted `OrderSheet`
+date+location TOCTOU pattern (see Known Gaps below); low-probability, single-admin-typical usage.
 
 ## Known Gaps
 

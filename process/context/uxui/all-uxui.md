@@ -1,9 +1,9 @@
 ---
 name: context:all-uxui
 description: "UI/UX context entrypoint for orderstock — pguard Design System tokens, semantic-alias contract, shared src/components/ui/* primitives, sidebar+topbar shell, dark mode, and print-font behavior"
-keywords: ui, ux, design, tokens, pguard, theme, dark mode, dark-mode, sidebar, topbar, nav, primitives, button, input, card, modal, toast, chip, switch, ibm plex, font, focus ring, radius, print font, order-matrix, matrix, topbar-actions, portal, app-settings, settings persistence, summary, history, bar chart, top shops, groupby, shop totals, mobile, responsive, breakpoint, bottom tab bar, touch target, mobile entry, mobile overlay, drawer, sidebar drawer, hamburger, tablet, collapse, sidebar-shell, sidebar-drawer-store, surface-focus, seasoning-band, dark-mode contrast, print footer, one-page print, tally-col, print pagination
+keywords: ui, ux, design, tokens, pguard, theme, dark mode, dark-mode, sidebar, topbar, nav, primitives, button, input, card, modal, toast, chip, switch, ibm plex, font, focus ring, radius, print font, order-matrix, matrix, topbar-actions, portal, app-settings, settings persistence, summary, history, bar chart, top shops, groupby, shop totals, mobile, responsive, breakpoint, bottom tab bar, touch target, mobile entry, mobile overlay, drawer, sidebar drawer, hamburger, tablet, collapse, sidebar-shell, sidebar-drawer-store, surface-focus, seasoning-band, dark-mode contrast, print footer, one-page print, tally-col, print pagination, locations, location management, managed list, location row, shop form select
 related: [context:all-tests, context:all-database]
-date: 13-07-26
+date: 15-07-26
 metadata:
   read_when: any UI/token/component/shell/theme work
 ---
@@ -434,6 +434,27 @@ of truth both surfaces import). `print.css`'s page-height budget now flexes with
 comment was added noting this; no rule change was required). Any future roster-adjacent screen
 should import `buildLocationRoster` directly rather than re-deriving the filter/fallback/renumber
 logic — same "one shared helper, no forked logic" discipline as `order-payload.ts` and `totals.ts`.
+
+## Managed location list page (`location-management_14-07-26`, ✅ VERIFIED AT CODE LEVEL)
+
+No new tokens or primitives — reuses the existing `ui/*` primitives and the confirm-before-destroy
+modal pattern first established by `delete-sheet-button.tsx`. `/locations` (new route, both
+ADMIN+STAFF, "ข้อมูลหลัก" sidebar group, MapPin icon in `nav-links.tsx`) renders a single list with
+3 inline states — add-new (Input + primary Button), per-row rename (inline edit toggle), per-row
+delete (opens `ui/modal.tsx` confirm + `danger-ghost` Button) — visually matching the `/shops` list
+(`ui/card.tsx`/`ui/input.tsx`/`ui/button.tsx`, `--text`/`--text-muted`/`--danger` tokens). Each row
+is its OWN small subcomponent (`LocationRow`, rendered via `.map()`) so each can call
+`useActionState` independently — a single component cannot call a hook a variable number of times
+inside a loop (React Rules of Hooks); this mirrors the already-proven
+`DeleteSheetButton`-per-sheet-row pattern in `orders/page.tsx`.
+
+`shop-form.tsx`'s location field changed from a free-text `<Input>` to a `<select>` populated by
+`getEffectiveLocationOptions()` (see `all-context.md` and `database/all-database.md`), with a
+defensive extra `<option>` for a shop's current value if it was since deleted from the managed
+list (so an existing shop never silently loses its displayed location). `orders/page.tsx`'s
+location `<select>` (rendered by the untouched `new-sheet-form.tsx`) now sources the same
+`getEffectiveLocationOptions()` call instead of its own inline `distinct` shop query — visually and
+behaviorally unchanged from the user's perspective, just a single shared data source underneath.
 
 ## Print one-page-fit footer pattern (`matrix-print-darkmode-fixes_13-07-26`)
 
