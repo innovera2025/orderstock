@@ -3,7 +3,7 @@ name: context:all-uxui
 description: "UI/UX context entrypoint for orderstock — pguard Design System tokens, semantic-alias contract, shared src/components/ui/* primitives, sidebar+topbar shell, dark mode, and print-font behavior"
 keywords: ui, ux, design, tokens, pguard, theme, dark mode, dark-mode, sidebar, topbar, nav, primitives, button, input, card, modal, toast, chip, switch, ibm plex, font, focus ring, radius, print font, order-matrix, matrix, topbar-actions, portal, app-settings, settings persistence, summary, history, bar chart, top shops, groupby, shop totals, mobile, responsive, breakpoint, bottom tab bar, touch target, mobile entry, mobile overlay, drawer, sidebar drawer, hamburger, tablet, collapse, sidebar-shell, sidebar-drawer-store, surface-focus, seasoning-band, dark-mode contrast, print footer, one-page print, tally-col, print pagination, locations, location management, managed list, location row, shop form select
 related: [context:all-tests, context:all-database]
-date: 15-07-26
+date: 17-07-26
 metadata:
   read_when: any UI/token/component/shell/theme work
 ---
@@ -18,7 +18,10 @@ responsive breakpoint pattern, bottom tab bar, mobile order-matrix branch), and 
 ✅ VERIFIED — ตีลานนิ่ม/ตีลาน display renames, no UI-pattern changes). Post-program,
 `matrix-print-darkmode-fixes_13-07-26` (✅ VERIFIED at code level, commit `c87dccc`) added the
 `--surface-focus` and `--seasoning-band`/`--seasoning-band-fg` tokens and the print one-page-fit
-footer pattern — see the two dedicated sections below. Read this before
+footer pattern; `shop-location-roster_13-07-26`, `location-management_14-07-26`, and
+`shop-location-filter_17-07-26` (all ✅ VERIFIED AT CODE LEVEL) layered the per-location roster
+picker, the `/locations` managed-list page, and `/shops`+`/orders` per-location list filtering on
+top, with no new tokens/primitives — see the dedicated sections below. Read this before
 touching `src/app/globals.css`, `src/components/ui/*`, the sidebar/topbar shell,
 `src/lib/app-settings.ts`, or any dark-mode/theme/topbar-portal/mobile-responsive logic.
 **pguard-redesign is PROGRAM COMPLETE (08-07-26)** — all 5 phases verified, folder archived to
@@ -455,6 +458,40 @@ list (so an existing shop never silently loses its displayed location). `orders/
 location `<select>` (rendered by the untouched `new-sheet-form.tsx`) now sources the same
 `getEffectiveLocationOptions()` call instead of its own inline `distinct` shop query — visually and
 behaviorally unchanged from the user's perspective, just a single shared data source underneath.
+
+## Per-location list filtering — /shops + /orders (`shop-location-filter_17-07-26`, ✅ VERIFIED AT CODE LEVEL)
+
+Zero schema change, zero new primitives — a `?location=` searchParam becomes the single source of
+truth for two independent list-filter surfaces:
+
+- **`/shops`**: gained a "สถานที่" column (`shop.location ?? "-"`, between ชื่อร้านค้า and สถานะ)
+  and a NEW small client component `src/app/(main)/shops/shop-location-filter.tsx` — the
+  codebase's FIRST `useRouter`-driven client filter. It is an uncontrolled `<select>` whose
+  `onChange` navigates via `router.push('/shops?location=' + encodeURIComponent(v))` (or plain
+  `/shops` for "ทุกสถานที่"). Reuses the exact select styling classes already established by
+  `new-sheet-form.tsx`'s สถานที่ select (`h-10 rounded-[var(--r-md)] border border-[var(--border)]
+  bg-[var(--bg-surface)] px-3 text-[var(--text)] outline-none focus-visible:border-[var(--brand-int)]
+  focus-visible:shadow-[0_0_0_4px_var(--focus-ring)]`) — no new token or style rule introduced.
+  `shops/page.tsx` now types `searchParams` as a `Promise<{ location?: string }>` (Next 16 App
+  Router contract), awaits it, and adds `location` to the existing `prisma.shop.findMany` `where`.
+
+- **/orders**: NO new component — the EXISTING `new-sheet-form.tsx` สถานที่ `<select>` now does
+  **double duty**. It became a CONTROLLED select (`value={selectedLocation}` instead of
+  `defaultValue=""`) sourced from the parent server component's own `?location=` searchParam, with
+  an `onChange` that `router.push`es the same URL-filter pattern as `/shops`. Because `name="location"`
+  is unchanged, the select still submits its currently-displayed (URL-synced) value on
+  `createOrderSheet` — i.e. "create defaults to the currently filtered location" falls out of the
+  design for free, with zero change to `createOrderSheet`'s call contract. `orders/page.tsx` adds
+  the same `location` filter to its existing `where: { active: true, ... }` `orderSheet.findMany`
+  query.
+
+**Reusable pattern going forward:** any future list page needing a location filter should follow
+this exact shape — `searchParams: Promise<{ location?: string }>` on the server component +
+`getEffectiveLocationOptions()` for the option list (already the shared source, see
+`database/all-database.md` and the Managed location list page section above) + either a small new
+`useRouter`-driven filter component (list-only surfaces, like `/shops`) or making an EXISTING form
+select controlled and URL-synced (surfaces that already have a location select doing something
+else, like `/orders`'s create form). Do not re-derive `getEffectiveLocationOptions()`.
 
 ## Print one-page-fit footer pattern (`matrix-print-darkmode-fixes_13-07-26`)
 
