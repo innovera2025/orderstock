@@ -1,16 +1,27 @@
 "use client";
 
 import { useActionState } from "react";
+import { useRouter } from "next/navigation";
 import { createOrderSheet, type OrderSheetActionState } from "./actions";
 import { ceToBeDisplay, parseDateInputValue, toDateInputValue } from "@/lib/be-date";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 
 // Create a new daily sheet: native CE date input + read-only BE label + "วันนี้" shortcut, plus
-// a สถานที่ picker (a <select> of distinct existing shop locations, server-fed). Submit runs
-// createOrderSheet (dup-check → redirect to the grid editor); the action still receives a plain
-// string, so its zod validation is unchanged in shape.
-export function NewSheetForm({ locations = [] }: { locations?: string[] }) {
+// a สถานที่ picker (a <select> of distinct existing shop locations, server-fed). The select does
+// double duty: (a) changing it navigates to /orders?location=<value>, filtering the sheet list
+// below; (b) its current value is still submitted as name="location" on create. The URL
+// (`selectedLocation`, from the parent server component) is the single source of truth — no local
+// state for the location field. Submit runs createOrderSheet (dup-check → redirect to the grid
+// editor); the action still receives a plain string, so its zod validation is unchanged in shape.
+export function NewSheetForm({
+  locations = [],
+  selectedLocation = "",
+}: {
+  locations?: string[];
+  selectedLocation?: string;
+}) {
+  const router = useRouter();
   const [state, formAction, pending] = useActionState(
     createOrderSheet,
     {} as OrderSheetActionState,
@@ -55,7 +66,11 @@ export function NewSheetForm({ locations = [] }: { locations?: string[] }) {
         <span>สถานที่ (ไม่บังคับ)</span>
         <select
           name="location"
-          defaultValue=""
+          value={selectedLocation}
+          onChange={(e) => {
+            const v = e.target.value;
+            router.push(v ? `/orders?location=${encodeURIComponent(v)}` : "/orders");
+          }}
           className="h-10 rounded-[var(--r-md)] border border-[var(--border)] bg-[var(--bg-surface)] px-3 text-[var(--text)] outline-none focus-visible:border-[var(--brand-int)] focus-visible:shadow-[0_0_0_4px_var(--focus-ring)]"
         >
           <option value="">ทุกสถานที่</option>

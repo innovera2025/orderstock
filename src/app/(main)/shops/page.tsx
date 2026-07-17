@@ -1,11 +1,25 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
+import { getEffectiveLocationOptions } from "@/lib/locations";
 import { softDeleteShop, restoreShop } from "./actions";
+import { ShopLocationFilter } from "./shop-location-filter";
 
 export const dynamic = "force-dynamic";
 
-export default async function ShopsPage() {
-  const shops = await prisma.shop.findMany({ orderBy: { rosterOrder: "asc" } });
+export default async function ShopsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ location?: string }>;
+}) {
+  const { location } = await searchParams;
+
+  const [shops, locations] = await Promise.all([
+    prisma.shop.findMany({
+      where: { ...(location ? { location } : {}) },
+      orderBy: { rosterOrder: "asc" },
+    }),
+    getEffectiveLocationOptions(),
+  ]);
 
   return (
     <main className="mx-auto w-full max-w-3xl p-6">
@@ -19,11 +33,16 @@ export default async function ShopsPage() {
         </Link>
       </div>
 
+      <div className="mb-6">
+        <ShopLocationFilter current={location ?? ""} locations={locations} />
+      </div>
+
       <table className="w-full border-collapse text-[var(--t-sm)]">
         <thead>
           <tr className="border-b border-[var(--border)] text-left text-[var(--text-muted)]">
             <th className="py-2 pr-2 font-medium">ลำดับ</th>
             <th className="py-2 pr-2 font-medium">ชื่อร้านค้า</th>
+            <th className="py-2 pr-2 font-medium">สถานที่</th>
             <th className="py-2 pr-2 font-medium">สถานะ</th>
             <th className="py-2 pr-2 text-right font-medium">จัดการ</th>
           </tr>
@@ -42,6 +61,7 @@ export default async function ShopsPage() {
               <td className="py-2 pr-2 text-[var(--text)]">
                 {shop.name}
               </td>
+              <td className="py-2 pr-2 text-[var(--text-muted)]">{shop.location ?? "-"}</td>
               <td className="py-2 pr-2 text-[var(--text-muted)]">{shop.active ? "ใช้งาน" : "ลบแล้ว"}</td>
               <td className="py-2 pr-2 text-right">
                 <Link href={`/shops/${shop.id}/edit`} className="mr-3 text-[var(--brand-int)] hover:underline">

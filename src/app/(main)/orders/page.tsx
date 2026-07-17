@@ -13,13 +13,18 @@ function normalizeDbDate(d: Date): Date {
   return new Date(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate());
 }
 
-export default async function OrdersPage() {
+export default async function OrdersPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ location?: string }>;
+}) {
+  const { location } = await searchParams;
   const session = await auth();
   const role = session?.user?.role;
 
   const [sheets, locations] = await Promise.all([
     prisma.orderSheet.findMany({
-      where: { active: true },
+      where: { active: true, ...(location ? { location } : {}) },
       orderBy: [{ date: "desc" }, { id: "desc" }],
       include: { _count: { select: { orderLines: true } } },
     }),
@@ -33,7 +38,7 @@ export default async function OrdersPage() {
 
       <section className="mb-8 rounded-[var(--r-lg)] border border-[var(--border)] bg-[var(--bg-surface)] p-4">
         <h2 className="mb-3 text-[var(--t-sm)] font-medium text-[var(--text-muted)]">เปิดใบออเดอร์ใหม่</h2>
-        <NewSheetForm locations={locations} />
+        <NewSheetForm locations={locations} selectedLocation={location ?? ""} />
       </section>
 
       <table className="w-full border-collapse text-[var(--t-sm)]">

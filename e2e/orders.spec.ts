@@ -32,10 +32,13 @@ function toDbDate(isoDate: string): Date {
 // The สถานที่ picker is now a <select> of distinct existing shop locations (shop-location-roster):
 // `location` must be an existing option ("ยิ่งเจริญ") or "" (ทุกสถานที่ → null, full-roster fallback).
 // Arbitrary free-text isolation strings are no longer possible — tests isolate by a unique DATE.
+// The location <select> is now URL-driven (shop-location-filter plan): its value comes from the
+// ?location= searchParam (selectedLocation prop) and is submitted on create. So set the location by
+// navigating with the param rather than via selectOption (which triggers its own navigation and
+// would race the submit). location="" → bare /orders (ทุกสถานที่ → null).
 async function openSheet(page: import("@playwright/test").Page, isoDate: string, location = "") {
-  await page.goto("/orders");
+  await page.goto(location ? `/orders?location=${encodeURIComponent(location)}` : "/orders");
   await page.fill('input[name="date"]', isoDate);
-  await page.selectOption('select[name="location"]', location);
   await page.click('button:has-text("เปิดใบออเดอร์")');
   await page.waitForURL(/\/orders\/\d+$/);
 }
@@ -167,6 +170,73 @@ test("G5: null-location sheet falls back to the full active-shop roster", async 
   await expect(page.getByTestId("cell-28-2")).toHaveCount(1);
   // Full-roster renumber: rosterOrder 5 is the 4th active slot → displayNo "4".
   await expect(page.getByTestId("rownum-5")).toHaveText("4");
+});
+
+// shop-location-filter plan hybrid gate: the /orders สถานที่ <select> now does double duty — it
+// filters the sheet list below via ?location= (URL is the single source of truth) AND still submits
+// the currently-selected location on create. Two active sheets with DISTINCT locations are created
+// directly; selecting one location narrows the list to that sheet, "ทุกสถานที่" restores both.
+test.describe("shop-location-filter: /orders list filters by the selected location", () => {
+  test.use({ storageState: "e2e/.auth/staff.json" });
+
+  const ts = Date.now();
+  const locA = `FILT-${ts}-A`;
+  const locB = `FILT-${ts}-B`;
+  // Spare shops made active with the two distinct locations so both appear as <select> options
+  // (getEffectiveLocationOptions surfaces distinct active-shop locations).
+  const SHOP_A = 21;
+  const SHOP_B = 24;
+  let shopAOrig: { location: string | null; active: boolean };
+  let shopBOrig: { location: string | null; active: boolean };
+  let sheetAId: number;
+  let sheetBId: number;
+
+  test.beforeAll(async () => {
+    const a = await prisma.shop.findUnique({ where: { rosterOrder: SHOP_A } });
+    const b = await prisma.shop.findUnique({ where: { rosterOrder: SHOP_B } });
+    expect(a && b, "seeded shops at roster slots 21 and 24").toBeTruthy();
+    shopAOrig = { location: a!.location, active: a!.active };
+    shopBOrig = { location: b!.location, active: b!.active };
+    await prisma.shop.update({ where: { id: a!.id }, data: { location: locA, active: true } });
+    await prisma.shop.update({ where: { id: b!.id }, data: { location: locB, active: true } });
+
+    const sheetA = await prisma.orderSheet.create({
+      data: { date: toDbDate("2026-03-22"), location: locA, active: true },
+    });
+    const sheetB = await prisma.orderSheet.create({
+      data: { date: toDbDate("2026-03-23"), location: locB, active: true },
+    });
+    sheetAId = sheetA.id;
+    sheetBId = sheetB.id;
+  });
+
+  test.afterAll(async () => {
+    await prisma.orderSheet.deleteMany({ where: { id: { in: [sheetAId, sheetBId] } } });
+    const a = await prisma.shop.findUnique({ where: { rosterOrder: SHOP_A } });
+    const b = await prisma.shop.findUnique({ where: { rosterOrder: SHOP_B } });
+    if (a) await prisma.shop.update({ where: { id: a.id }, data: shopAOrig });
+    if (b) await prisma.shop.update({ where: { id: b.id }, data: shopBOrig });
+    await prisma.$disconnect();
+  });
+
+  test("selecting a location narrows the sheet list; ทุกสถานที่ restores all", async ({ page }) => {
+    // Unfiltered: both sheets visible.
+    await page.goto("/orders");
+    await expect(page.getByTestId(`sheet-row-${sheetAId}`)).toBeVisible();
+    await expect(page.getByTestId(`sheet-row-${sheetBId}`)).toBeVisible();
+
+    // Select locB → URL carries ?location=, only sheet B remains.
+    await page.selectOption('select[name="location"]', locB);
+    await page.waitForURL(/\/orders\?location=/);
+    await expect(page.getByTestId(`sheet-row-${sheetBId}`)).toBeVisible();
+    await expect(page.getByTestId(`sheet-row-${sheetAId}`)).toHaveCount(0);
+
+    // Reset to ทุกสถานที่ (value "") → bare /orders, both visible again.
+    await page.selectOption('select[name="location"]', "");
+    await page.waitForURL(/\/orders$/);
+    await expect(page.getByTestId(`sheet-row-${sheetAId}`)).toBeVisible();
+    await expect(page.getByTestId(`sheet-row-${sheetBId}`)).toBeVisible();
+  });
 });
 
 // location-management plan hybrid gate: the full managed-list ↔ shop wiring loop —
