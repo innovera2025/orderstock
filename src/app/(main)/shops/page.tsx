@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { getEffectiveLocationOptions } from "@/lib/locations";
+import { perLocationDisplayNo, sortShopsForDisplay } from "@/lib/roster";
 import { softDeleteShop, restoreShop } from "./actions";
 import { ShopLocationFilter } from "./shop-location-filter";
 
@@ -13,13 +14,22 @@ export default async function ShopsPage({
 }) {
   const { location } = await searchParams;
 
-  const [shops, locations] = await Promise.all([
-    prisma.shop.findMany({
-      where: { ...(location ? { location } : {}) },
-      orderBy: { rosterOrder: "asc" },
-    }),
+  const [allShops, locations] = await Promise.all([
+    prisma.shop.findMany({ orderBy: { rosterOrder: "asc" } }),
     getEffectiveLocationOptions(),
   ]);
+
+  // Per-location 1..N number is computed over ACTIVE shops only (inactive shops never appear on the
+  // order sheet, so they get no number → rendered "-"). rosterOrder stays the React key / identity.
+  const activeShops = allShops.filter((s) => s.active);
+  const displayNoMap = perLocationDisplayNo(activeShops);
+
+  // Filtering now happens in JS (not a DB `where`) so the display-number map is computed over the
+  // full active-shop scope regardless of the current filter. Unfiltered → group by location; filtered
+  // → that location's shops in the query's existing rosterOrder-asc order.
+  const shops = location
+    ? allShops.filter((s) => s.location === location)
+    : sortShopsForDisplay(allShops);
 
   return (
     <main className="mx-auto w-full max-w-3xl p-6">
@@ -57,7 +67,7 @@ export default async function ShopsPage({
                   : "border-b border-[var(--border)] opacity-50"
               }
             >
-              <td className="py-2 pr-2 font-[var(--font-mono)] text-[var(--text-muted)]">{shop.rosterOrder}</td>
+              <td className="py-2 pr-2 font-[var(--font-mono)] text-[var(--text-muted)]">{shop.active ? (displayNoMap.get(shop.id) ?? "-") : "-"}</td>
               <td className="py-2 pr-2 text-[var(--text)]">
                 {shop.name}
               </td>

@@ -55,3 +55,73 @@ export function buildLocationRoster(
     shopName: s.name,
   }));
 }
+
+/** Normalize a shop location to its grouping key: null/empty/whitespace → "" (the "no location"
+ * bucket), otherwise the trimmed string. Same convention `buildLocationRoster` uses (`?.trim() ?? ""`),
+ * kept in one place so `/shops` numbering and the order sheet can never disagree on what counts as
+ * "no location". */
+function locationKey(location: string | null): string {
+  return location?.trim() || "";
+}
+
+/**
+ * Per-location display numbers for the `/shops` master-data list.
+ *
+ * Unlike `buildLocationRoster` (which answers "the roster for ONE location", with a full-list
+ * fallback appropriate for an order sheet that always has exactly one location), this answers "the
+ * per-location number for EVERY shop across ALL locations at once" — a `Map<shopId, displayNo>`,
+ * with NO fallback-to-full-list: a null/empty-location shop lands in its own "" bucket rather than
+ * being folded into every other location's numbering. That different shape is why this is a separate
+ * function, not a `buildLocationRoster` variant.
+ *
+ * Contract: the CALLER passes active shops only — this function does not filter by `active`. Inactive
+ * shops are therefore absent from the returned map, so `map.get(inactiveShop.id)` is `undefined` and
+ * the page renders `-`.
+ *
+ * Within each location bucket, shops are sorted by `rosterOrder` ascending (same tie-break as
+ * `buildLocationRoster`) and numbered 1..N. `rosterOrder` is never renumbered.
+ */
+export function perLocationDisplayNo(activeShops: RosterInputShop[]): Map<number, number> {
+  const groups = new Map<string, RosterInputShop[]>();
+  for (const shop of activeShops) {
+    const key = locationKey(shop.location);
+    const group = groups.get(key);
+    if (group) group.push(shop);
+    else groups.set(key, [shop]);
+  }
+
+  const result = new Map<number, number>();
+  for (const group of groups.values()) {
+    const sorted = [...group].sort((a, b) => a.rosterOrder - b.rosterOrder);
+    sorted.forEach((shop, i) => result.set(shop.id, i + 1));
+  }
+  return result;
+}
+
+/**
+ * Sort shops for the UNFILTERED `/shops` view: group by location ascending (the null/empty "no
+ * location" bucket always sorts LAST regardless of alphabetical position), then `rosterOrder`
+ * ascending within each group — so the flat list reads as a sequence of per-location 1..N runs.
+ *
+ * Generic over any `{ location, rosterOrder }` shape so it works directly on Prisma `Shop` rows
+ * (which also carry `id`, `name`, `active`, …) without a mapping step. Returns a new sorted array;
+ * the input is not mutated.
+ *
+ * The filtered (`?location=`) view does NOT use this — its single-location list already arrives
+ * `rosterOrder` ascending from the query.
+ */
+export function sortShopsForDisplay<
+  T extends { location: string | null; rosterOrder: number },
+>(shops: T[]): T[] {
+  return [...shops].sort((a, b) => {
+    const ka = locationKey(a.location);
+    const kb = locationKey(b.location);
+    if (ka !== kb) {
+      // "" (no location) always sorts last.
+      if (ka === "") return 1;
+      if (kb === "") return -1;
+      return ka < kb ? -1 : 1;
+    }
+    return a.rosterOrder - b.rosterOrder;
+  });
+}

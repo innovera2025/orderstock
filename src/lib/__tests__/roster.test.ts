@@ -1,7 +1,12 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { buildLocationRoster, type RosterInputShop } from "../roster";
+import {
+  buildLocationRoster,
+  perLocationDisplayNo,
+  sortShopsForDisplay,
+  type RosterInputShop,
+} from "../roster";
 import { computeGrandTotal, type OrderLineCell } from "../totals";
 
 // Fully-automated gates for shop-location-roster:
@@ -57,6 +62,99 @@ describe("buildLocationRoster — G2 fallback to full active-shop list", () => {
     expect(buildLocationRoster(shops, "   ").length).toBe(5);
     // a location that matches 0 shops → full list (not an empty roster)
     expect(buildLocationRoster(shops, "ไม่มีจริง").length).toBe(5);
+  });
+});
+
+// Fully-automated gates for per-location-shop-numbering (the /shops display number):
+//   perLocationDisplayNo — groups active shops by location, numbers 1..N per group (rosterOrder-asc),
+//     rosterOrder gaps don't affect numbering, null/"" are ONE bucket, caller filters active-only.
+//   sortShopsForDisplay — unfiltered /shops ordering: location asc, null/"" bucket LAST, rosterOrder asc within.
+
+describe("perLocationDisplayNo — per-location 1..N numbering for /shops", () => {
+  it("should number 1..N within each location, ignoring rosterOrder gaps", () => {
+    const map = perLocationDisplayNo(shops);
+    // ยิ่งเจริญ: rosterOrder 1,3,5 → display 1,2,3 (gaps collapsed)
+    expect(map.get(101)).toBe(1);
+    expect(map.get(103)).toBe(2);
+    expect(map.get(105)).toBe(3);
+    // คลอง 2: its own independent 1
+    expect(map.get(107)).toBe(1);
+    // null-location shop: its own "" bucket, independent 1
+    expect(map.get(109)).toBe(1);
+  });
+
+  it("should number by rosterOrder ascending within a group regardless of input order", () => {
+    const shuffled = [shops[2], shops[0], shops[1]]; // E(5), A(1), C(3) — all ยิ่งเจริญ
+    const map = perLocationDisplayNo(shuffled);
+    expect(map.get(101)).toBe(1); // rosterOrder 1
+    expect(map.get(103)).toBe(2); // rosterOrder 3
+    expect(map.get(105)).toBe(3); // rosterOrder 5
+  });
+
+  it("should treat null and empty/whitespace location as the SAME bucket, numbered together", () => {
+    const input: RosterInputShop[] = [
+      { id: 201, rosterOrder: 4, name: "NullLoc", location: null },
+      { id: 202, rosterOrder: 2, name: "EmptyLoc", location: "" },
+      { id: 203, rosterOrder: 6, name: "SpaceLoc", location: "   " },
+    ];
+    const map = perLocationDisplayNo(input);
+    // All three share the "" bucket → numbered 1..3 by rosterOrder asc (2,4,6): 202,201,203
+    expect(map.get(202)).toBe(1);
+    expect(map.get(201)).toBe(2);
+    expect(map.get(203)).toBe(3);
+  });
+
+  it("should number whatever it is given — the caller (not this fn) filters to active-only", () => {
+    // The function has no `active` field/branch; an inactive shop passed in still gets numbered.
+    // /shops passes active shops only, so inactive ids are naturally absent from the map there.
+    const map = perLocationDisplayNo(shops);
+    expect(map.size).toBe(shops.length);
+  });
+});
+
+describe("sortShopsForDisplay — unfiltered /shops ordering", () => {
+  it("should put the null/empty-location group LAST regardless of alphabetical position", () => {
+    const input = [
+      { id: 1, rosterOrder: 1, location: "B" },
+      { id: 2, rosterOrder: 2, location: null },
+      { id: 3, rosterOrder: 3, location: "A" },
+    ];
+    const sorted = sortShopsForDisplay(input);
+    // A before B (alphabetical), null bucket last.
+    expect(sorted.map((s) => s.id)).toEqual([3, 1, 2]);
+  });
+
+  it("should preserve rosterOrder ascending within one location group", () => {
+    const input = [
+      { id: 1, rosterOrder: 5, location: "A" },
+      { id: 2, rosterOrder: 1, location: "A" },
+      { id: 3, rosterOrder: 3, location: "A" },
+    ];
+    const sorted = sortShopsForDisplay(input);
+    expect(sorted.map((s) => s.rosterOrder)).toEqual([1, 3, 5]);
+  });
+
+  it("should group by location then rosterOrder, null-bucket last", () => {
+    const input = [
+      { id: 1, rosterOrder: 9, location: null },
+      { id: 2, rosterOrder: 2, location: "B" },
+      { id: 3, rosterOrder: 1, location: "B" },
+      { id: 4, rosterOrder: 8, location: "A" },
+      { id: 5, rosterOrder: 4, location: "" },
+    ];
+    const sorted = sortShopsForDisplay(input);
+    // A(8), B(1), B(2), then "" bucket [null(9)? no — "" and null share the bucket, rosterOrder asc: 5(4),1(9)]
+    expect(sorted.map((s) => s.id)).toEqual([4, 3, 2, 5, 1]);
+  });
+
+  it("should not mutate the input array", () => {
+    const input = [
+      { id: 1, rosterOrder: 2, location: "A" },
+      { id: 2, rosterOrder: 1, location: "A" },
+    ];
+    const snapshot = [...input];
+    sortShopsForDisplay(input);
+    expect(input).toEqual(snapshot);
   });
 });
 
