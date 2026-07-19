@@ -1,9 +1,9 @@
 ---
 name: context:all-uxui
 description: "UI/UX context entrypoint for orderstock — pguard Design System tokens, semantic-alias contract, shared src/components/ui/* primitives, sidebar+topbar shell, dark mode, and print-font behavior"
-keywords: ui, ux, design, tokens, pguard, theme, dark mode, dark-mode, sidebar, topbar, nav, primitives, button, input, card, modal, toast, chip, switch, ibm plex, font, focus ring, radius, print font, order-matrix, matrix, topbar-actions, portal, app-settings, settings persistence, summary, history, bar chart, top shops, groupby, shop totals, mobile, responsive, breakpoint, bottom tab bar, touch target, mobile entry, mobile overlay, drawer, sidebar drawer, hamburger, tablet, collapse, sidebar-shell, sidebar-drawer-store, surface-focus, seasoning-band, dark-mode contrast, print footer, one-page print, tally-col, print pagination, locations, location management, managed list, location row, shop form select
+keywords: ui, ux, design, tokens, pguard, theme, dark mode, dark-mode, sidebar, topbar, nav, primitives, button, input, card, modal, toast, chip, switch, ibm plex, font, focus ring, radius, print font, order-matrix, matrix, topbar-actions, portal, app-settings, settings persistence, summary, history, bar chart, top shops, groupby, shop totals, mobile, responsive, breakpoint, bottom tab bar, touch target, mobile entry, mobile overlay, drawer, sidebar drawer, hamburger, tablet, collapse, sidebar-shell, sidebar-drawer-store, surface-focus, seasoning-band, dark-mode contrast, print footer, one-page print, tally-col, print pagination, locations, location management, managed list, location row, shop form select, shop numbering, per-location numbering, displayNo, rosterOrder, perLocationDisplayNo, sortShopsForDisplay, ลำดับ column
 related: [context:all-tests, context:all-database]
-date: 17-07-26
+date: 19-07-26
 metadata:
   read_when: any UI/token/component/shell/theme work
 ---
@@ -18,9 +18,10 @@ responsive breakpoint pattern, bottom tab bar, mobile order-matrix branch), and 
 ✅ VERIFIED — ตีลานนิ่ม/ตีลาน display renames, no UI-pattern changes). Post-program,
 `matrix-print-darkmode-fixes_13-07-26` (✅ VERIFIED at code level, commit `c87dccc`) added the
 `--surface-focus` and `--seasoning-band`/`--seasoning-band-fg` tokens and the print one-page-fit
-footer pattern; `shop-location-roster_13-07-26`, `location-management_14-07-26`, and
-`shop-location-filter_17-07-26` (all ✅ VERIFIED AT CODE LEVEL) layered the per-location roster
-picker, the `/locations` managed-list page, and `/shops`+`/orders` per-location list filtering on
+footer pattern; `shop-location-roster_13-07-26`, `location-management_14-07-26`,
+`shop-location-filter_17-07-26`, and `per-location-shop-numbering_19-07-26` (all ✅ VERIFIED /
+VERIFIED AT CODE LEVEL) layered the per-location roster picker, the `/locations` managed-list page,
+`/shops`+`/orders` per-location list filtering, and `/shops`'s per-location display numbering on
 top, with no new tokens/primitives — see the dedicated sections below. Read this before
 touching `src/app/globals.css`, `src/components/ui/*`, the sidebar/topbar shell,
 `src/lib/app-settings.ts`, or any dark-mode/theme/topbar-portal/mobile-responsive logic.
@@ -492,6 +493,41 @@ this exact shape — `searchParams: Promise<{ location?: string }>` on the serve
 `useRouter`-driven filter component (list-only surfaces, like `/shops`) or making an EXISTING form
 select controlled and URL-synced (surfaces that already have a location select doing something
 else, like `/orders`'s create form). Do not re-derive `getEffectiveLocationOptions()`.
+
+## Per-location shop display numbering — `/shops` (`per-location-shop-numbering_19-07-26`, ✅ VERIFIED)
+
+No new tokens or primitives — a pure data/render change to the existing `/shops` list. The "ลำดับ"
+column previously showed the shop's global `rosterOrder` (the `@unique` DB identity value, e.g. a
+shop numbered `1` on its own location's order sheet could show `29` on `/shops`). Now it shows the
+SAME per-location 1..N number the order sheet already shows via `displayNo`.
+
+- **`src/lib/roster.ts` gained two new pure, DB-free exports** (both additive — `buildLocationRoster`
+  is completely untouched): `perLocationDisplayNo(activeShops): Map<shopId, number>` groups active
+  shops by `location?.trim() || ""` (null/empty/whitespace all land in one "no location" bucket,
+  same normalization convention `buildLocationRoster` already uses), sorts each group by
+  `rosterOrder` ascending, and assigns 1..N per group — deliberately with NO fallback-to-full-list
+  behavior (unlike `buildLocationRoster`, which is answering a different question: "what's the
+  roster for ONE location" vs. "the per-location number for EVERY shop across ALL locations at
+  once"). `sortShopsForDisplay(shops)` is a pure sort for the UNFILTERED `/shops` view: location
+  group ascending with the null/empty bucket always LAST (never alphabetical), `rosterOrder`
+  ascending within each group.
+- **`src/app/(main)/shops/page.tsx`**: now fetches all shops once (dropped the conditional DB
+  `where: { location }` clause — filtering happens in JS instead), computes `activeShops` +
+  `displayNoMap = perLocationDisplayNo(activeShops)`, and renders
+  `{shop.active ? (displayNoMap.get(shop.id) ?? "-") : "-"}` in the ลำดับ `<td>` — inactive
+  (soft-deleted) shops always show `-`. The filtered view (`?location=X`) keeps its existing
+  narrowed list order (already `rosterOrder`-asc per location); the unfiltered view applies
+  `sortShopsForDisplay`.
+- **Zero schema change; `rosterOrder` untouched.** `orders/[id]/page.tsx`, `get-sheet-for-print.ts`,
+  both print routes, and `buildLocationRoster`'s signature/behavior are unaffected — this plan is
+  display-only on the `/shops` master-data list.
+- VALIDATE was intentionally skipped (UI-display-only, no schema/auth/API surface, same shape as
+  `shop-location-filter_17-07-26`).
+
+**Reusable pattern going forward:** any future screen needing "the Nth-within-its-group number for
+every row across all groups" should import `perLocationDisplayNo` (or its ordering counterpart
+`sortShopsForDisplay`) rather than re-deriving grouping/numbering logic — same "one shared helper,
+no forked logic" discipline as `buildLocationRoster`, `order-payload.ts`, and `totals.ts`.
 
 ## Print one-page-fit footer pattern (`matrix-print-darkmode-fixes_13-07-26`)
 
