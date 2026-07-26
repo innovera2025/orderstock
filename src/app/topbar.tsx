@@ -13,7 +13,7 @@ import { useDrawerVisible, toggleDrawer } from "@/lib/sidebar-drawer-store";
 // here this phase; that is Phase 02).
 const TITLES: { prefix: string; title: string }[] = [
   { prefix: "/orders", title: "ออเดอร์รายวัน" },
-  { prefix: "/summary", title: "สรุปยอดผลิต" },
+  { prefix: "/summary", title: "สรุปยอดขาย" },
   { prefix: "/history", title: "ประวัติออเดอร์" },
   { prefix: "/shops", title: "จัดการร้านค้า" },
   { prefix: "/products", title: "จัดการสินค้า" },

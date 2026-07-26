@@ -25,7 +25,7 @@ const GROUPS: Group[] = [
     label: "ปฏิบัติการ",
     items: [
       { href: "/orders", label: "ออเดอร์รายวัน", icon: ClipboardList },
-      { href: "/summary", label: "สรุปยอดผลิต", icon: BarChart3 },
+      { href: "/summary", label: "สรุปยอดขาย", icon: BarChart3 },
       { href: "/history", label: "ประวัติออเดอร์", icon: History },
     ],
   },

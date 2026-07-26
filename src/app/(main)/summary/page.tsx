@@ -9,7 +9,7 @@ import {
 } from "@/lib/totals";
 import { topShops } from "@/lib/summary";
 
-// สรุปยอดผลิต (/summary) — Phase 03. READ-ONLY production summary over an existing OrderSheet.
+// สรุปยอดขาย (/summary) — Phase 03. READ-ONLY production summary over an existing OrderSheet.
 // The LEFT bars ARE the 20 computeColumnTotals columns (the literal gate); the RIGHT list is the
 // per-shop top-8 from the new pure src/lib/summary.ts. Consumes totals.ts UNCHANGED — no new
 // write path, no schema change. Defaults to the most-recent sheet; ?date=yyyy-mm-dd (+ ?location)
@@ -56,7 +56,7 @@ export default async function SummaryPage({
   if (!sheet) {
     return (
       <main className="w-full p-8">
-        <h1 className="mb-2 text-[var(--t-xl)] font-semibold text-[var(--text-strong)]">สรุปยอดผลิต</h1>
+        <h1 className="mb-2 text-[var(--t-xl)] font-semibold text-[var(--text-strong)]">สรุปยอดขาย</h1>
         <p className="text-[var(--t-base)] text-[var(--text-faint)]">ยังไม่มีใบออเดอร์</p>
       </main>
     );
@@ -129,7 +129,7 @@ export default async function SummaryPage({
   return (
     <main className="flex w-full flex-col gap-4 p-6">
       <div className="flex items-baseline gap-3">
-        <h1 className="text-[var(--t-xl)] font-semibold text-[var(--text-strong)]">สรุปยอดผลิต</h1>
+        <h1 className="text-[var(--t-xl)] font-semibold text-[var(--text-strong)]">สรุปยอดขาย</h1>
         <span className="font-[var(--font-mono)] text-[13px] text-[var(--text-muted)]">
           {ceToBeDisplay(normalizeDbDate(sheet.date))}
           {sheet.location ? ` — ${sheet.location}` : ""}
@@ -165,7 +165,7 @@ export default async function SummaryPage({
         <Card className="flex flex-col gap-3 p-5">
           <div className="flex items-center justify-between">
             <h2 className="text-[var(--t-base)] font-semibold text-[var(--text-strong)]">
-              ยอดผลิตตามสินค้า
+              ยอดขายตามสินค้า
             </h2>
             <div className="flex items-center gap-4 text-[11px] text-[var(--text-muted)]">
               <span className="flex items-center gap-1">

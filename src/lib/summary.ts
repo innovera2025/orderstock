@@ -1,4 +1,4 @@
-// สรุปยอดผลิต (/summary) aggregation layer (pguard-redesign Phase 03). PURE, imports the
+// สรุปยอดขาย (/summary) aggregation layer (pguard-redesign Phase 03). PURE, imports the
 // UNCHANGED totals.ts for the OrderLineCell shape — it does NOT re-implement column/grand totals
 // (the /summary bars ARE the 20 computeColumnTotals columns; this module only adds the per-SHOP
 // axis for the "ร้านที่สั่งมากที่สุด" list). The 446 gate stays owned by totals.ts.
