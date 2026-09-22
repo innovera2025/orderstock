@@ -44,6 +44,25 @@ const MODULES: ActionModule[] = [
   },
 ];
 
+// PUBLIC API ROUTES — intentionally NOT covered by the MODULES sweep above.
+//
+// `MODULES` asserts `requireAuth()` inside SERVER-ACTION modules. API Route Handlers are a
+// different shape and have never been enumerated here. `/api/health` calls no `requireAuth()`
+// and is unauthenticated by design (an operator/uptime probe). erp-dashboards Phase 1's
+// `/api/health/erp` follows that same precedent deliberately: it exposes only a boolean, a
+// latency number, a staleness flag, and a fixed sanitized error string — no ERP business data,
+// no money field, no connection detail. Forcing a mismatched MODULES-shaped entry for it would
+// assert a guard that is intentionally absent.
+//
+// If a FUTURE ERP route returns business data, it MUST call requireAuth() and gets a real
+// coverage entry of its own — this exemption covers health probes only.
+// Rationale is also recorded in the phase report and in the "ERP Read Layer" section of
+// `process/context/database/all-database.md`.
+const INTENTIONALLY_PUBLIC_API_ROUTES = [
+  "src/app/api/health/route.ts",
+  "src/app/api/health/erp/route.ts",
+];
+
 // ADMIN-only action modules — every exported action must gate on the ADMIN role specifically (B4).
 const ADMIN_MODULES = [
   "src/app/(main)/admin/users/actions.ts",
@@ -101,6 +120,18 @@ describe("requireAuth coverage over all server actions (ELEV-guard)", () => {
         .filter((a) => !/requireAuth(State)?\(\s*"ADMIN"\s*\)/.test(a.body))
         .map((a) => a.name);
       expect(notAdminGated, `actions not gated on ADMIN in ${file}`).toEqual([]);
+    });
+  }
+
+  // Documents (and pins) the public-health-route exemption above, so the intent is explicit
+  // rather than a silent omission from MODULES.
+  for (const file of INTENTIONALLY_PUBLIC_API_ROUTES) {
+    it(`${file} is an intentionally public health probe (no requireAuth by design)`, () => {
+      const source = readFileSync(resolve(ROOT, file), "utf8");
+      expect(/export async function GET/.test(source), `${file} is a GET route handler`).toBe(
+        true,
+      );
+      expect(/requireAuth\(/.test(source), `${file} is public by design`).toBe(false);
     });
   }
 

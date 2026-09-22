@@ -37,8 +37,11 @@ export default defineConfig({
     {
       // Phase 04 mobile project — 390×844 viewport reusing the STAFF storage state so the mobile
       // per-shop stepper e2e runs headless. Only picks up mobile.spec.ts.
+      // erp-dashboards Phase 1 broadened this regex to also pick up the dashboards nav spec —
+      // without it, that spec's "phone tab bar still has 3 tabs" block would never run under the
+      // phone viewport (it would silently execute zero tests at this tier).
       name: "mobile",
-      testMatch: /mobile\.spec\.ts/,
+      testMatch: /mobile\.spec\.ts|dashboards-nav-visibility\.spec\.ts/,
       use: {
         ...devices["Desktop Chrome"],
         viewport: { width: 390, height: 844 },

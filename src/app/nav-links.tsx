@@ -11,6 +11,9 @@ import {
   Package,
   Users,
   Settings,
+  TrendingUp,
+  ShoppingCart,
+  Factory,
   type LucideIcon,
 } from "lucide-react";
 
@@ -27,6 +30,18 @@ const GROUPS: Group[] = [
       { href: "/orders", label: "ออเดอร์รายวัน", icon: ClipboardList },
       { href: "/summary", label: "สรุปยอดขาย", icon: BarChart3 },
       { href: "/history", label: "ประวัติออเดอร์", icon: History },
+    ],
+  },
+  {
+    // erp-dashboards Phase 1 — the read-only ERP dashboard group. Visible to BOTH ADMIN and
+    // STAFF (no adminOnly flag). The 3 routes 404 until Phases 2/3/4 land their pages; that is
+    // an accepted temporary state, the nav shell is wired once here and never edited by those
+    // phases.
+    label: "แดชบอร์ด",
+    items: [
+      { href: "/dashboards/sales", label: "ยอดขาย", icon: TrendingUp },
+      { href: "/dashboards/purchase", label: "การจัดซื้อ", icon: ShoppingCart },
+      { href: "/dashboards/production", label: "การผลิต", icon: Factory },
     ],
   },
   {
