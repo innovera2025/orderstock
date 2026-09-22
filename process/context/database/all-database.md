@@ -654,3 +654,81 @@ Added 22-09-26 by `phase-02-sales-dashboard`. Establishes the pattern every late
 - **Quantity aggregation**: quantities are summed strictly PER `MainUnits` value, never across
   different units — the same rule Phase 1 established structurally now has a proven Phase-2 example
   (`sumQuantityByUnit()`).
+
+### Purchase dashboard query contract (erp-dashboards Phase 3)
+
+Added 22-09-26 by `phase-03-purchase-dashboard`. Follows Phase 2's embed-plus-byte-identity-gate
+pattern exactly, with its own domain twist:
+
+- **Dual basis, both fully counted**: `total-invoice-basis.sql` (`PurchaseInvoiceHdr`/`Dtl`) and
+  `total-po-committed-basis.sql` (`PurchaseOrderHdr`/`Dtl`) are two DIFFERENT, non-overlapping ways
+  of asking "how much have we bought" — unlike Sales's single-total-plus-coverage-footnote pattern,
+  neither Purchase basis excludes real data, so both render as equal-weight KPI tiles rather than
+  one "primary" and one "footnoted secondary."
+- **`total-invoice-basis.sql` returns ROWS, not a bare `SUM`** — the KPI tile, the period chart, and
+  the supplier donut all need the SAME filtered invoice set at three different groupings, so
+  aggregating once in TS (not three separately-parameterized SQL sums) keeps all three figures
+  arithmetically identical by construction.
+- **`po-received.sql` mirrors the ERP's own `sp_Popending` report literally** — bare `h.IsClosed <>
+  1` with NO `ISNULL(...)` wrapper, matching the stored procedure's actual source verbatim (quoted
+  in `erp-master-data_REF_18-09-26.md`). An `IsClosed IS NULL` row is therefore silently EXCLUDED
+  from `received_qty` — this is real ERP report behavior, not a bug to "fix." `derivePoStatus()`
+  (the pure TS status function, NOT this SQL file) is the one place that DOES use
+  `ISNULL(IsClosed,0)=1` semantics — the two functions deliberately disagree on NULL handling
+  because they answer different questions (this SQL: "is this receipt excluded from ค้างรับ";
+  `derivePoStatus`: "is this PO Closed").
+- **`po-lines.sql`/`po-received.sql` take OPTIONAL id parameters** so the PO list page can aggregate
+  รับแล้ว/ค้างรับ per PO in ONE round trip instead of N+1 queries — the same static statement serves
+  both the list page and the detail page.
+- **Outstanding quantity is never clamped** — `computeOutstanding()` returns the raw
+  `ordered - received` value even when negative (an over-receipt is real data worth surfacing, not
+  a bug to floor at 0); the UI renders a distinct warning tone for a negative value instead of
+  hiding it.
+- **`derivePoStatus()` is an UNVALIDATED field-precedence guess** (7-branch CASE: cancel → closed →
+  completed → received → checked → approved → pending) — every render site pairs the status chip
+  with a separate "ยังไม่ผ่านการยืนยัน" caveat chip (see `uxui/all-uxui.md`'s Unvalidated-derivation
+  caveat badge pattern). Do not upgrade this confidence without new evidence from real db_TCL data.
+- **Shared-fixture-table collision with Phase 4 (resolved additively)**: `InventoryFlowHdr`/
+  `InventoryFlowDtl` are used by both Purchase (`po-received.sql`) and Production
+  (`material-issues.sql`). Phase 4's seed had already created these tables with a narrower,
+  differently-named shape (`DocuNo`/`TransactionDate`/`Qty`) before Phase 3's seed ran; Phase 3's
+  seed resolves this via `IF OBJECT_ID(...) IS NULL CREATE TABLE` (create-if-absent) plus
+  `IF COL_LENGTH(...) IS NULL ALTER TABLE ... ADD` (add-missing-column) so BOTH domains' expected
+  column spellings coexist on the same fixture tables, and reserves its own rows in a
+  `TransactionNo` 7700-block (Phase 4 uses the 9000-block) so neither domain's rows collide. **The
+  fixture therefore carries both column spellings, which the live ERP does not — a future phase
+  (Phase 5 or later) should converge on ONE canonical naming for these two shared tables** before
+  this collision resolution is considered final.
+- Money-gate contract: identical mechanism to Sales (`canSeeMoney` computed once server-side,
+  markup conditionally omitted, never CSS-hidden) — see `uxui/all-uxui.md`.
+
+### Production dashboard query contract (erp-dashboards Phase 4)
+
+Added 22-09-26 by `phase-04-production-dashboard`. No money data in scope at all (see
+`uxui/all-uxui.md`'s No-money-dashboards pattern) — this domain's contract is entirely about
+honest absence-of-data, not money gating.
+
+- **`mo-list.sql`**: single `SELECT` over `tbl_MoHdr` (+ optional `tbl_BatchOrder` join for
+  `IsCheck`/`IsRecPo` flags per the data dictionary), the same `InventoryItem` highest-`Roworder`
+  tie-break join Phase 2 established, date/status filters via `(@p IS NULL OR col = @p)`, and an
+  issue-line-count sub-select (feeds the "MOs with material issues" KPI). `PlannedQty` is
+  `COALESCE(m.LotQty, m.Prodqty, 0)` — **this column name is a coincidence, not a signal**: it is
+  never surfaced as an "actual produced" figure anywhere (see AC7 honesty guarantees below).
+- **`material-issues.sql`**: reads the line-item unit from `InventoryItem.MainUnits`, NOT a
+  per-line `InventoryFlowDtl.Unit` column — the real-data extract hints at a detail-level unit
+  column existing, but no reference document confirms it in `db_TCL`; querying an unverified
+  column risks a live break, so the plan's own (verified) SQL shape was followed instead.
+- **AC7 "no achievement %" is enforced at FOUR independent levels**, not just "the SQL doesn't
+  return it" — see `uxui/all-uxui.md`'s Plan-only honesty pattern for the full structural /
+  data-shape / module-surface / rendered-page breakdown. `mo-list.sql` never returns any field
+  matching `/actual|percent|pct|achiev/`, enforced by a unit gate reading the raw query text.
+  **There is no "received into stock" ledger signal anywhere in the ERP for a completed MO** (the
+  data dictionary confirms 0 of 218 `InventoryFlowHdr` rows qualify as an FG-from-production
+  receipt) — this is a real absence, not a query gap.
+- **No locking hint** (`WITH (NOLOCK)` or similar) is added on any query in this domain — matches
+  Phase 2's own delivered, VERIFIED SQL, which likewise carries no locking hint; `guardedQuery`'s
+  read-only enforcement, not a locking hint, is the actual security/correctness boundary (a plan
+  claim about an "RCSI-off convention" was found inaccurate and corrected during this phase's inner
+  PVL — no such convention exists anywhere in the umbrella plan's text).
+- **Shared-fixture-table collision with Phase 3**: see Phase 3's entry above — resolved on Phase
+  3's side, additively, with Phase 4's original rows (`TransactionNo` 9000-block) untouched.

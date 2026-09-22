@@ -1,0 +1,9 @@
+cycle	gates_total	gates_failed	loop_status
+0	17	17	baseline
+1	17	9	env-blocked (hybrid+agent-probe gates could not run — see purchase-evl-iteration-001_REPORT_22-09-26.md)
+2	17	9	HALTED_KNOWN_GAP (fix cycle 1: no code fix applicable — credential-access block, not a defect; gap accepted, Phase 5 follow-up recorded — see purchase-evl-iteration-002_REPORT_22-09-26.md)
+3	17	9	HALTED_KNOWN_GAP (EVL confirmation run 2: 8 Fully-Automated gates + build/lint re-confirmed green; 9 Hybrid/Agent-Probe gates remain env-blocked, identical credential-access restriction as cycle 2 — no code fix applicable, no new defect found)
+4	17	9	HALTED_KNOWN_GAP (fix cycle 2: no code fix applicable — same credential-access block; automated gates + tsc + eslint re-confirmed green — see purchase-evl-iteration-004_REPORT_22-09-26.md)
+5	17	9	HALTED_KNOWN_GAP (EVL confirmation run 3: 8 Fully-Automated gates + tsc/eslint/lint/build re-confirmed green; 9 Hybrid/Agent-Probe gates remain env-blocked, identical credential-access restriction as cycles 2-4 — no code fix applicable, no new defect found — see purchase-evl-iteration-005_REPORT_22-09-26.md)
+6	17	9	HALTED_KNOWN_GAP (fix cycle 3: no code fix applicable — same credential-access env block as cycles 1-5; 67/67 purchase unit tests + tsc re-confirmed green; no new defect — see purchase-evl-iteration-006_REPORT_22-09-26.md)
+7	17	9	HALTED_KNOWN_GAP (EVL confirmation run 4: 8 Fully-Automated gates + tsc/lint/build re-confirmed green; 9 Hybrid/Agent-Probe gates remain env-blocked by the auto-mode credential-materialization classifier, identical restriction as cycles 2-6 -- no code fix applicable, no new defect found, scope confinement clean)

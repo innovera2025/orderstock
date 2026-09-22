@@ -1,7 +1,7 @@
 ---
 name: context:all-tests
-description: Testing entrypoint for orderstock — Vitest 3.2.6 (282 tests/23 files) and Playwright E2E (49+ tests excl. [setup], incl. mobile + tablet projects, plus the erp-dashboards suite) both real and wired, sandbox SQL Server constraint
-keywords: tests, testing, vitest, playwright, e2e, unit, integration, verification, coverage, sandbox, sql server, health check, build, lint, storage state, fixtures, totals, be-date, order-save, mobile, mobile viewport, mobile project, tablet, tablet project, sidebar drawer, clean-state, print page count, pdf page count, one-page print, print footer, roster, location, shop location, per-location, buildLocationRoster, locations, location management, locations.test, managed list, shop location filter, location filter, searchParam filter, shops.spec, orders filter gate
+description: Testing entrypoint for orderstock — Vitest 3.2.6 (390 tests/30 files, 24 skipped self-guarding Hybrid gates + 1 todo) and Playwright E2E (49+ tests excl. [setup], incl. mobile + tablet projects, plus the erp-dashboards Sales/Purchase/Production suites) both real and wired, sandbox SQL Server constraint
+keywords: tests, testing, vitest, playwright, e2e, unit, integration, verification, coverage, sandbox, sql server, health check, build, lint, storage state, fixtures, totals, be-date, order-save, mobile, mobile viewport, mobile project, tablet, tablet project, sidebar drawer, clean-state, print page count, pdf page count, one-page print, print footer, roster, location, shop location, per-location, buildLocationRoster, locations, location management, locations.test, managed list, shop location filter, location filter, searchParam filter, shops.spec, orders filter gate, purchase dashboard, production dashboard, purchase-status, purchase-received, purchase-dual-basis, production-status-derivation, production-plan-only-empty-state, production-material-issue-drilldown, dashboards-purchase, dashboards-production, credential materialization, erp_fixture env block
 related: [context:all-database, context:all-auth]
 metadata:
   read_when: the task involves testing, verification, or test debugging
@@ -328,3 +328,90 @@ not yet lifted into a shared component.
   (Phase 2/3/4 agent-probe).
 - The guard's denylist is proven against every case enumerable from the ported source; it cannot
   prove the absence of an unknown bypass shape. Layers 3–5 exist because of that residual.
+
+---
+
+## Purchase dashboard testing (erp-dashboards Phase 3)
+
+Added 22-09-26 by `phase-03-purchase-dashboard`. Same fixture/Hybrid-gate pattern as Phase 2, own
+domain fixture (`db/erp-fixture/purchase-seed.sql`).
+
+### Unit suites
+
+| File | Proves |
+|---|---|
+| `src/lib/__tests__/purchase-status.test.ts` (14 tests) | `derivePoStatus()` all 7 branches, incl. `IsClosed IS NULL` fall-through (not Closed) and cancelled short-circuiting every other flag |
+| `src/lib/__tests__/purchase-received.test.ts` (12 tests) | `computeOutstanding()` incl. an over-received line — negative outstanding, never clamped to 0 |
+| `src/lib/__tests__/purchase-dual-basis.test.ts` (41 tests) | `aggregateSupplierBreakdown()` determinism + `SupplierCode`-asc tie-break, plus the "embedded Purchase SQL matches `db/erp-queries/purchase/*.sql`" byte-identity/read-only-keyword/no-concatenation drift sweep (the `src/lib/purchase-sql.ts` pattern — required because `output: "standalone"` excludes `db/` from the production bundle) |
+
+Suite total moved 282 → **382 (EXECUTE-session count) → 390 tests across 30 files** (combined with
+Phase 4's additions below; both phases landed in the same window).
+
+### E2E
+
+`e2e/dashboards-purchase.spec.ts` — 27 tests: nav+access, dual-basis KPI tiles (461,140 invoice /
+727,920 PO-committed against the fixture), PO status badge + unvalidated caveat (incl. the
+`IsClosed IS NULL` row), money-gate DOM-string assertion (AC9), filter/drilldown/sort/paginate
+round-trips, 390×844 mobile card view via an in-file `test.use({viewport})` override (NOT
+`--project=mobile`, which does not match this spec).
+
+### Known gaps
+
+- Live reconcile of `total-invoice-basis.sql`/`total-po-committed-basis.sql` against real `db_TCL`
+  and KRS's own `sp_PurchaseInvoiceMonth`/`sp_Popending` procedures is Phase 5's
+  `live-reconcile-script.ts` — this phase proves correctness against `erp_fixture` only.
+- **EVL-session credential-access gap (recurring, not phase-specific):** 5 independent EVL cycles
+  against this phase could not re-run the 9 Hybrid/Agent-Probe gates above — every attempt to build
+  `ERP_DATABASE_URL` was blocked by the tester session's own "Credential Materialization"
+  restriction (no `.env` read, no `docker exec ... printenv`, no inline `source .env`). This same
+  restriction was hit again by the combined UPDATE PROCESS closeout session (22-09-26) attempting
+  the full regression per this session's own instructions. **This is a genuine, unresolved
+  test-infra gap**, not a product defect — the EXECUTE session that originally wrote and green-ran
+  these gates DID have credential access. Backlog: publish a documented, non-secret local-fixture
+  credential path (or a `pnpm test:e2e:erp` wrapper script that sources it without an agent needing
+  to read `.env` directly) so any future session — including this repo's own EVL/UPDATE-PROCESS
+  agents — can independently re-run these gates. Serves Phases 2, 3, and 4 identically.
+
+---
+
+## Production dashboard testing (erp-dashboards Phase 4)
+
+Added 22-09-26 by `phase-04-production-dashboard`. Own domain fixture
+(`db/erp-fixture/production-seed.sql`, self-provisions `tbl_MoHdr`/`tbl_BatchOrder`/
+`InventoryFlowHdr`/`InventoryFlowDtl` since Phase 1's seed did not yet touch Production tables).
+
+### Unit suites
+
+| File | Proves |
+|---|---|
+| `src/lib/__tests__/production-status-derivation.test.ts` (26 tests) | `deriveMoStatus()` precedence (cancel → closed → approved → pending, `ISNULL(IsClosed,0)` semantics) + `plannedQuantity()`/`plannedQtyByUnit()` (LotQty with Prodqty fallback, never summed across units) + the embedded-SQL byte-identity drift sweep against `db/erp-queries/production/*.sql` |
+| `src/lib/__tests__/production-plan-only-empty-state.test.ts` (10 tests, Hybrid half against real fixture rows) | AC7: the "ผลิตจริง" cell always renders the literal Thai empty-state string, never a computed percentage |
+| `src/lib/__tests__/production-material-issue-drilldown.test.ts` (7 tests, Hybrid) | AC8: raw-material-issue lookup + its own empty state when an MO has zero issues |
+
+Suite total (combined with Phase 3): **390 tests across 30 files** (up from 282 pre-Phase-3/4).
+
+### E2E
+
+`e2e/dashboards-production.spec.ts` — 17 tests: nav+access, plan-only empty-state column always
+renders the Thai string with no achievement-% anywhere on the page (AC7, 4-level enforcement — see
+`uxui/all-uxui.md`'s Plan-only honesty pattern), material-issue drilldown navigation + empty state
+(AC8), filter round-trip, breakdown-row drilldown, sort+paginate, 390×844 mobile card view via the
+same in-file `test.use({viewport})` pattern as Phase 2/3.
+
+**Gotcha (repeats across Phases 2–4):** `pnpm test:e2e -- <file>` does NOT filter — pnpm swallows
+the `--` and Playwright runs the WHOLE suite. Always use `pnpm exec playwright test <file>` for a
+scoped run.
+
+### Known gaps
+
+- **Status-precedence confidence is LOW** — only 2 of 4 `deriveMoStatus()` branches have ever been
+  exercised by real data (n=3 live MOs). The gates prove the CASE logic mechanically, not the
+  real-world branch distribution. Do not upgrade this confidence without new evidence.
+- No "FG receipt into stock" ledger signal exists anywhere in the ERP schema for completed MOs
+  (data dictionary confirms 0 of 218 `InventoryFlowHdr` rows qualify) — deliberately not built, not
+  a bug.
+- AC18's live boot-probe against the real scoped read-only login is Phase 5's, not this phase's.
+- Unlike Phase 3, this phase's single independent EVL cycle (22-09-26) reached the fixture
+  successfully and every gate passed on the first try — it did **not** hit the credential-access
+  block described in Phase 3's Known Gaps above (session-dependent, not a fixed property of the
+  environment).

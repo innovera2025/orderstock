@@ -548,7 +548,7 @@ once a day had more than a handful of หมายเหตุ notes. Fixed WITH
 - Real Chrome print-preview visual confirmation remains Agent-Probe only (not yet re-verified with
   a live browser) — see `process/general-plans/backlog/matrix-darkmode-print-agent-probe-residuals_NOTE_13-07-26.md`.
 
-## ERP dashboard UI patterns (`erp-dashboards` program, Phase 1 + Phase 2)
+## ERP dashboard UI patterns (`erp-dashboards` program, Phase 1–4)
 
 New shared components/patterns introduced by the `erp-dashboards` program, all under
 `src/components/` (shared, Phase-1-owned) or `src/app/(main)/dashboards/sales/**`
@@ -588,6 +588,32 @@ New shared components/patterns introduced by the `erp-dashboards` program, all u
 - **"แดชบอร์ด" nav group** (Phase 1) — additive 3-link group in `nav-links.tsx` (Sales/Purchase/
   Production), ADMIN+STAFF, phone bottom-tab-bar UNCHANGED at 3 tabs (dashboards are not tab-bar
   entries — never add a 4th tab per the umbrella charter's hard safety constraint).
+- **`sales-chart-scale.ts`'s `computeBarScale()`** (Phase 2, `src/lib`, cross-phase reusable) — the
+  pixel-scale helper that exists BECAUSE percentage-height bars silently collapsed to zero height in
+  an early Sales iteration. Phase 3 (`purchase-chart.tsx`) and Phase 4 (`production-plan-chart.tsx`)
+  both import this read-only, cross-phase, rather than re-deriving percentage-based bar geometry —
+  any future hand-rolled CSS bar chart in this repo should do the same.
+- **Dual-basis / dual-tile KPI pattern** (Phase 3) — when a domain has two legitimate, non-
+  overlapping totals for the "same" figure (Purchase's invoice-basis vs PO-committed-basis), render
+  BOTH as equal-visual-weight KPI tiles with distinct basis labels, never one "primary" and one
+  "secondary" — this differs from Sales's single-total + coverage-footnote pattern (AC4), because
+  Purchase's two bases are both fully counted, not one excluding real data.
+- **Unvalidated-derivation caveat badge** (Phase 3) — when a status is derived from an unconfirmed
+  field-precedence guess (`derivePoStatus()`'s 7-branch CASE), always render a SEPARATE small
+  `Chip tone="warning"` ("ยังไม่ผ่านการยืนยัน") immediately adjacent to the status chip — never merged
+  into one chip, so it can be removed independently later if confidence improves without touching
+  the status-chip logic itself.
+- **Plan-only honesty pattern** (Phase 4) — when a metric legitimately does not exist yet (Production
+  has no actual-vs-planned "achievement %" signal anywhere in the ERP), enforce its absence at FOUR
+  independent levels so it cannot silently regress back in: (1) structural — the rendering cell
+  component takes zero numeric props; (2) data-shape — the SQL/data layer never returns the field
+  under any name; (3) module-surface — a gate asserts no export is percentage-shaped; (4) rendered-
+  page — an e2e gate strips the page's own disclaimer sentence and asserts no stray `NN%` remains.
+  Reuse this 4-level pattern for any future "we don't have this number yet" dashboard cell.
+- **No-money dashboards need no `canSeeMoney` gate** (Phase 4) — a dashboard with zero money data in
+  scope (Production) correctly has NO money-visibility gate at all; do not treat "no `canSeeMoney`
+  found" as a defect when auditing a dashboard that was never supposed to carry money in the first
+  place (Phase 5's cross-dashboard money audit must read this as correct-by-design).
 
 ## Update triggers
 

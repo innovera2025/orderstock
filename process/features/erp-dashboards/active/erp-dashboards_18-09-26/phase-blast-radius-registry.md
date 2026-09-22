@@ -306,6 +306,6 @@ only; always write `status: BLOCKED-skipped` for new entries.
 | Phase 0 | DONE — all owned paths touched exactly as claimed; no shared-file collision; 12/12 EVL gates PASS (18-09-26) |
 | Phase 1 | DONE — all owned paths touched exactly as claimed; no shared-file collision; EVL confirmation PASS, `gates_green: true`, no fix cycle (22-09-26); ✅ VERIFIED at agent level |
 | Phase 2 | DONE — all owned paths touched exactly as claimed (plus one within-radius resilience fix, `sales-unavailable.tsx`); no shared-file collision; EVL confirmation `all_pass: true`/`gates_green: true` after 1 in-flight fix cycle (22-09-26); ✅ VERIFIED at agent level |
-| Phase 3 | (no field — not started) |
-| Phase 4 | (no field — not started) |
+| Phase 3 | DONE — all owned paths touched exactly as claimed (plus 8 within-radius component files beyond the plan's named 4, mirroring Phase 2's split); no shared-file collision with Phase 4 (an additive, self-resolved `InventoryFlowHdr`/`InventoryFlowDtl` shared-fixture-table collision was found and fixed within this phase's own seed file — see phase report Test Infra Gaps Found); 5 EVL cycles — Fully-Automated gates green every cycle, 9 Hybrid/Agent-Probe gates env-blocked (known-gap, not a defect, accepted per plateau rule); ✅ VERIFIED at agent level |
+| Phase 4 | DONE — all owned paths touched exactly as claimed (plus `production-sql.ts`, not in the plan's Touchpoints but required by the standalone-bundle constraint); no shared-file collision with Phase 3 (resolved on Phase 3's side, additively); EVL confirmation `all_pass: true`/`gates_green: true` on the FIRST cycle, zero fix cycles needed (22-09-26); ✅ VERIFIED at agent level |
 | Phase 5 | (no field — not started) |

@@ -218,8 +218,12 @@ mirroring Phase 2/Phase 3's own already-documented resolution to the same shared
 ## Data / SQL Details (tested filters — from the data dictionary)
 
 All queries below run through Phase 1's `guardedQuery` choke point against `erp_fixture` (dev/test)
-— never a live db_TCL connection in this phase. WITH (NOLOCK) per the umbrella's RCSI-off / read-only
-convention. Table/column names and filter logic are taken verbatim from
+— never a live db_TCL connection in this phase. No explicit `WITH (NOLOCK)` hint is added — this
+mirrors Phase 2's own delivered, VERIFIED SQL files (`db/erp-queries/sales/*.sql`), which likewise
+carry no locking hint; the umbrella plan does not actually document an "RCSI-off" convention anywhere
+(PVL correction, 22-09-26 — the prior wording implied a documented convention that does not exist in
+the umbrella text). `guardedQuery`'s read-only enforcement, not a locking hint, is the security/
+correctness boundary here. Table/column names and filter logic are taken verbatim from
 `erp-data-dictionary_REF_18-09-26.md` §60-65, §90-96 (residual finding), and §111 (status CASE
 pattern), which are already tested against real (fixture-representative) rows — do not re-derive
 from training-data guesses.
@@ -344,34 +348,34 @@ from training-data guesses.
 
 ### Step A — Pure logic + data-fetch functions (no UI yet)
 
-- [ ] A1. Create `src/app/(main)/dashboards/production/production-status.ts` — pure
+- [x] A1. Create `src/app/(main)/dashboards/production/production-status.ts` — pure
       `deriveMoStatus(mo: { approved, isClosed, isCancel }): { label: string; tone: ChipTone }`,
       implementing the CASE precedence above (`ISNULL(IsClosed,0)` semantics, cancel-first).
-- [ ] A2. Write `src/lib/__tests__/production-status-derivation.test.ts` — TDD-first: write the
+- [x] A2. Write `src/lib/__tests__/production-status-derivation.test.ts` — TDD-first: write the
       failing test asserting the 4 status branches (รออนุมัติ / อนุมัติแล้ว / ปิดแล้ว / ยกเลิก) AND
       the `IsClosed = null` (open, not closed) edge case BEFORE implementing A1's function body; run
       red, then implement A1 to make it green.
-- [ ] A3. Create `db/erp-queries/production/mo-list.sql` with the exact query from Data/SQL Details
+- [x] A3. Create `db/erp-queries/production/mo-list.sql` with the exact query from Data/SQL Details
       above (versioned, reviewable by KRS ERP team — include a header comment citing the data
       dictionary section it's sourced from).
-- [ ] A4. Create `db/erp-queries/production/material-issues.sql` with the exact query above.
-- [ ] A5. Create `src/app/(main)/dashboards/production/production-data.ts` exporting
+- [x] A4. Create `db/erp-queries/production/material-issues.sql` with the exact query above.
+- [x] A5. Create `src/app/(main)/dashboards/production/production-data.ts` exporting
       `getProductionMoList(filters: { dateFrom?, dateTo?, status? })` and
       `getMaterialIssuesForMo(moNumBer: string)`, both calling `guardedQuery` (Phase 1's import) with
       the SQL from A3/A4, wrapped in Phase 1's short-TTL cache helper. Both are plain async functions
       returning plain objects — no JSX, no Next-specific types — so Phase 5 can import them for CSV
       export without modification.
-- [ ] A6. **Section A test gate:** run `pnpm test production-status-derivation` — must be green
+- [x] A6. **Section A test gate:** run `pnpm test production-status-derivation` — must be green
       before proceeding to Step B.
 
 ### Step B — Fixture tests proving the plan-only + drilldown behavior (TDD-first)
 
-- [ ] B1. Write `src/lib/__tests__/production-plan-only-empty-state.test.ts` FIRST (red): assert that
+- [x] B1. Write `src/lib/__tests__/production-plan-only-empty-state.test.ts` FIRST (red): assert that
       for every row `getProductionMoList()` returns, the rendered/derived "actual produced" field is
       always the literal string `"ยังไม่มีข้อมูลผลิตจริง"` regardless of `Prodqty`/`LotQty` values in
       the fixture, and that no field in the returned shape or rendered output represents a percentage
       achievement figure. This is the direct AC7 proof.
-- [ ] B2. Write `src/lib/__tests__/production-material-issue-drilldown.test.ts` FIRST (red): seed the
+- [x] B2. Write `src/lib/__tests__/production-material-issue-drilldown.test.ts` FIRST (red): seed the
       `erp_fixture` DB (via Phase 1's fixture seed helper) with an MO that has ≥1 linked
       `InventoryFlowDtl` row (`MONo` string match + correct `ReasonName`) and one MO with ZERO linked
       rows; assert `getMaterialIssuesForMo()` returns the correct rows for the first and an empty
@@ -380,28 +384,30 @@ from training-data guesses.
       whitespace padding still matches its MO via the `TRIM()`-guarded query above; this closes the
       loop on the Risks table's "string-match-only linkage" mitigation, which promised this exact
       fixture case.)
-- [ ] B3. Implement A5's query-calling logic (if not already complete) to make B1 and B2 green.
+- [x] B3. Implement A5's query-calling logic (if not already complete) to make B1 and B2 green.
       **Section B test gate:** `pnpm test production-plan-only-empty-state production-material-issue-drilldown` green.
 
 ### Step C — Page UI (desktop table + mobile cards)
 
-- [ ] C1. Create `src/app/(main)/dashboards/production/page.tsx` — `requireAuth()`,
+- [x] C1. Create `src/app/(main)/dashboards/production/page.tsx` — `requireAuth()`,
       `dynamic = "force-dynamic"`, reads URL searchParams for date-range/status filters, calls
       `getProductionMoList(filters)`, renders KPI tiles (`Card`), the bar chart (CSS bars, matching
       `/summary`'s existing pattern — or Recharts if Phase 2's spike passed and this phase's own
       INNOVATE step independently chooses to adopt it), and the `dashboard-data-table` component with
       MO rows.
-- [ ] C2. Render the "actual produced" column via a small inline component that ALWAYS shows the
+- [x] C2. Render the "actual produced" column via a small inline component that ALWAYS shows the
       empty-state string (never conditionally shows a number) — make this structurally impossible to
       regress by not passing any numeric prop into that cell at all.
-- [ ] C3. Wire status badges via `Chip` (tone mapping: รออนุมัติ → neutral, อนุมัติแล้ว → brand,
+- [x] C3. Wire status badges via `Chip` (tone mapping: รออนุมัติ → neutral, อนุมัติแล้ว → brand,
       ปิดแล้ว → success, ยกเลิก → danger).
-- [ ] C4. Create `src/app/(main)/dashboards/production/production-mobile.tsx` — `md:hidden` card list
+- [x] C4. Create `src/app/(main)/dashboards/production/production-mobile.tsx` — `md:hidden` card list
       mirroring `admin/users/users-mobile.tsx`'s card structure (MO number + FG item + status chip +
       planned qty + actual-produced empty-state line), imported and rendered by `page.tsx` alongside
       the desktop table (desktop table wrapped `hidden md:block` or equivalent — do not duplicate data
       fetching, both consume the same `page.tsx`-level fetched data).
-- [ ] C5. Create the MO → material-issue drilldown surface. **INNOVATE decision recorded here:**
+- [x] C5. Create the MO → material-issue drilldown surface. **INNOVATE decision CONFIRMED
+      22-09-26 (see Inner Loop Refresh Note): (a) nested route — no override.**
+      Original INNOVATE decision framing (retained for context):
       choose either (a) a nested route `dashboards/production/[moNumber]/page.tsx` (full navigation,
       matches SPEC's "navigates to ... the list" wording most literally and gives a bookmarkable URL
       per AC10/AC11's URL-driven pattern) or (b) an in-page expand/collapse row (matches SPEC's
@@ -410,20 +416,20 @@ from training-data guesses.
       drilldown precedent (e.g. `/orders/[id]`). Implement whichever is chosen and document the
       choice + rejected alternative in the phase report's Decision Summary (INNOVATE step, step 2 of
       Phase Loop Progress).
-- [ ] C6. Implement the material-issue empty state (C5's route/expand renders the Thai empty-state
+- [x] C6. Implement the material-issue empty state (C5's route/expand renders the Thai empty-state
       string when `getMaterialIssuesForMo()` returns `[]`).
-- [ ] C7. Wire date-range + status filters as URL searchParams (controlled inputs, navigate on
+- [x] C7. Wire date-range + status filters as URL searchParams (controlled inputs, navigate on
       change, mirrors `shop-location-filter.tsx`'s pattern) — reloading a filtered URL must reproduce
       the same view (AC10).
-- [ ] C8. Wire sort + pagination via the shared `dashboard-data-table` component's existing
+- [x] C8. Wire sort + pagination via the shared `dashboard-data-table` component's existing
       props/contract (no new sort/paginate logic written here — Phase 1 owns that).
-- [ ] C9. **Section C test gate:** manually verify (agent-probe, no automated assertion yet) that the
+- [x] C9. **Section C test gate:** manually verify (agent-probe, no automated assertion yet) that the
       page renders with a small in-memory/fixture dataset; proceed to Step D for the automated e2e
       proof.
 
 ### Step D — E2E gates + append-only shared-file edits
 
-- [ ] D1. Create `e2e/dashboards-production.spec.ts` covering: nav entry visible + reachable (AC1
+- [x] D1. Create `e2e/dashboards-production.spec.ts` covering: nav entry visible + reachable (AC1
       Production share), plan-only empty-state column always renders the Thai string with no
       achievement-% anywhere on the page (AC7), material-issue drilldown navigation + empty-state
       (AC8), filter round-trip via URL (AC10), breakdown-row → drilldown navigation (AC11), sort +
@@ -432,19 +438,20 @@ from training-data guesses.
       this same spec file — reuses Phase 2's PVL-resolved pattern; the existing `mobile` Playwright
       project's `testMatch: /mobile\.spec\.ts/` regex does NOT pick up this file, so this phase does
       NOT rely on `--project=mobile` — see Registry Change Requests below).
-- [ ] D2. Append `/dashboards/production` (and the drilldown route from C5) to
+- [x] D2. Append `/dashboards/production` (and the drilldown route from C5) to
       `src/lib/__tests__/auth-guard-coverage.test.ts`'s expected-routes list — Production entries
-      ONLY, do not touch Sales/Purchase/Phase-1 entries already present.
-- [ ] D3. Update `process/context/all-context.md`'s erp-dashboards feature entry with this phase's own
-      status line (append/update only).
-- [ ] D4. **Section D test gate (full phase regression):** run
+      ONLY, do not touch Sales/Purchase/Phase-1 entries already present. (Done by the combined
+      closeout agent, 22-09-26 — `PRODUCTION_DASHBOARD_PAGES` array added; test re-run PASS.)
+- [x] D3. Update `process/context/all-context.md`'s erp-dashboards feature entry with this phase's own
+      status line (append/update only). (Done by the combined closeout agent, 22-09-26.)
+- [x] D4. **Section D test gate (full phase regression):** run
       `pnpm test` (full Vitest suite — confirms no regression in Phase 1/2/3's tests, which may exist
       in parallel by the time this phase executes) and
       `pnpm test:e2e -- e2e/dashboards-production.spec.ts` (file-path invocation, mirrors Phase
       2/3's exact pattern for this program — `--grep dashboards-production` would match ZERO tests
       because Playwright's `--grep` filters on test TITLE text, not filename, and this repo's
       existing spec titles do not embed a feature-slug string) green.
-- [ ] D5. Recommend `vc-git-manager` for a logical commit of this phase's changes before UPDATE
+- [x] D5. Recommend `vc-git-manager` for a logical commit of this phase's changes before UPDATE
       PROCESS.
 
 ---
@@ -578,6 +585,66 @@ available by then.
 
 ---
 
+## Inner Loop Refresh Note
+
+**Date:** 22-09-26
+**Trigger:** Inner-loop Steps 1-3 (RESEARCH → INNOVATE → PLAN-SUPPLEMENT) for the Phase 4 execution
+run under the erp-dashboards program's outer PVL-already-PASS validate-contract.
+
+**RESEARCH findings (summary — full findings in the phase report at UPDATE PROCESS):**
+- Phase 1 exit gate confirmed satisfied: `src/lib/erp/{erp-adapter,pool,cache,degrade,resolve-erp-database-url}.ts`
+  and `src/components/{dashboard-data-table,pilot-banner,degrade-banner}.tsx` all exist and match
+  this plan's assumed contracts exactly — zero divergence found. E1's "confirm divergence" execute
+  instruction is resolved: no divergence.
+- `erp_fixture` currently has ONLY `dbo.InventoryItem` (Phase 1's base schema/seed).
+  `tbl_MoHdr`/`tbl_BatchOrder`/`InventoryFlowHdr`/`InventoryFlowDtl` do not exist yet — this phase's
+  own `production-seed.sql` must `CREATE TABLE IF NOT EXISTS` these plus insert rows, mirroring
+  Phase 2's `sales-seed.sql` self-contained idempotent pattern. This was already anticipated in this
+  plan's own Touchpoints table (`db/erp-fixture/production-seed.sql` owned/create) — no plan gap,
+  just confirmed real and required.
+- Chart tech settled, no live INNOVATE debate needed: Phase 2's phase report
+  (`phase-02-sales-dashboard_REPORT_22-09-26.md`) confirms the Recharts spike was "not attempted" —
+  Phase 2 delivered every chart form hand-rolled CSS/SVG, `package.json`/lockfile byte-unchanged, and
+  explicitly recommends Phases 3/4 reuse `sales-slice-chart.tsx`'s pattern rather than re-running the
+  spike. This removes E4's branch — CSS bars is the only live option for Step C1's chart. Reuse
+  `src/lib/sales-chart-scale.ts`'s px-scale helper (not percentage heights, which caused a real
+  zero-height-bar defect in Phase 2).
+- `dashboard-data-table.tsx` real prop contract confirmed stable (`DataTableColumn`/`DataTableRow`/
+  `DashboardDataTableProps` — columns/rows/basePath/searchParams/sort/page/pageSize/totalRows/
+  mobileTitleKey/emptyText). Matches what C1/C8 assume — no divergence.
+- `PilotBanner`/`DegradeBanner` real signatures confirmed (zero-prop `className`-only, and
+  `{state, className}` respectively) — trivially importable exactly as planned.
+- Data dictionary §Production section (lines 56-67) matches this plan's SQL/status/edge-case content
+  verbatim — no drift since plan-write time.
+- Mockup's production tab data (verified) matches this plan's edge cases exactly (null `LotQty`
+  fallback case, `IsClosed: false` on all 3, one MO with material issues) — usable as a seed template
+  for `production-seed.sql`'s minimum required rows.
+
+**INNOVATE decisions (narrow — plan's own defaults confirmed, not broad exploration):**
+- **C5 (drilldown route shape):** CONFIRMED nested route `dashboards/production/[moNumber]/page.tsx`
+  — no override of the plan's own default recommendation. Rationale unchanged from the plan: more
+  consistent with AC10/AC11's URL-bookmarkability requirement and the existing `/orders/[id]`
+  drilldown precedent. Rejected alternative: in-page expand/collapse row (loses bookmarkable URL).
+- **E4 (chart tech):** CONFIRMED CSS bars (see RESEARCH findings above — Recharts spike not
+  attempted/not passed, so this is a confirmation of the only live option, not a genuine debate).
+
+**PLAN-SUPPLEMENT scope:** No section required substantive rewriting — this plan's own Touchpoints,
+Data/SQL Details, Risks, and Verification Evidence sections already anticipated every fact RESEARCH
+confirmed (fixture-table self-provisioning, Phase 1 contract shapes, chart-tech resolution). Edits
+applied by this refresh pass: ticked Phase Loop Progress Steps 1-3; annotated C5's checklist item and
+the E3/E4 execute-agent instruction rows with the resolved decisions (so a fresh EXECUTE-phase agent
+does not have to re-derive them); added this note. No scope expansion, no new files, no touchpoint
+changes.
+
+**Validate-contract re-validation:** per the orchestrator's Phase Program Pre-Routing Check Step 4b,
+this Inner Loop Refresh Note (dated 22-09-26) is newer than the existing `## Validate Contract`
+(`date: 2026-09-18`, `generated-by: outer-pvl`) — inner R+I has run since the last contract, so PVL
+must re-run from V1 before EXECUTE. This is expected and intentional: the refresh only resolved two
+already-anticipated decision points and confirmed zero drift, so V1 is expected to re-confirm PASS
+quickly rather than surface new gaps.
+
+---
+
 ## Resume and Execution Handoff
 
 - Selected plan file path: `process/features/erp-dashboards/active/erp-dashboards_18-09-26/phase-04-production-dashboard_PLAN_18-09-26.md`
@@ -615,25 +682,44 @@ Orchestrator reads this before deciding which subagent to spawn next. The canoni
 `R → I → P → PVL → E → EVL → UP` SKIPS SPEC (the umbrella SPEC governs this phase; no inner SPEC is
 written here).
 
-- [ ] 1. RESEARCH — research-agent: read Phase 1's actual delivered file shapes (once they exist),
+- [x] 1. RESEARCH — research-agent: read Phase 1's actual delivered file shapes (once they exist),
       confirm `erp_fixture` seed coverage for this phase's edge cases, re-check the data dictionary
-      for any Production-section updates since plan time, check plan drift
-- [ ] 2. INNOVATE — innovate-agent: decide C5's nested-route-vs-expand drilldown approach (default
+      for any Production-section updates since plan time, check plan drift (DONE 22-09-26 — see
+      Inner Loop Refresh Note below: zero drift found, all Phase 1 contracts confirmed real and
+      matching, fixture tables for tbl_MoHdr/InventoryFlowHdr/InventoryFlowDtl confirmed NOT YET
+      CREATED — production-seed.sql must self-provision them, already anticipated in Touchpoints)
+- [x] 2. INNOVATE — innovate-agent: decide C5's nested-route-vs-expand drilldown approach (default
       recommendation: nested route, per Step C5); decide whether to adopt Recharts (only if Phase 2's
       spike passed) or CSS bars; write Decision Summary (chosen approach + rejected alternatives)
-- [ ] 3. PLAN-SUPPLEMENT — plan-agent: update this plan with RESEARCH/INNOVATE findings (or mark
-      "n/a — research clean"); write an Inner Loop Refresh Note if sections changed
-- [ ] 4. PVL — vc-validate-agent: full V1–V7; validate-contract written per
+      (DONE 22-09-26 — Decision Summary: C5 confirmed nested route `[moNumber]/page.tsx` per the
+      plan's own default recommendation, no override; chart tech confirmed CSS bars — Phase 2's
+      Recharts spike was NOT attempted/did not pass per Phase 2's own phase report, so the
+      Recharts branch is moot, not a live choice — see Inner Loop Refresh Note below)
+- [x] 3. PLAN-SUPPLEMENT — plan-agent: update this plan with RESEARCH/INNOVATE findings (or mark
+      "n/a — research clean"); write an Inner Loop Refresh Note if sections changed (DONE 22-09-26 —
+      Inner Loop Refresh Note added below; C5/E4 marked resolved; no scope expansion)
+- [x] 4. PVL — vc-validate-agent: full V1–V7; validate-contract written per
       `.claude/skills/vc-validate-findings/references/example-validate-output.md` (Status / Gate /
       Plan updates applied / Execute-agent instructions / Test gates / High-risk pack / Backlog
-      artifacts / Known gaps / Accepted by)
-- [ ] 5. EXECUTE — Steps A–D of the Implementation Checklist done; per-section test gates (A6, B3,
-      C9, D4) run and green
-- [ ] 6. EVL — vc-tester re-runs the exact Verification Evidence gate commands independently; all
-      green; follow-up stubs registered; EVL HANDOFF SUMMARY written
-- [ ] 7. UPDATE PROCESS — phase report written to the destination above, umbrella
-      `## Current Execution State` and `## Program Status Table` updated (Phase 4 row), this phase's
-      status line appended to `process/context/all-context.md`, commit made via vc-git-manager
+      artifacts / Known gaps / Accepted by) (DONE 22-09-26 — inner-PVL re-validation cycle following
+      the Inner Loop Refresh Note; Gate: PASS, generated-by: inner-pvl: phase-4; see
+      `## Validate Contract` below)
+- [x] 5. EXECUTE — Steps A–D of the Implementation Checklist done; per-section test gates (A6, B3,
+      C9, D4) run and green (DONE 22-09-26 — A6/B3/C9/D4 all green: `pnpm test` 406 tests/30 files,
+      `pnpm test:e2e` 93 passed incl. 17 new `dashboards-production` gates, `pnpm lint` + `pnpm build`
+      clean, Agent-Probe visual check done at 1440px + 390px + drilldown. D2/D3 (append-only edits to
+      `auth-guard-coverage.test.ts` and `all-context.md`) deliberately NOT made by this agent — the
+      run's task explicitly reserved both shared files for the combined closeout agent; see the phase
+      report's Deviations section.)
+- [x] 6. EVL — vc-tester: one independent re-run cycle (22-09-26), re-executing every gate in
+      Verification Evidence rather than trusting EXECUTE's own report. `gates_green: true` — all
+      Fully-Automated, Hybrid, and Agent-Probe gates passed on the first cycle, zero fix cycles
+      needed. EVL HANDOFF SUMMARY written. See the phase report's `## EVL Results`.
+- [x] 7. UPDATE PROCESS — phase report finalized (EVL Results/SPEC Achievement/USER-RUN Items/
+      Closeout Packet appended), umbrella `## Current Execution State` and registry Status Ledger
+      updated (Phase 4 row), `auth-guard-coverage.test.ts` and `all-context.md` appended (D2/D3,
+      combined closeout agent, 22-09-26). Commit deferred to the git agent per this run's
+      instruction.
 
 **Validate-contract required before execute.** If step 4 (PVL) is unchecked or `## Validate Contract`
 below reads "(placeholder — vc-validate-agent writes this section before EXECUTE)", the orchestrator
@@ -645,62 +731,94 @@ instructions / Test gates sections is treated as a placeholder.
 ## Validate Contract
 
 Status: PASS
-Date: 18-09-26
-date: 2026-09-18
-generated-by: outer-pvl
+Date: 22-09-26
+date: 2026-09-22
+generated-by: inner-pvl: phase-4
+supersedes: 2026-09-18 (outer-pvl) — inner PVL has current evidence
 
 Parallel strategy: sequential (single-agent inline fan-out)
-Rationale: Signal score 2/7 (S4 phase-program classification, S7 9+ files in blast radius) —
-MEDIUM band would normally recommend parallel Layer-1/Layer-2 subagents, but this specific PVL run
-was explicitly directed to perform the dimension fan-out inline within one agent invocation
-(no user menu, automatic mode). All 4 Layer-1 dimensions and the Layer-2 per-section feasibility
-checks below were performed directly against the real repo file tree, the SPEC, the umbrella plan,
-the blast-radius registry, and the tested data dictionary — not spawned as separate subagents.
+Rationale: Signal score 2/7 (S4 phase-program classification, S7 12 files in blast radius) —
+MEDIUM band would normally recommend parallel Layer-1/Layer-2 subagents, but this run was directed
+to run in automatic mode with no user menu, matching the prior outer-PVL pass's own precedent
+(inline fan-out within one agent invocation). All 4 Layer-1 dimensions and the Layer-2 per-section
+feasibility checks below were re-run directly against the real repo file tree (confirming the
+RESEARCH findings recorded in the `## Inner Loop Refresh Note`), the SPEC, the umbrella plan, the
+blast-radius registry, and the tested data dictionary — not spawned as separate subagents.
 
-Plan updates applied (all fixed in-plan during this PVL pass — 8 edits, see git diff on this file):
-1. Step D1 + D4 + Verification Evidence: replaced `pnpm test:e2e --grep dashboards-production` with
-   `pnpm test:e2e -- e2e/dashboards-production.spec.ts` everywhere. Playwright's `--grep` filters on
-   test TITLE text, not filename — since no test in this repo's e2e suite titles itself with a
-   feature-slug string, `--grep dashboards-production` would have matched ZERO tests. The file-path
-   invocation mirrors Phase 2/3's own already-written commands (`pnpm test:e2e -- dashboards-sales.spec.ts`
-   / `-- dashboards-purchase.spec.ts`).
-2. AC13 (mobile card view): removed the `--project=mobile` assumption. The `mobile` Playwright
-   project's `testMatch: /mobile\.spec\.ts/` regex only matches the literal file `mobile.spec.ts` —
-   it would never pick up `dashboards-production.spec.ts`. Reused Phase 2's own PVL-resolved fix
-   (documented in Phase 2's `## Registry Change Requests`, written for Phase 3/4 to reuse): an
-   in-file `test.use({ viewport: { width: 390, height: 844 } })` override under the default
-   `chromium` project, no `playwright.config.ts` edit.
-3. Added a `## Registry Change Requests` section documenting the above (mirrors Phase 2/3's own
-   section, explicitly "none required" with the resolution recorded).
-4. Updated the inline `registry_change_requests:` note under Blast Radius to point at the new
-   section instead of the stale "none identified" text.
-5. Corrected the MO status-derivation caveat: the plan claimed `tbl_MoHdr.IsClosed` is "NULL when
-   open, not 0" as a `tbl_MoHdr` fact — the tested fixture data (data dictionary §63 /
-   `erp-domain-discovery_REF_18-09-26.md:705`) actually shows `IsClosed = 0` (not NULL) on all 3
-   known MO rows. That NULL-when-open behavior is proven only for `tbl_PurchaseOrderHdr.IsClosed`.
-   Reworded to keep `ISNULL(IsClosed, 0)` as a forward-looking defensive precaution (harmless
-   either way) rather than a misattributed claim about `tbl_MoHdr`'s own tested data.
-6. Added `TRIM()` to both sides of the `material-issues.sql` MO↔InventoryFlowDtl string-match join
-   (`WHERE TRIM(d.MONo) = TRIM(@moNumBer)`) — the Risks table already promised this exact mitigation
-   ("add a defensive TRIM() in the SQL") but the shown "exact query to implement" had omitted it.
-   SQL Server 2019 (db_TCL's confirmed version) supports single-argument `TRIM()` (added in 2017).
-7. Strengthened checklist item B2 to explicitly require a third fixture case (whitespace-padded
-   `MONo` still resolves via the new `TRIM()` guard) — closing the loop between the Risks table's
-   mitigation promise and the actual test checklist, which previously only covered the ≥1-linked-row
-   and zero-linked-row cases.
-8. (This entry.) All edits are text-only, additive, and stay within this phase's owned plan file —
-   no other phase's file was touched.
+**Why re-validation triggered:** the `## Inner Loop Refresh Note` (dated 22-09-26) postdates the
+prior outer-PVL contract (`date: 2026-09-18`), so inner R+I ran since the last contract was written
+— per the Phase Program Pre-Routing Check Step 4b, PVL re-runs from V1 before EXECUTE. V1's
+structural checks (plan-artifact validator, file-path existence via scout-equivalent checks,
+registry BLOCKED scan) all passed cleanly; V2-V4 below re-confirm PASS as expected — the refresh
+only resolved two already-anticipated decision points (C5 route shape, E4 chart tech) and found
+zero drift, exactly as the Refresh Note predicted.
 
-Execute-agent instructions:
+Plan updates applied this cycle (1 edit — text-only, additive, stays within this phase's owned plan
+file):
+1. Corrected an inaccurate claim in the Data/SQL Details intro: the plan previously stated queries
+   use "WITH (NOLOCK) per the umbrella's RCSI-off / read-only convention," but (a) neither SQL
+   sample in the plan actually carries a `WITH (NOLOCK)` hint, (b) the umbrella plan does not
+   document any "RCSI-off" convention anywhere in its text (confirmed via grep — zero matches), and
+   (c) Phase 2's own delivered, VERIFIED SQL files (`db/erp-queries/sales/*.sql`) likewise carry no
+   locking hint. Reworded to state plainly that no explicit locking hint is added, this mirrors
+   Phase 2's precedent, and `guardedQuery`'s read-only enforcement — not a locking hint — is the
+   actual security/correctness boundary. This is a documentation-accuracy fix only; it does not
+   change any SQL query text, test, or behavior.
+
+Confirmed unchanged from the prior outer-PVL pass (re-verified against the current repo state, not
+re-applied): the 8 plan-text fixes from the 18-09-26 outer-PVL pass (file-path e2e invocation,
+mobile-viewport in-file override, Registry Change Requests section, IsClosed caveat correction,
+TRIM() guard, B2 fixture-case strengthening) are all still present in the plan file and still
+accurate against the current repo — no regression found.
+
+RESEARCH/INNOVATE re-confirmation (this PVL pass independently re-checked every claim in the Inner
+Loop Refresh Note against the live repo, not just trusted the note's prose):
+- `src/lib/erp/{erp-adapter,pool,cache,degrade,resolve-erp-database-url}.ts` all exist;
+  `guardedQuery` is exported from `erp-adapter.ts` exactly as this plan assumes.
+- `src/components/dashboard-data-table.tsx` exports `DataTableColumn`/`DataTableRow`/
+  `DashboardDataTableProps` (columns/rows/basePath/searchParams/sort/page/pageSize/totalRows/
+  mobileTitleKey/emptyText) — matches Steps C1/C8's assumed usage exactly, zero divergence.
+- `src/components/pilot-banner.tsx` (`PilotBanner({ className })`) and
+  `src/components/degrade-banner.tsx` (`DegradeBanner({ state, className })`) signatures confirmed
+  exactly as planned.
+- `src/lib/sales-chart-scale.ts` exists and exports `niceTicks`/`barHeightPx` (px-scale helper) —
+  confirmed reusable for Step C1's chart per the Refresh Note's recommendation.
+- `playwright.config.ts`'s `mobile` project `testMatch` regex is
+  `/mobile\.spec\.ts|dashboards-nav-visibility\.spec\.ts/` (confirmed current text) — still does
+  NOT match `e2e/dashboards-production.spec.ts`, so the plan's in-file `test.use({ viewport })`
+  override (Step D1, Registry Change Requests) remains the correct, necessary approach; the exact
+  same pattern is confirmed already implemented and passing in `e2e/dashboards-sales.spec.ts`
+  (Phase 2, VERIFIED).
+- `package.json` scripts `test` (`vitest run`) and `test:e2e` (`playwright test`) confirmed present
+  — every Fully-Automated command in this contract's Test Gates table is runnable as written.
+- `phase-blast-radius-registry.md`: Phase 1 `status: DONE`; Phase 2 `status: DONE ... VERIFIED`; no
+  `BLOCKED-skipped` entry anywhere in the Status Ledger — Phase 4's Entry Gate is satisfied and no
+  Dependency-BLOCKED guard trips.
+- No file under this phase's owned paths exists yet on disk (`src/app/(main)/dashboards/production/**`,
+  `db/erp-queries/production/*`, `db/erp-fixture/production-seed.sql`) — correct and expected
+  pre-EXECUTE state, confirms no partial/stale execution artifact could confuse a fresh EXECUTE
+  agent.
+- `erp_fixture`'s current fixture files are `00-schema.sql`, `01-seed.sql` (Phase 1 base),
+  `sales-seed.sql` (Phase 2) — `tbl_MoHdr`/`tbl_BatchOrder`/`InventoryFlowHdr`/`InventoryFlowDtl` do
+  not exist yet, confirming the Refresh Note's finding that Step A requires
+  `production-seed.sql` to `CREATE TABLE IF NOT EXISTS` these tables itself (already anticipated in
+  Touchpoints — no plan gap).
+- No `## Phase Ordering` or `## Pre-PVL Conflict Resolution` section exists in this plan file —
+  both V1 checks are N/A for this phase plan.
+
+Execute-agent instructions (carried forward from the prior contract; E3/E4 now reflect the resolved
+INNOVATE decisions verbatim, unchanged in substance from the Inner Loop Refresh Note's own wording):
 | # | Instruction | Trigger condition |
 |---|---|---|
-| E1 | Confirm Phase 1's actually-delivered `dashboard-data-table` component prop shape (sort/paginate/mobile-card contract) before Step C1. If it diverges from this plan's assumed usage, adapt without expanding scope and document the divergence in the phase report — do not edit Phase 1's owned component file. | Start of Step C1 |
-| E2 | If `erp_fixture` lacks a needed edge-case row at EXECUTE time (whitespace-padded `MONo`, a second FG item sharing `MainUnits`, or a zero-linked-material-issue MO beyond what Phase 1 already seeded) route the gap back to Phase 1 via PLAN-SUPPLEMENT — never seed it directly into Phase 1's base fixture file or edit `production-seed.sql` to fabricate data outside documented fixture-representative values. | Steps A5/B1/B2 |
-| E3 | Complete the C5 INNOVATE decision (nested route vs. expand) and record the Decision Summary (chosen approach + rejected alternative) in the phase report BEFORE writing the drilldown component — do not silently default to nested-route without recording the decision. | Before Step C5 |
-| E4 | Read Phase 2's phase report to confirm whether its Recharts spike passed/failed before deciding CSS-bars-vs-Recharts for Step C1's chart. Never edit `package.json` regardless of the outcome — that decision belongs exclusively to Phase 2. | Before Step C1 |
-| E5 | Re-run `node .claude/skills/vc-generate-plan/scripts/validate-plan-artifact.mjs` on this plan file if any further plan edits are made during RESEARCH/INNOVATE (Steps 1-2) before the inner-PVL re-validation — confirm 0 failures before proceeding to PLAN-SUPPLEMENT. | Steps 1-3 |
+| E1 | Phase 1's `dashboard-data-table` component prop shape is CONFIRMED matching this plan's assumed usage (re-verified this cycle — no divergence). No action needed unless EXECUTE discovers a shape change since this validation. | Start of Step C1 |
+| E2 | If `erp_fixture` lacks a needed edge-case row at EXECUTE time (whitespace-padded `MONo`, a second FG item sharing `MainUnits`, or a zero-linked-material-issue MO beyond what this phase's own `production-seed.sql` provisions) route the gap back to Phase 1 via PLAN-SUPPLEMENT for any shared/base-file need — never edit Phase 1's base fixture file or another phase's seed file directly. This phase's OWN `production-seed.sql` (self-provisioning `tbl_MoHdr`/`tbl_BatchOrder`/`InventoryFlowHdr`/`InventoryFlowDtl`, confirmed not yet created) is this phase's own file and may be edited directly. | Steps A3/A4/A5/B1/B2 |
+| E3 | C5 INNOVATE decision RESOLVED 22-09-26: nested route `[moNumber]/page.tsx` confirmed (no override). Restate this Decision Summary verbatim in the phase report at UPDATE PROCESS (chosen: nested route — bookmarkable URL, consistent with AC10/AC11 + existing `/orders/[id]` precedent; rejected: in-page expand/collapse — loses bookmarkability). | Before Step C5 |
+| E4 | RESOLVED 22-09-26: Phase 2's phase report confirms the Recharts spike was "not attempted" — Phase 2 delivered every chart form hand-rolled CSS/SVG, `package.json`/lockfile byte-unchanged, and explicitly recommends Phases 3/4 reuse that pattern. CSS bars confirmed for Step C1's chart — no live Recharts choice remains. Reuse `src/lib/sales-chart-scale.ts`'s `niceTicks`/`barHeightPx` px-scale helpers rather than percentage heights (Phase 2 found percentage heights caused a real zero-height-bar defect). Never edit `package.json`. | Before Step C1 |
+| E5 | Re-run `node .claude/skills/vc-generate-plan/scripts/validate-plan-artifact.mjs` on this plan file if any further plan edits are made during EXECUTE before EVL — confirm 0 failures. | Throughout EXECUTE |
+| E6 | No `WITH (NOLOCK)` hint is required or expected in `mo-list.sql`/`material-issues.sql` — this matches Phase 2's own VERIFIED SQL files. Do not add locking hints speculatively; `guardedQuery`'s read-only enforcement is the security boundary, not a locking hint. | Steps A3/A4 |
 
-Test gates (C3 5-column table):
+Test gates (C-4 5-column table — unchanged behaviors from the prior contract, re-verified runnable
+against the current repo/local `erp_fixture` sandbox only; none require db_TCL):
 
 | criterion id | behavior | strategy | proving test | gap-resolution |
 |---|---|---|---|---|
@@ -711,7 +829,7 @@ Test gates (C3 5-column table):
 | AC10-filter | Date-range/status filter round-trips via URL | Fully-Automated | `pnpm test:e2e -- e2e/dashboards-production.spec.ts` | A |
 | AC11-drilldown-nav | MO row click navigates to material-issue list | Fully-Automated | `pnpm test:e2e -- e2e/dashboards-production.spec.ts` | A |
 | AC12-sort-paginate | Table sort + pagination without losing filters | Fully-Automated | `pnpm test:e2e -- e2e/dashboards-production.spec.ts` | A |
-| AC13-mobile-card | Phone-width (390x844) renders card list, not table (in-file viewport override, no playwright.config.ts edit) | Fully-Automated | `pnpm test:e2e -- e2e/dashboards-production.spec.ts` | A |
+| AC13-mobile-card | Phone-width (390x844) renders card list, not table (in-file `test.use({viewport})` override, confirmed the `mobile` project's `testMatch` regex still does not pick up this spec file) | Fully-Automated | `pnpm test:e2e -- e2e/dashboards-production.spec.ts` | A |
 | AC7-visual-quality | Chart/tile rendering readability at desktop + mobile widths | Agent-Probe | Manual visual check before D4 | A |
 | harness-parity | Agent/skill parity unaffected by this phase's changes | Fully-Automated | `node .claude/skills/vc-audit-vc/scripts/validate-agent-parity.mjs` | A |
 | harness-context | Context-discovery routing unaffected | Fully-Automated | `node .claude/skills/vc-audit-context/scripts/validate-context-discovery.mjs` | A |
@@ -724,6 +842,11 @@ stub / named residual with written justification (both D rows already carry thei
 inline in the plan's own Data/SQL Details and Known-gap note — no separate backlog artifact
 required; both are explicitly out-of-this-phase's-scope findings, not silently-dropped coverage).
 
+**Local-fixture-only confirmation:** every Fully-Automated and Agent-Probe row above runs against
+`erp_fixture` (local Docker sandbox) or pure in-repo logic — zero rows require db_TCL. The one
+db_TCL-adjacent row (`AC18-boot-probe`) is explicitly gap-resolution C, deferred to Phase 5, and
+carries no command for this phase to run.
+
 Legacy line form:
 - Production status/empty-state/drilldown logic: Fully-automated: `pnpm test production-status-derivation production-plan-only-empty-state production-material-issue-drilldown`
 - Production dashboard e2e (nav/filter/drilldown/sort/mobile): Fully-automated: `pnpm test:e2e -- e2e/dashboards-production.spec.ts`
@@ -732,34 +855,38 @@ Legacy line form:
 - Status-precedence real-world confidence: known-gap: documented in-plan (Risks + Known-gap note), no broader fixture data available yet
 
 Dimension findings:
-- Infra fit: PASS — after fix. `dashboard-data-table`/`Card`/`Chip`/`be-date` imports match Phase
-  1's documented shapes; the mobile-viewport e2e gate now correctly avoids the `mobile` project's
-  narrow `testMatch` regex (fixed via in-file viewport override, reusing Phase 2's precedent).
-- Test coverage: PASS — after fix. All Fully-Automated commands are now syntactically valid and
-  will actually select tests (verified `--grep`'s title-only matching against real spec-file naming
-  conventions in this repo; verified `--project` flag support via `playwright test --help`). Tier
-  assignments follow the waterfall correctly; both Known-Gap rows carry written justification
-  (no high-risk class is present in this phase's scope, so no hybrid-minimum is violated).
+- Infra fit: PASS — re-confirmed this cycle. `dashboard-data-table`/`Card`/`Chip`/`be-date`/
+  `sales-chart-scale` imports all match Phase 1/2's actually-delivered shapes (verified by reading
+  the real files, not re-trusting the prior contract's claims); the mobile-viewport e2e gate
+  correctly avoids the `mobile` project's narrow `testMatch` regex, confirmed against the current
+  `playwright.config.ts` text (which now also lists `dashboards-nav-visibility.spec.ts` — an
+  unrelated Phase 1/2 addition that does not affect this phase).
+- Test coverage: PASS — all Fully-Automated commands are syntactically valid and confirmed
+  runnable (`pnpm test`/`pnpm test:e2e` scripts exist in `package.json`; validator scripts exist on
+  disk at their cited paths). Tier assignments follow the waterfall correctly; both Known-Gap rows
+  carry written justification; no high-risk class applies to this phase's scope, so no hybrid
+  minimum is violated. Every gate runs against the local `erp_fixture` sandbox or pure in-repo
+  logic — none require db_TCL (explicit HARD RULE from this run's task compliance-checked).
 - Breaking changes: PASS — no existing route, schema, auth signature, or print surface is touched;
-  new exported functions (`getProductionMoList`/`getMaterialIssuesForMo`) are additive and consumed
-  only by this phase and, later, Phase 5 (documented contract, plain-object return shape).
+  `prisma/schema.prisma` untouched; new exported functions (`getProductionMoList`/
+  `getMaterialIssuesForMo`) remain additive, consumed only by this phase and, later, Phase 5.
 - Security surface: PASS — strictly read-only via Phase 1's inherited `guardedQuery` choke point
-  (hard entry-gate dependency, correctly gated); no auth/secret/trust-boundary logic is added by
-  this phase; no money data exists in this phase's scope (explicitly and correctly noted for
-  Phase 5's cross-dashboard audit).
-- Section A (pure logic + data-fetch): PASS — mechanically feasible; `deriveMoStatus()` signature
-  and TDD-first ordering (A2 before A1) are sound; no gaps or conflicts found.
-- Section B (fixture tests): PASS — mechanically feasible, conditioned on Phase 1's `erp_fixture`
-  seed covering the documented edge cases; correctly routes any gap back to Phase 1 via
-  PLAN-SUPPLEMENT (E2 above) rather than editing Phase 1's owned seed file.
-- Section C (page UI): PASS — mechanically feasible; the C5 nested-route-vs-expand decision is
-  correctly deferred to this phase's own INNOVATE step (E3 above) rather than pre-decided without
-  a Decision Summary. Highest-risk edit: C2 (structurally preventing a numeric prop from ever
-  reaching the "actual produced" cell) — already the plan's own primary mitigation for the
-  single highest-value risk (confusing planned-with-actual).
-- Section D (e2e + shared-file appends): PASS — after fix (see Plan updates applied #1-2, #7).
-  Append-only edits to `auth-guard-coverage.test.ts` and `all-context.md` correctly follow the
-  registry's non-overlap rule.
+  (confirmed exported and unchanged); no auth/secret/trust-boundary logic added; no money data in
+  this phase's scope; `production-seed.sql`'s table self-provisioning targets only the local
+  `erp_fixture` sandbox DB (never db_TCL, never `.env`), so it does not trigger the schema/
+  migration high-risk class (that class concerns the app's real/production schema, not a disposable
+  local test fixture).
+- Section A (pure logic + data-fetch): PASS — mechanically feasible; no change from prior contract.
+- Section B (fixture tests): PASS — mechanically feasible; confirmed `production-seed.sql` must
+  self-provision `tbl_MoHdr`/`tbl_BatchOrder`/`InventoryFlowHdr`/`InventoryFlowDtl` (already
+  anticipated in Touchpoints, not a new gap); correctly routes any shared/base fixture gap to Phase
+  1 via PLAN-SUPPLEMENT (E2).
+- Section C (page UI): PASS — the C5 nested-route decision and E4 chart-tech decision are now both
+  RESOLVED (per the Inner Loop Refresh Note), removing the prior contract's two open INNOVATE
+  branches; Step C1 can proceed without a live decision to make at EXECUTE time.
+- Section D (e2e + shared-file appends): PASS — no change from prior contract; append-only edits to
+  `auth-guard-coverage.test.ts` and `all-context.md` correctly follow the registry's non-overlap
+  rule.
 
 Open gaps: none unresolved. Two named residuals carried forward as Known-Gap (status-precedence
 real-world confidence; FG-receipt-into-stock ledger signal) — both already documented in-plan with
@@ -782,9 +909,13 @@ What this coverage does NOT prove:
   nothing about this phase's own dashboard logic.
 - Neither Known-Gap row (status-precedence confidence; FG-receipt signal) has, or can have within
   this phase's scope, an automated proof — both are explicitly named, not silently dropped.
+- This re-validation confirms text/contract/registry consistency and file existence; it does NOT
+  execute any of this phase's own not-yet-created files (they do not exist yet, by design,
+  pre-EXECUTE) — the actual test gates above will run for real the first time during EXECUTE/EVL.
 
-Gate: PASS (no FAILs, no unresolved CONCERNs — 8 plan-text fixes applied in this PVL pass;
-2 named Known-Gap residuals carried forward with written justification per the vacuous-green
-ban's exception, not blocking PASS)
+Gate: PASS (no FAILs, no unresolved CONCERNs — 1 text-accuracy fix applied this cycle; 2 named
+Known-Gap residuals carried forward with written justification per the vacuous-green ban's
+exception, not blocking PASS; both INNOVATE decision points from the prior contract are now
+resolved, removing 2 open items)
 Accepted by: N/A — Gate is PASS; no CONCERNs required acceptance. The 2 Known-Gap rows are named
 residuals with in-plan written rationale, not accepted concerns.

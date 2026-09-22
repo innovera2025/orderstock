@@ -15,7 +15,7 @@ metadata:
 **Umbrella plan:** `process/features/erp-dashboards/active/erp-dashboards_18-09-26/erp-dashboards-umbrella_PLAN_18-09-26.md`
 **SPEC (frozen, governs this phase — do not edit):** `process/features/erp-dashboards/active/erp-dashboards_18-09-26/erp-dashboards_SPEC_18-09-26.md`
 **Registry (owned-path source of truth — do not edit; only append your own status):** `process/features/erp-dashboards/active/erp-dashboards_18-09-26/phase-blast-radius-registry.md`
-**Phase status:** ⏳ PLANNED
+**Phase status:** 🔄 EXECUTE COMPLETE — awaiting EVL
 **Report destination:** `process/features/erp-dashboards/active/erp-dashboards_18-09-26/phase-03-purchase-dashboard_REPORT_18-09-26.md` (flat in the program task folder)
 **Complexity:** COMPLEX
 **Date**: 18-09-26
@@ -315,6 +315,13 @@ that is a follow-up PLAN-SUPPLEMENT to this phase, not a Phase-3 EXECUTE-time ju
 - `db/erp-queries/purchase/*.sql` (new — 5 files: `total-invoice-basis.sql`,
   `total-po-committed-basis.sql`, `supplier-breakdown.sql`, `po-list.sql`, `po-lines.sql`,
   `po-received.sql`) — 6 files total, versioned and reviewable by KRS's ERP team
+- `src/lib/purchase-sql.ts` (new — **\[PVL fix, 22-09-26\]** embedded, byte-identical TS string
+  constants mirroring the 6 files above, exactly the `src/lib/sales-sql.ts` pattern Phase 2 already
+  proved out. Required, not stylistic: `next.config.ts` sets `output: "standalone"` and the
+  production Dockerfile's COPY list excludes `db/`, so a runtime `fs.readFileSync` against
+  `db/erp-queries/purchase/*.sql` would work in dev/`pnpm start` and then silently 500 ONLY in the
+  production container — a break no other gate in this repo would catch. `purchase-data.ts` (below)
+  imports these constants; it never reads a `.sql` file at runtime.)
 - `src/lib/__tests__/purchase-status.test.ts` (new)
 - `src/lib/__tests__/purchase-received.test.ts` (new)
 - `src/lib/__tests__/purchase-dual-basis.test.ts` (new)
@@ -322,7 +329,7 @@ that is a follow-up PLAN-SUPPLEMENT to this phase, not a Phase-3 EXECUTE-time ju
 - `process/features/erp-dashboards/active/erp-dashboards_18-09-26/phase-03-purchase-dashboard_REPORT_18-09-26.md` (new, at UPDATE-PROCESS)
 
 **Shared files touched (append-only per registry rule):**
-- `src/lib/__tests__/auth-guard-coverage.test.ts` — append ONLY a new `DASHBOARD_PAGES` entry (or
+- `src/lib/__tests__/auth-guard-coverage.test.ts` — append ONLY to the existing `ERP_DASHBOARD_PAGES` array (confirmed real, created by Phase 2 in `auth-guard-coverage.test.ts` ~line 160) — do NOT create a new array (or
   extend an existing one Phase 1/Phase 2 may have already started — check RESEARCH-time state
   first) for `src/app/(main)/dashboards/purchase/page.tsx` and
   `src/app/(main)/dashboards/purchase/[poNo]/page.tsx`, mirroring the existing `PRINT_PAGES`
@@ -386,6 +393,12 @@ those files are Phase-1-owned and this phase only imports them.
   under a clearly-commented "Phase 3 fixture additions" block — never editing Phase 1's existing
   rows, only appending new ones. If Phase 1's seed file structure does not support additive rows
   cleanly, route this as a PLAN-SUPPLEMENT back to Phase 1 instead of forcing an edit.
+- **INNOVATE-resolved (22-09-26):** the fixture MUST include one `InventoryFlowHdr` row with
+  `IsClosed IS NULL` (mirroring the same edge case already required for `PurchaseOrderHdr`).
+  `po-received.sql` is written LITERALLY (bare `h.IsClosed <> 1`, no `ISNULL(...)` wrapper) to
+  match the ERP's own `sp_Popending` source verbatim — a NULL row is therefore expected to be
+  silently excluded from `received_qty` (real ERP report behavior, not a bug). Step A2/B1 must
+  add a test case asserting this literal (exclusion) behavior, not a defensive-NULL-safe one.
 
 ---
 
@@ -393,77 +406,89 @@ those files are Phase-1-owned and this phase only imports them.
 
 ### Step A — Data layer (pure logic first, TDD)
 
-- [ ] A1. Write `src/lib/purchase-calc.ts`: `derivePoStatus()`, `computeOutstanding(orderedQty,
+- [x] A1. Write `src/lib/purchase-calc.ts`: `derivePoStatus()`, `computeOutstanding(orderedQty,
   receivedQty)`, `aggregateSupplierBreakdown(rows)`. Pure functions, no imports beyond types.
-- [ ] A2. Write the 3 pure-logic test files (`purchase-status.test.ts`, `purchase-received.test.ts`,
+- [x] A2. Write the 3 pure-logic test files (`purchase-status.test.ts`, `purchase-received.test.ts`,
   `purchase-dual-basis.test.ts`) FIRST as failing tests (red), covering: the `IsClosed IS NULL`
   edge case, an over-received line (negative outstanding), a cancelled PO short-circuiting every
   other flag, and a supplier-breakdown aggregation over ≥2 suppliers with tie-breaking by
   `SupplierCode` ascending (deterministic sort, mirrors `topShops`' tie-break convention).
-- [ ] A3. Implement until A2's tests are green.
+- [x] A3. Implement until A2's tests are green.
 
 ### Step B — ERP query + fetch layer
 
-- [ ] B1. Write the 6 SQL files under `db/erp-queries/purchase/*.sql` exactly as specified in Data
+- [x] B1. Write the 6 SQL files under `db/erp-queries/purchase/*.sql` exactly as specified in Data
   / SQL Details above (column names for `po-lines.sql`/`po-list.sql` were corrected at PVL,
   18-09-26 — see the inline `[PVL fix, 18-09-26]` notes in that section); do one final spot-check
   of `PurchaseOrderDtl.Number`/`PurchaseOrderHdr.PODate` against the live `erp_fixture` schema
-  once Phase 1 provisions it, before finalizing `po-lines.sql`/`po-list.sql`.
-- [ ] B2. Write `src/lib/purchase-data.ts`: functions `getPurchaseTotals()`,
-  `getSupplierBreakdown()`, `getPoList(filters)`, `getPoDetail(poNo)` — each loads its `.sql` file,
-  calls Phase 1's `guardedQuery`, and returns typed rows. Every function wraps its call in Phase
-  1's cache/degrade helper per the established contract (confirm exact function names/signatures
+  once Phase 1 provisions it, before finalizing `po-lines.sql`/`po-list.sql`. **\[PVL fix,
+  22-09-26\]** Immediately after, paste each file's exact text into a matching string constant in
+  the new `src/lib/purchase-sql.ts` (see Blast Radius) — this is the same required step Phase 2
+  took for `src/lib/sales-sql.ts`, not an optional add-on.
+- [x] B2. Write `src/lib/purchase-data.ts`: functions `getPurchaseTotals()`,
+  `getSupplierBreakdown()`, `getPoList(filters)`, `getPoDetail(poNo)` — each imports its query text
+  as a named constant from `src/lib/purchase-sql.ts` (**\[PVL fix, 22-09-26\]** — never a runtime
+  `fs.readFileSync` against `db/erp-queries/purchase/*.sql`, per Blast Radius above), calls Phase
+  1's `guardedQuery`, and returns typed rows. Every function wraps its call in Phase 1's
+  cache/degrade helper per the established contract (confirm exact function names/signatures
   during RESEARCH — do not guess if they differ from this plan's placeholders).
-- [ ] B3. Confirm (via a scratch/manual run against `erp_fixture`, not committed) that
+- [x] B3. Confirm (via a scratch/manual run against `erp_fixture`, not committed) that
   `total-invoice-basis.sql` and `total-po-committed-basis.sql` reproduce the fixture-equivalent
   values seeded by Phase 1 (or seeded by this phase per DB Safety Notes if a needed edge case is
   missing).
+- [x] B4. **\[PVL fix, 22-09-26\]** Add a drift-assertion `describe` block to
+  `purchase-dual-basis.test.ts` mirroring `sales-basis-reconciliation.test.ts`'s "embedded Sales
+  SQL matches db/erp-queries/sales/*.sql" block exactly: for each of the 6 files, assert the
+  `src/lib/purchase-sql.ts` constant is byte-identical to the on-disk file (`readFileSync` +
+  `toBe`), assert it is a single read-only `SELECT`/`WITH` statement with no write keyword, and
+  assert no value is string-concatenated (no `' +` / `${` in the embedded text) — see Test gates
+  table row `AC-sql-drift` below.
 
 ### Step C — Pages and components
 
-- [ ] C1. Write `src/app/(main)/dashboards/purchase/page.tsx`: `requireAuth()` (no role — ADMIN
+- [x] C1. Write `src/app/(main)/dashboards/purchase/page.tsx`: `requireAuth()` (no role — ADMIN
   and STAFF both open the page), `export const dynamic = "force-dynamic"`, `searchParams:
   Promise<{ from?; to?; supplier?; status?; sort?; page? }>` (Next 16 async-searchParams
   convention, per `orders/page.tsx`'s existing pattern), compute `canSeeMoney = role ===
   "ADMIN"`, render pilot banner + degraded-mode banner (conditionally) + 4 KPI tiles (`Card`
   primitive) + `purchase-chart.tsx` + `purchase-filters.tsx` + the shared data-table component fed
   a money-stripped row shape when `!canSeeMoney`.
-- [ ] C2. Write `src/app/(main)/dashboards/purchase/[poNo]/page.tsx`: same auth/dynamic pattern,
+- [x] C2. Write `src/app/(main)/dashboards/purchase/[poNo]/page.tsx`: same auth/dynamic pattern,
   fetches one PO's header + lines, renders header info + PO-lines table (money-stripped for
   Staff).
-- [ ] C3. Write `purchase-filters.tsx` (client component): supplier `<select>` + status `<select>`
+- [x] C3. Write `purchase-filters.tsx` (client component): supplier `<select>` + status `<select>`
   + from/to date inputs, `useRouter().push` on change, mirrors `shop-location-filter.tsx`'s
   controlled-value + URL-navigate pattern exactly.
-- [ ] C4. Write `purchase-chart.tsx` (server component): CSS-bar rendering, money-gated per
+- [x] C4. Write `purchase-chart.tsx` (server component): CSS-bar rendering, money-gated per
   Charting Decision — when `!canSeeMoney`, render the fallback list (supplier + PO count, no
   bar/value) instead of bars.
-- [ ] C5. Confirm the shared `dashboard-data-table.tsx` component (Phase 1) supports: sort-column
+- [x] C5. Confirm the shared `dashboard-data-table.tsx` component (Phase 1) supports: sort-column
   toggling via searchParam, page navigation via searchParam, a mobile card-mode render — read its
   actual prop contract during RESEARCH (do not assume a shape not yet built by Phase 1) and adapt
   Step C1/C2's usage to match exactly.
 
 ### Step D — Money gating
 
-- [ ] D1. Verify every money-bearing field (`total_invoice_basis`, `total_po_committed`, PO list
+- [x] D1. Verify every money-bearing field (`total_invoice_basis`, `total_po_committed`, PO list
   `amount`, PO-lines `price`/`amount`) is OMITTED from the data object passed to a Staff-rendered
   page/component — never merely CSS-hidden. Write this as an explicit code comment at each strip
   point citing AC9.
-- [ ] D2. Add a Staff-role manual/agent-probe check (see Verification Evidence) confirming no
+- [x] D2. Add a Staff-role manual/agent-probe check (see Verification Evidence) confirming no
   money string/number appears anywhere in the rendered Staff HTML for both pages.
 
 ### Step E — Tests and e2e
 
-- [ ] E1. `e2e/dashboards-purchase.spec.ts`: nav to `/dashboards/purchase` (ADMIN), assert both KPI
+- [x] E1. `e2e/dashboards-purchase.spec.ts`: nav to `/dashboards/purchase` (ADMIN), assert both KPI
   tiles render with the two distinct basis labels and values matching the `erp_fixture` seed;
   assert Staff sees the page with money columns/tiles absent (server-rendered, not hidden);
   assert filter searchParam roundtrip (change supplier filter → URL updates → reload reproduces
   same filtered rows); assert drilldown navigation (breakdown row → filtered PO list → PO row →
   PO detail page with lines); assert sort/page on the PO list without losing the active filter;
-  assert mobile-card rendering on the `mobile` Playwright project (390×844).
-- [ ] E2. Run `pnpm test` — all new Vitest files green, no regression in existing suites.
-- [ ] E3. Run `pnpm test:e2e` — new spec green, no regression in existing specs (incl. the
+  assert mobile-card rendering via an in-file `test.use({ viewport: { width: 390, height: 844 } })` block within `dashboards-purchase.spec.ts` (mirrors `dashboards-sales.spec.ts`'s pattern) — NOT `--project=mobile`, which does not select this spec (see `playwright.config.ts`'s `mobile` project `testMatch` restriction).
+- [x] E2. Run `pnpm test` — all new Vitest files green, no regression in existing suites.
+- [x] E3. Run `pnpm test:e2e` — new spec green, no regression in existing specs (incl. the
   existing 3-tab `mobile.spec.ts` assertion, since this phase never touches the bottom tab bar).
-- [ ] E4. Run `pnpm lint` and `pnpm build` — both clean.
+- [x] E4. Run `pnpm lint` and `pnpm build` — both clean.
 
 ### Step F — Context + registry housekeeping (UPDATE-PROCESS)
 
@@ -511,7 +536,7 @@ those files are Phase-1-owned and this phase only imports them.
 pnpm test
 # Expected: all existing + new purchase-*.test.ts files pass, 0 regressions
 
-pnpm test:e2e -- dashboards-purchase.spec.ts
+pnpm exec playwright test dashboards-purchase.spec.ts
 # Expected: all Purchase e2e gates pass (KPI, status/caveat, money-gate, filter, drilldown, sort/page, mobile)
 
 pnpm lint && pnpm build
@@ -541,26 +566,57 @@ Orchestrator reads this before deciding which subagent to spawn next. The canoni
 loop `R → I → P → PVL → E → EVL → UP` SKIPS SPEC (the umbrella SPEC governs this phase; this plan
 does not write its own SPEC).
 
-- [ ] 1. RESEARCH — research-agent: confirm Phase 1's actual `guardedQuery`/cache/degrade/
-  data-table export names+signatures; confirm `PurchaseOrderDtl` line-ordering column; confirm
-  `erp_fixture` seed coverage for the `IsClosed IS NULL` and over-received edge cases; re-read
-  `erp-data-dictionary_REF_18-09-26.md` §B/§D for drift since 18-09-26; check plan drift against
-  this file.
-- [ ] 2. INNOVATE — innovate-agent: confirm or revise the Charting Decision above; confirm or
-  revise the SupplierCode-only display-label decision; write Decision Summary.
-- [ ] 3. PLAN-SUPPLEMENT — plan-agent: update this plan with RESEARCH/INNOVATE findings (real
-  export names, real ordering column, any fixture gaps), or mark "n/a — research clean" and tick
-  this box.
-- [x] 4. PVL — vc-validate-agent: full V1-V7 complete 18-09-26; Gate: PASS (2 mechanical
-  column-name errors found in Data/SQL Details were fixed in-plan during PVL — see `[PVL fix,
-  18-09-26]` notes; 0 unresolved CONCERNs remain). Validate-contract written below.
-- [ ] 5. EXECUTE — vc-execute-agent: Steps A-F above, per-section test gates green before moving
-  to the next step.
-- [ ] 6. EVL — vc-tester: independent re-run of every gate below (Verification Evidence),
-  regardless of what EXECUTE reported; follow-up stubs registered for any known gap; EVL HANDOFF
-  SUMMARY written.
-- [ ] 7. UPDATE PROCESS — phase report written, registry Status Ledger appended, umbrella
-  `## Current Execution State` rewritten, commit made.
+- [x] 1. RESEARCH — research-agent: confirmed 22-09-26. Phase 1/2 exit gates real and green;
+  `guardedQuery(pool, sql, params)` signature confirmed; cache/degrade/pool helper names confirmed;
+  `dashboard-data-table.tsx` prop contract confirmed (sort/page/mobile-card all supported
+  out-of-the-box); `sp_Popending` `Approved`/`IsClosed<>1` wording re-confirmed verbatim; 2 plan
+  bugs found (auth-guard array name, dead `--project=mobile` e2e gate) — both fixed in this
+  PLAN-SUPPLEMENT pass; 1 open judgment call flagged for INNOVATE (InventoryFlowHdr.IsClosed
+  NULL-safety) — see Inner Loop Refresh Note below.
+- [x] 2. INNOVATE — Charting Decision (hand-rolled CSS bars) and SupplierCode-only display-label
+  decision both re-confirmed unchanged — no new architecture options surfaced by research.
+  InventoryFlowHdr.IsClosed NULL-safety judgment call: decided to keep `po-received.sql` LITERAL
+  (bare `h.IsClosed <> 1`, matching the ERP's own `sp_Popending` source verbatim) rather than
+  adding `ISNULL(...)` defensively — rationale: E3 already forbids "fixing" `Approved`→`IsApproved`
+  on the same principle (reproduce the ERP's own report logic exactly, even where it may be lossy);
+  Step A2/B1 fixture design should add an `IsClosed IS NULL` `InventoryFlowHdr` row and let
+  `po-received.sql` drop it silently (matching real ERP behavior) — this is now a resolved decision,
+  not an open question. See Inner Loop Refresh Note.
+- [x] 3. PLAN-SUPPLEMENT — plan-agent: applied 2 gap fixes (auth-guard array name corrected to
+  `ERP_DASHBOARD_PAGES`; `--project=mobile` gate commands replaced with the in-file
+  `test.use({viewport})` pattern in 4 locations) + 1 INNOVATE decision recorded (InventoryFlowHdr
+  NULL-safety — keep literal). See Inner Loop Refresh Note below.
+- [x] 4. PVL — vc-validate-agent: outer PVL complete 18-09-26, Gate: PASS (2 mechanical
+  column-name errors fixed in-plan — see `[PVL fix, 18-09-26]` notes). Inner PVL re-run complete
+  22-09-26 after the Steps 1-3 supplement (Inner Loop Refresh Note dated 22-09-26 was newer than
+  the 18-09-26 contract, triggering re-validation per the standard rule): 1 additional structural
+  gap found and fixed in-plan (missing `src/lib/purchase-sql.ts` embedded-SQL module + drift test —
+  `next.config.ts`'s `output: "standalone"` build excludes `db/` from the production bundle, so
+  runtime file reads would break only in production) and 1 test-infra gap propagated from Phase 2
+  (`pnpm test:e2e -- <spec>` swallows its filter argument — all gate commands corrected to `pnpm
+  exec playwright test <spec>`) — see `[PVL fix, 22-09-26]` notes throughout. 0 unresolved CONCERNs
+  remain. Validate-contract rewritten below with `generated-by: inner-pvl: phase-3`.
+- [x] 5. EXECUTE — vc-execute-agent: complete 22-09-26. Steps A-E done (Step F is UPDATE-PROCESS
+  scope and, for the shared files F1/F2/F3/F5, is owned by the combined closeout agent this run —
+  see the phase report's Plan Deviations). All Fully-Automated + Hybrid gates green: `pnpm test`
+  382 passed / 30 files; `pnpm exec playwright test dashboards-purchase.spec.ts` 27 passed; full
+  `pnpm test:e2e` 119 passed / 0 failed (no regressions); `pnpm lint` + `pnpm build` clean; both
+  harness validators clean. Fixture reconciles EXACTLY to 461,140 (invoice basis) / 727,920 (PO
+  basis) / ช-001 635,000 + ว-001 92,920. Report:
+  `phase-03-purchase-dashboard_REPORT_22-09-26.md`.
+- [x] 6. EVL — vc-tester: 5 independent re-run cycles (22-09-26). All 8-9 Fully-Automated gates
+  (unit tests, SQL-drift assertion, harness validators, lint/build) re-confirmed green every
+  cycle. The 9 Hybrid/Agent-Probe gates (AC5-kpi, AC6-badge, AC9-13-purchase, AC6-badge-visual,
+  AC9-chart-fallback) could not be independently re-run in any cycle — env-blocked by the tester
+  session's own credential-access restriction (no code fix applicable; the EXECUTE session itself
+  ran all 27 Hybrid gates green with a live `erp_fixture` connection). Accepted as known-gap per
+  the plateau rule (5 cycles, identical block, zero code-level cause found); backlog stub
+  recorded. EVL HANDOFF SUMMARY: gates_green=false (env-blocked, not a defect). See
+  `purchase-evl-iteration-{001..006}_REPORT_22-09-26.md` and the phase report's `## EVL Results`.
+- [x] 7. UPDATE PROCESS — phase report finalized (EVL Results/SPEC Achievement/USER-RUN Items/
+  Closeout Packet appended), registry Status Ledger appended, umbrella `## Current Execution
+  State` rewritten, `auth-guard-coverage.test.ts` + `all-context.md` updated (combined closeout
+  agent, 22-09-26). Commit deferred to the git agent per this run's instruction.
 
 **Validate-contract required before execute.** If step 4 (PVL) is unchecked or `## Validate
 Contract` below still reads "(placeholder — vc-validate-agent writes this section before
@@ -576,6 +632,7 @@ against a placeholder contract.
 - `src/app/(main)/dashboards/purchase/purchase-filters.tsx` (new)
 - `src/app/(main)/dashboards/purchase/purchase-chart.tsx` (new)
 - `src/lib/purchase-calc.ts` (new)
+- `src/lib/purchase-sql.ts` (new — **[PVL fix, 22-09-26]**, embedded SQL constants, see Blast Radius)
 - `src/lib/purchase-data.ts` (new)
 - `db/erp-queries/purchase/total-invoice-basis.sql` (new)
 - `db/erp-queries/purchase/total-po-committed-basis.sql` (new)
@@ -617,16 +674,17 @@ against a placeholder contract.
 | `pnpm test` — `purchase-status.test.ts` (derivePoStatus, incl. `IsClosed IS NULL` + cancelled-short-circuits-all edge cases) | Fully-Automated | AC6 |
 | `pnpm test` — `purchase-received.test.ts` (computeOutstanding, incl. over-received negative case) | Fully-Automated | AC6 |
 | `pnpm test` — `purchase-dual-basis.test.ts` (aggregateSupplierBreakdown determinism + tie-break) | Fully-Automated | AC5 |
-| `pnpm test:e2e -- dashboards-purchase.spec.ts` — KPI tiles show both bases with correct fixture values | Hybrid (requires `erp_fixture` container running; deterministic once up) | AC5 |
-| `pnpm test:e2e -- dashboards-purchase.spec.ts` — PO status badge + unvalidated caveat render for every fixture PO, incl. the `IsClosed IS NULL` fixture row | Hybrid (requires `erp_fixture`) | AC6 |
-| `pnpm test:e2e -- dashboards-purchase.spec.ts` — Staff sees page with zero money strings in rendered HTML; Admin sees both totals | Hybrid (requires `erp_fixture`; DOM-string assertion is deterministic) | AC9 (Purchase) |
-| `pnpm test:e2e -- dashboards-purchase.spec.ts` — filter searchParam roundtrip (`?supplier=`, `?status=`, `?from=/&to=`) survives reload | Hybrid (requires `erp_fixture`) | AC10 (Purchase) |
-| `pnpm test:e2e -- dashboards-purchase.spec.ts` — supplier breakdown row → filtered PO list → PO row → PO detail lines | Hybrid (requires `erp_fixture`) | AC11 (Purchase) |
-| `pnpm test:e2e -- dashboards-purchase.spec.ts` — sort + page on PO list retains active filter | Hybrid (requires `erp_fixture`) | AC12 (Purchase) |
-| `pnpm test:e2e -- dashboards-purchase.spec.ts` (mobile project, 390×844) — PO list + PO lines render as card list | Hybrid (requires `erp_fixture`) | AC13 (Purchase) |
+| `pnpm exec playwright test dashboards-purchase.spec.ts` — KPI tiles show both bases with correct fixture values | Hybrid (requires `erp_fixture` container running; deterministic once up) | AC5 |
+| `pnpm exec playwright test dashboards-purchase.spec.ts` — PO status badge + unvalidated caveat render for every fixture PO, incl. the `IsClosed IS NULL` fixture row | Hybrid (requires `erp_fixture`) | AC6 |
+| `pnpm exec playwright test dashboards-purchase.spec.ts` — Staff sees page with zero money strings in rendered HTML; Admin sees both totals | Hybrid (requires `erp_fixture`; DOM-string assertion is deterministic) | AC9 (Purchase) |
+| `pnpm exec playwright test dashboards-purchase.spec.ts` — filter searchParam roundtrip (`?supplier=`, `?status=`, `?from=/&to=`) survives reload | Hybrid (requires `erp_fixture`) | AC10 (Purchase) |
+| `pnpm exec playwright test dashboards-purchase.spec.ts` — supplier breakdown row → filtered PO list → PO row → PO detail lines | Hybrid (requires `erp_fixture`) | AC11 (Purchase) |
+| `pnpm exec playwright test dashboards-purchase.spec.ts` — sort + page on PO list retains active filter | Hybrid (requires `erp_fixture`) | AC12 (Purchase) |
+| `pnpm exec playwright test dashboards-purchase.spec.ts` (in-file `test.use({viewport:390x844})` block, mirrors `dashboards-sales.spec.ts`; NOT `--project=mobile`) — PO list + PO lines render as card list | Hybrid (requires `erp_fixture`) | AC13 (Purchase) |
 | Manual agent-probe: visually confirm the unvalidated caveat badge is legible and always co-located with the status chip (never merged/ambiguous) on both `/dashboards/purchase` and `/dashboards/purchase/[poNo]` | Agent-Probe | AC6 (badge visibility/placement, judgment-only) |
 | Manual agent-probe: visually confirm the money-gated chart fallback (text list, no bars) renders sensibly for Staff, not a broken/empty chart shell | Agent-Probe | AC9 (Purchase, chart-specific) |
 | Known-gap: live reconcile of `total-invoice-basis.sql`/`total-po-committed-basis.sql` against real `db_TCL` and KRS's own `sp_PurchaseInvoiceMonth`/`sp_Popending` procs | Known-Gap — this phase proves correctness against `erp_fixture` only; the manual live-reconcile pass is explicitly Phase 5's scope, backlog stub required if Phase 5 has not yet run when this phase closes | (Phase-5-owned, not this phase's gate) |
+| `pnpm test` — `purchase-dual-basis.test.ts` "embedded Purchase SQL matches db/erp-queries/purchase/*.sql" block (**[PVL fix, 22-09-26]**, byte-identical + read-only + no-string-concat assertions, mirrors `sales-basis-reconciliation.test.ts`) | Fully-Automated | infra correctness (prevents a production-only `db/` read failure under `output: "standalone"`) |
 | `node .claude/skills/vc-audit-vc/scripts/validate-agent-parity.mjs` | Fully-Automated | harness regression gate |
 | `node .claude/skills/vc-audit-context/scripts/validate-context-discovery.mjs` | Fully-Automated | harness regression gate |
 | `pnpm lint` / `pnpm build` | Fully-Automated | no regression to existing surfaces |
@@ -642,41 +700,85 @@ gates alone; those gates prove correctness against the fixture, not against the 
 ## Resume and Execution Handoff
 
 - Selected plan file path: `process/features/erp-dashboards/active/erp-dashboards_18-09-26/phase-03-purchase-dashboard_PLAN_18-09-26.md`
-- Last completed step: Phase Loop Progress Step 4 (PVL) — outer PVL, Gate: PASS (18-09-26)
-- Validate-contract status: written 18-09-26 — Gate: PASS (see `## Validate Contract` below)
-- Next step for a fresh agent: confirm Phase 1's exit gate has actually passed (do not trust this
-  plan's placeholder assumptions about Phase 1's exports — re-verify against Phase 1's real
-  committed files), then spawn vc-research-agent for this phase's RESEARCH step (Step 1 in Phase
-  Loop Progress above).
-- vc-execute-agent may now be spawned once Phase 1's exit gate is confirmed — Phase Loop Progress
-  Step 4 (PVL) is checked and `## Validate Contract` below is a real, non-placeholder PASS
-  contract.
+- Last completed step: Phase Loop Progress Step 4 (PVL) — inner PVL, Gate: PASS (22-09-26,
+  re-validated after the Steps 1-3 supplement; supersedes the 18-09-26 outer-pvl contract)
+- Validate-contract status: written 22-09-26 — Gate: PASS (see `## Validate Contract` below)
+- Next step for a fresh agent: Phase 1 and Phase 2's exit gates are both confirmed DONE in the
+  registry Status Ledger; spawn vc-execute-agent directly against this plan (Phase Loop Progress
+  Step 5).
+- vc-execute-agent may now be spawned — Phase Loop Progress Step 4 (PVL) is checked and
+  `## Validate Contract` below is a real, non-placeholder PASS contract, `generated-by:
+  inner-pvl: phase-3`.
 
 ---
 
 ## Test Infra Improvement Notes
 
-(none identified yet)
+- **`pnpm test:e2e -- <spec>` swallows the `--` filter argument** (runs the FULL e2e suite instead
+  of the named spec) — discovered by Phase 2, propagated here as a backlog note for Phase 4. This
+  plan's own gate commands were corrected to `pnpm exec playwright test <spec>` during this PVL
+  pass (22-09-26) — see execute-agent instruction E5 and Plan updates applied.
+- **`ERP_DATABASE_URL` / `ERP_ALLOW_WRITE_CAPABLE_LOGIN` are not in `.env`** (by design — inline
+  shell env vars only, per the umbrella's hard rules) — every Hybrid gate below needs both set
+  before it can run; Phase 2's EVL Cycle 1 hit this env-blocked failure before Cycle 2 set them.
+  See execute-agent instruction E5.
 
 ---
 
 ## Validate Contract
 
 Status: PASS
-Date: 18-09-26
-date: 2026-09-18
-generated-by: outer-pvl
+Date: 22-09-26
+date: 2026-09-22
+generated-by: inner-pvl: phase-3
+supersedes: 2026-09-18 (outer-pvl) — inner PVL has current evidence (Inner Loop Refresh Note,
+2026-09-22, is newer than the prior outer-pvl contract date; full V1-V7 re-run per
+`orchestration.md`'s pre-routing check and V1 Step 4's Refresh-Note-date rule)
 
 Parallel strategy: sequential
-Rationale: Single-plan V1-V7 validate pass with 4 Layer-1 dimension checks + per-section Layer-2
-feasibility checks run inline by this agent (score 0-1 for this specific PVL task — one plan file,
-no live probes needed); the umbrella program itself will fan out P2/P3/P4 outer-PVL as an agent
-team once all three phase plans reach this same PVL step (see umbrella `Stable Program Goal`).
+Rationale: Signal score 1/7 for this PVL task (S4 phase-program classification present; S7 5+
+files in blast radius was true at the 18-09-26 outer pass and remains true — but S7 is folded into
+the same single-plan V1-V7 pass, not a separate fan-out). Nominal band is LOW-MEDIUM; Strategy-by-Fit
+overrides to **sequential**, one agent running the 4 Layer-1 dimension checks + per-section Layer-2
+feasibility checks inline: this is a single-plan re-validation with no live probes and no
+cross-plan coordination needed (the umbrella program's own P2/P3/P4 outer-PVL fan-out already
+completed prior to this inner cycle). Unchanged conclusion from the outer pass.
 
-Plan updates applied (6 fixes, all mechanical column-name corrections found during Layer-2 Data/SQL
-Details feasibility review, cross-checked against `erp-domain-discovery_REF_18-09-26.md`'s verified
-"Key columns" lists and drilldown SQL — none required a live-DB probe since the corrected names were
-already documented in already-loaded research):
+Plan updates applied — **this cycle (inner-PVL, 22-09-26)**, 2 gaps found by Layer-1/Layer-2 review
+of the Steps 1-3 supplement, both fixed in-plan (mechanical, no live probe needed — both precedents
+already exist and were read directly from committed Phase 2 files):
+
+7. **Infra-fit gap (structural, would have broken only in production):** the plan's Blast Radius /
+   Step B1-B2 described `purchase-data.ts` as loading `db/erp-queries/purchase/*.sql` files at
+   runtime, with no embedded-constants module. `next.config.ts` sets `output: "standalone"` and the
+   production Dockerfile's COPY list excludes `db/` — confirmed by reading Phase 2's own
+   `src/lib/sales-sql.ts` header comment, which documents this exact failure mode (works in dev/
+   `pnpm start`, 500s only in the container, no gate in this repo would catch it). Fixed: added
+   `src/lib/purchase-sql.ts` (embedded byte-identical SQL constants) to Blast Radius/Touchpoints,
+   updated Step B1/B2 to require embedding after writing each `.sql` file, added Step B4 (a
+   drift-assertion test block in `purchase-dual-basis.test.ts`, mirroring
+   `sales-basis-reconciliation.test.ts`'s "embedded Sales SQL matches db/erp-queries/sales/*.sql"
+   block byte-for-byte), and added the `AC-sql-drift` row to both the Test gates table and
+   Verification Evidence.
+8. **Test-coverage gap (propagated from Phase 2's own Test Infra Gaps Found):** every Hybrid gate's
+   proving-test command in this plan read `pnpm test:e2e -- dashboards-purchase.spec.ts` — Phase 2's
+   phase report documents that `pnpm test:e2e -- <spec>` silently swallows the `--` filter argument
+   and runs the FULL e2e suite instead of the named spec (a real, already-discovered vacuous-scope
+   risk, not a hypothetical). Fixed: replaced all 16 live occurrences (Exit Gate, Verification
+   Evidence ×7, Test gates table ×7, legacy line form ×1) with `pnpm exec playwright test
+   dashboards-purchase.spec.ts` — the exact form Phase 2's own report recommends and its EVL run
+   used successfully. Added execute-agent instruction E5 naming both this fix and the
+   `ERP_DATABASE_URL`/`ERP_ALLOW_WRITE_CAPABLE_LOGIN=1` inline-env precondition (Phase 2's EVL Cycle
+   1 was env-blocked before these were exported; Cycle 2 passed once set) so execute-agent does not
+   repeat either miss.
+
+Neither fix required a live-DB probe or new architecture decision — both were confirmed by reading
+already-committed Phase 1/Phase 2 source files and Phase 2's own phase report during this pass.
+
+**18-09-26 outer-PVL fixes (unchanged, retained for history — see the 18-09-26 contract this one
+supersedes for the original context)**, 6 mechanical column-name corrections found during that
+pass's Layer-2 Data/SQL Details feasibility review, cross-checked against
+`erp-domain-discovery_REF_18-09-26.md`'s verified "Key columns" lists and drilldown SQL:
 1. `po-lines.sql` — `Qty`/`UnitPrice`/`Amount` did not exist on `PurchaseOrderDtl`; corrected to
    `MainQuantity AS Qty`, `MainUnitPrice AS UnitPrice`, `TotalPrice AS Amount`.
 2. `po-lines.sql` — `ORDER BY Slno` was wrong (`Slno` belongs to `tbl_PoAmend`, not
@@ -694,12 +796,12 @@ already documented in already-loaded research):
 6. Risk table row updated to reflect the resolved column-name risk (was MED likelihood/unconfirmed;
    now LOW likelihood/cited).
 
-No other Data/SQL Details query needed correction — `total-invoice-basis.sql` (461,140),
-`total-po-committed-basis.sql` (727,920), `supplier-breakdown.sql` (ช-001 635,000 / ว-001 92,920,
-which sums to 727,920 — internally consistent), and `po-received.sql` (`InventoryFlowHdr.Approved`/
-`TranSactionno` spelling, `InventoryFlowDtl.PoNo` direct join) were all independently cross-checked
-against `erp-data-dictionary_REF_18-09-26.md`, `erp-master-data_REF_18-09-26.md`, and
-`erp-domain-discovery_REF_18-09-26.md` and match exactly.
+No other Data/SQL Details query needed correction in either pass — `total-invoice-basis.sql`
+(461,140), `total-po-committed-basis.sql` (727,920), `supplier-breakdown.sql` (ช-001 635,000 /
+ว-001 92,920, which sums to 727,920 — internally consistent), and `po-received.sql`
+(`InventoryFlowHdr.Approved`/`TranSactionno` spelling, `InventoryFlowDtl.PoNo` direct join) were all
+independently cross-checked against `erp-data-dictionary_REF_18-09-26.md`,
+`erp-master-data_REF_18-09-26.md`, and `erp-domain-discovery_REF_18-09-26.md` and match exactly.
 
 Execute-agent instructions:
 - E1. Before finalizing `po-lines.sql`/`po-list.sql` (Step B1), do one final spot-check of
@@ -720,6 +822,16 @@ Execute-agent instructions:
 - E4. If Phase 1's seed does not yet contain an `IsClosed IS NULL` or over-received fixture row
   when Step A2/E1 need them, follow DB Safety Notes §5 (additive rows to `db/erp-fixture/purchase-
   seed.sql` only, never editing Phase 1's base file) — do not skip the edge-case tests.
+- E5. **[PVL fix, 22-09-26]** Every Hybrid gate below needs `ERP_DATABASE_URL` (pointed at the
+  local `erp_fixture` database on the existing `orderstock-sql` container) and
+  `ERP_ALLOW_WRITE_CAPABLE_LOGIN=1` set as INLINE shell env vars before running `pnpm test:e2e`
+  gates — neither belongs in `.env` (see Phase 2's own EVL Cycle 1, which 500'd env-blocked before
+  these were set; Cycle 2 passed once they were exported inline). Never point either at `db_TCL`.
+  Use `pnpm exec playwright test dashboards-purchase.spec.ts` for a scoped run — `pnpm test:e2e --
+  <spec>` silently swallows the `--` filter argument and runs the FULL e2e suite instead (a
+  Phase-2-discovered gap; all Test gates / Verification Evidence commands in this plan were
+  corrected to the `pnpm exec playwright test <spec>` form during this PVL pass — see Plan updates
+  applied).
 
 Test gates (C3 5-column table):
 
@@ -728,16 +840,17 @@ Test gates (C3 5-column table):
 | AC6-status | `derivePoStatus()` resolves all 7 branches correctly incl. `IsClosed IS NULL` (falls through, not Closed) and cancelled short-circuits every other flag | Fully-Automated | `pnpm test` — `src/lib/__tests__/purchase-status.test.ts` | A |
 | AC6-received | `computeOutstanding()` handles an over-received line (negative outstanding, not clamped to 0) | Fully-Automated | `pnpm test` — `src/lib/__tests__/purchase-received.test.ts` | A |
 | AC5-supplier | `aggregateSupplierBreakdown()` is deterministic over ≥2 suppliers with tie-break by `SupplierCode` ascending | Fully-Automated | `pnpm test` — `src/lib/__tests__/purchase-dual-basis.test.ts` | A |
-| AC5-kpi | Both dual-basis KPI tiles render correct fixture values (461,140 invoice-basis / 727,920 committed-basis) with distinct basis labels | Hybrid (requires `erp_fixture` container running; deterministic once up) | `pnpm test:e2e -- dashboards-purchase.spec.ts` (KPI assertion) | A |
-| AC6-badge | PO status badge + unvalidated caveat badge render correctly for every fixture PO incl. the `IsClosed IS NULL` row | Hybrid (requires `erp_fixture`) | `pnpm test:e2e -- dashboards-purchase.spec.ts` (status/caveat assertion) | A |
-| AC9-purchase | Staff-rendered HTML contains zero money strings (server-omitted, not hidden); Admin sees both totals | Hybrid (requires `erp_fixture`; DOM-string assertion is deterministic) | `pnpm test:e2e -- dashboards-purchase.spec.ts` (money-gate assertion) | A |
-| AC10-purchase | `?supplier=`/`?status=`/`?from=`/`?to=` filter searchParam roundtrip survives reload | Hybrid (requires `erp_fixture`) | `pnpm test:e2e -- dashboards-purchase.spec.ts` (filter roundtrip assertion) | A |
-| AC11-purchase | Supplier breakdown row → filtered PO list → PO row → PO detail lines drilldown | Hybrid (requires `erp_fixture`) | `pnpm test:e2e -- dashboards-purchase.spec.ts` (drilldown assertion) | A |
-| AC12-purchase | Sort + page on PO list table retains the active filter | Hybrid (requires `erp_fixture`) | `pnpm test:e2e -- dashboards-purchase.spec.ts` (sort/page assertion) | A |
-| AC13-purchase | PO list + PO-lines render as card list on phone width | Hybrid (requires `erp_fixture`) | `pnpm test:e2e -- dashboards-purchase.spec.ts --project=mobile` | A |
+| AC5-kpi | Both dual-basis KPI tiles render correct fixture values (461,140 invoice-basis / 727,920 committed-basis) with distinct basis labels | Hybrid (requires `erp_fixture` container running; deterministic once up) | `pnpm exec playwright test dashboards-purchase.spec.ts` (KPI assertion) | A |
+| AC6-badge | PO status badge + unvalidated caveat badge render correctly for every fixture PO incl. the `IsClosed IS NULL` row | Hybrid (requires `erp_fixture`) | `pnpm exec playwright test dashboards-purchase.spec.ts` (status/caveat assertion) | A |
+| AC9-purchase | Staff-rendered HTML contains zero money strings (server-omitted, not hidden); Admin sees both totals | Hybrid (requires `erp_fixture`; DOM-string assertion is deterministic) | `pnpm exec playwright test dashboards-purchase.spec.ts` (money-gate assertion) | A |
+| AC10-purchase | `?supplier=`/`?status=`/`?from=`/`?to=` filter searchParam roundtrip survives reload | Hybrid (requires `erp_fixture`) | `pnpm exec playwright test dashboards-purchase.spec.ts` (filter roundtrip assertion) | A |
+| AC11-purchase | Supplier breakdown row → filtered PO list → PO row → PO detail lines drilldown | Hybrid (requires `erp_fixture`) | `pnpm exec playwright test dashboards-purchase.spec.ts` (drilldown assertion) | A |
+| AC12-purchase | Sort + page on PO list table retains the active filter | Hybrid (requires `erp_fixture`) | `pnpm exec playwright test dashboards-purchase.spec.ts` (sort/page assertion) | A |
+| AC13-purchase | PO list + PO-lines render as card list on phone width | Hybrid (requires `erp_fixture`) | `pnpm exec playwright test dashboards-purchase.spec.ts` (in-file `test.use({viewport:390x844})` block, mirrors `dashboards-sales.spec.ts`; NOT `--project=mobile`, which does not select this spec) | A |
 | AC6-badge-visual | Unvalidated caveat badge is legible and always co-located with (never merged into) the status chip on both pages | Agent-Probe | Manual visual scan of `/dashboards/purchase` and `/dashboards/purchase/[poNo]` | A |
 | AC9-chart-fallback | Money-gated chart fallback (supplier + PO-count text list, no bars) renders sensibly for Staff, not a broken/empty shell | Agent-Probe | Manual visual scan under Staff role | A |
 | purchase-live-reconcile | `total-invoice-basis.sql`/`total-po-committed-basis.sql` reconcile against real `db_TCL` and KRS's own `sp_PurchaseInvoiceMonth`/`sp_Popending` procs | Known-Gap | — (this phase proves correctness against `erp_fixture` only; Phase 5 owns the live-reconcile script per the umbrella's Phase Ordering) | D |
+| AC-sql-drift | `src/lib/purchase-sql.ts`'s 6 embedded constants stay byte-identical to their `db/erp-queries/purchase/*.sql` source files, are single read-only SELECT/WITH statements, and bind no concatenated values (**[PVL fix, 22-09-26]**) | Fully-Automated | `pnpm test` — `purchase-dual-basis.test.ts` drift-assertion block | A |
 | harness-parity | Agent/skill parity unaffected by this phase's new files | Fully-Automated | `node .claude/skills/vc-audit-vc/scripts/validate-agent-parity.mjs` | A |
 | harness-context | Context-discovery routing unaffected | Fully-Automated | `node .claude/skills/vc-audit-context/scripts/validate-context-discovery.mjs` | A |
 | build-lint | No regression to existing surfaces | Fully-Automated | `pnpm lint && pnpm build` | A |
@@ -750,7 +863,7 @@ gap-resolution legend:
 
 Legacy line form (retained for existing validate-contract consumers):
 - Purchase pure-logic (status/received/supplier): Fully-automated: `pnpm test` (purchase-status.test.ts, purchase-received.test.ts, purchase-dual-basis.test.ts)
-- Purchase e2e (KPI/badge/money-gate/filter/drilldown/sort-page/mobile): Hybrid: `pnpm test:e2e -- dashboards-purchase.spec.ts` (+ `--project=mobile` for the mobile-card gate) + precondition: `erp_fixture` container running
+- Purchase e2e (KPI/badge/money-gate/filter/drilldown/sort-page/mobile): Hybrid: `pnpm exec playwright test dashboards-purchase.spec.ts` (mobile-card gate via an in-file `test.use({viewport:390x844})` block, NOT `--project=mobile`) + precondition: `erp_fixture` container running
 - Caveat-badge placement / chart fallback: Agent-probe: manual visual scan of both dashboard pages under both roles
 - Live db_TCL reconciliation vs KRS report procs: Known-gap: documented — Phase 5 scope (`erp-dashboards_18-09-26` umbrella, Phase Ordering table)
 - Harness regression: Fully-automated: `node .claude/skills/vc-audit-vc/scripts/validate-agent-parity.mjs` && `node .claude/skills/vc-audit-context/scripts/validate-context-discovery.mjs`
@@ -772,10 +885,13 @@ test("should sort supplier breakdown rows deterministically with SupplierCode-as
 ```
 
 Dimension findings:
-- Infra fit: PASS — new routes/files only, no port/container/proxy surface touched; ERP reads route
-  exclusively through Phase-1-owned `guardedQuery` (imported, never re-implemented); contingent on
-  Phase 1's exit gate, which is an already-documented, correctly-gated dependency (Entry Gate +
-  Blockers section), not an unmanaged risk.
+- Infra fit: PASS (after 1 in-plan fix, this cycle) — new routes/files only, no port/container/proxy
+  surface touched; ERP reads route exclusively through Phase-1-owned `guardedQuery` (imported, never
+  re-implemented); contingent on Phase 1's exit gate, confirmed `DONE` in the registry Status Ledger.
+  Fixed this cycle: the plan lacked the `src/lib/purchase-sql.ts` embedded-SQL module required by
+  `next.config.ts`'s `output: "standalone"` production build (see Plan updates applied #7) — without
+  it, `purchase-data.ts` would have read `.sql` files at runtime and worked in dev while silently
+  500ing in the production container, a break no other gate in this repo would have caught.
 - Test coverage: PASS — all 4 waterfall tiers assigned; the money-visibility high-risk class (AC9)
   meets the required Hybrid-minimum via an explicit DOM-string-absence e2e gate, not a known-gap.
 - Breaking changes: PASS — `/dashboards/purchase` and `/dashboards/purchase/[poNo]` are brand-new
@@ -800,9 +916,15 @@ Dimension findings:
   fallback rather than a Phase-3 workaround edit to Phase-1-owned files.
 - Money Gating feasibility: PASS — D1/D2's explicit server-omission-plus-probe pattern matches the
   codebase's only existing money-gating precedent (this program's own AC9 contract); no gaps found.
-- Tests/e2e feasibility: PASS — `pnpm test`, `pnpm test:e2e`, `pnpm lint`, `pnpm build` all confirmed
-  as real `package.json` scripts; the `mobile` Playwright project (390×844) confirmed to exist in
-  `playwright.config.ts`.
+- Tests/e2e feasibility: PASS (after 1 in-plan fix, this cycle) — `pnpm test`, `pnpm test:e2e`,
+  `pnpm lint`, `pnpm build` all confirmed as real `package.json` scripts; the `mobile` Playwright
+  project (390×844) confirmed to exist in `playwright.config.ts` and confirmed NOT to select
+  `dashboards-purchase.spec.ts` (its `testMatch` only selects `mobile.spec.ts` /
+  `dashboards-nav-visibility.spec.ts`, matching the Steps 1-3 supplement's `--project=mobile` fix).
+  Fixed this cycle: every Hybrid gate's proving-test command used `pnpm test:e2e --
+  dashboards-purchase.spec.ts`, which Phase 2's own phase report documents as silently swallowing
+  the `--` filter and running the FULL e2e suite — all 16 live occurrences corrected to `pnpm exec
+  playwright test dashboards-purchase.spec.ts` (see Plan updates applied #8).
 
 Open gaps: none. (The Phase-5 live-db-reconciliation row is a pre-declared Known-Gap tier in the
 Test gates table above, not an unresolved CONCERN — it is explicitly out of this phase's scope per
@@ -824,7 +946,57 @@ What this coverage does NOT prove:
   the "unvalidated" caveat badge is mandatory and non-removable without a fresh confidence check.
 - None of these gates prove Phase 1's `guardedQuery`/cache/degrade contract actually behaves as this
   plan assumes — that is proven by Phase 1's own exit gate, not re-verified here.
+- The `AC-sql-drift` gate proves `src/lib/purchase-sql.ts`'s constants stay byte-identical to the
+  versioned `.sql` files and are syntactically read-only/parameterized; it does NOT re-prove the
+  queries are logically correct against a live schema — that is the Hybrid e2e gates' job (against
+  `erp_fixture`) and Phase 5's job (against `db_TCL`).
 
-Gate: PASS (no FAILs, no unresolved CONCERNs; 2 mechanical CONCERNs found in Data/SQL Details were
-fixed in-plan during this PVL pass — see Plan updates applied)
+Gate: PASS (no FAILs, no unresolved CONCERNs; 2 mechanical CONCERNs found this cycle — the missing
+`purchase-sql.ts` embedding and the `pnpm test:e2e --` filter-swallow bug — were both fixed in-plan
+during this inner-PVL pass; see Plan updates applied #7-8. The 6 mechanical column-name CONCERNs
+from the 18-09-26 outer-PVL pass were already resolved and remain so — re-confirmed unchanged
+during this cycle's Data/SQL Details re-read.)
 Accepted by: N/A — Gate: PASS, no concerns required acceptance
+
+---
+
+## Inner Loop Refresh Note
+
+**Date:** 22-09-26
+**Trigger:** Phase 3 inner-loop Steps 1-3 (RESEARCH → INNOVATE → PLAN-SUPPLEMENT), per the 7-step
+inner loop `R → I → P → PVL → E → EVL → UP`.
+
+**Research confirmed (no drift from PVL-time understanding):**
+- `guardedQuery(pool, sql, params)` real signature confirmed in `src/lib/erp/erp-adapter.ts`.
+- Cache/degrade/pool helper names (`getCached`, `erpDegradeState`, `getErpPool`) confirmed real.
+- `dashboard-data-table.tsx` prop contract confirmed real — supports sort/page/mobile-card
+  out-of-the-box; Step C5 needs no rework.
+- Nav already wired by Phase 1 (`/dashboards/purchase` entry exists) — no `nav-links.tsx` edit needed.
+- All Data/SQL Details figures (461,140 / 727,920 / supplier splits / monthly splits) and the
+  `sp_Popending` column names (`Approved`, not `IsApproved`) re-confirmed exactly as written.
+
+**Gaps found and fixed in this pass:**
+1. `src/lib/__tests__/auth-guard-coverage.test.ts` Blast Radius §Shared referenced a `DASHBOARD_PAGES`
+   array that does not exist — the real array (created by Phase 2) is `ERP_DASHBOARD_PAGES`. Fixed:
+   Blast Radius now instructs appending to the existing `ERP_DASHBOARD_PAGES` array.
+2. The mobile e2e gate command `pnpm test:e2e -- dashboards-purchase.spec.ts --project=mobile` is
+   dead — the `mobile` Playwright project's `testMatch` only selects `mobile.spec.ts` /
+   `dashboards-nav-visibility.spec.ts`, so this command would silently select 0 tests and exit 0
+   (vacuous-green risk). Fixed in 4 locations (Step E1 checklist, Verification Evidence table,
+   Test gates 5-column table, legacy line-form summary): replaced with the in-file
+   `test.use({ viewport: { width: 390, height: 844 } })` pattern already proven in
+   `e2e/dashboards-sales.spec.ts`.
+
+**Judgment call resolved (INNOVATE, no new architecture options — fast-closed):**
+3. Whether `po-received.sql`'s bare `h.IsClosed <> 1` needs the same `ISNULL(...)` NULL-safety
+   treatment the derived-status `CASE` already gets. Decided: keep it LITERAL, matching the
+   `sp_Popending` stored-procedure source verbatim (same principle as E3's "do not fix Approved to
+   IsApproved"). Fixture design (Step A2/B1) must add an `IsClosed IS NULL` `InventoryFlowHdr` row and
+   assert it is silently excluded from `received_qty` — this reproduces real ERP report behavior
+   rather than "fixing" it. Recorded in DB Safety Notes and Phase Loop Progress Step 2.
+
+No scope expansion. No new files added to Blast Radius. No section outside the ones listed above was
+touched.
+
+**Status: PLAN-SUPPLEMENT complete.** Ready for orchestrator to re-trigger inner PVL (Step 4) from V1
+per the standard Refresh Note routing rule.
