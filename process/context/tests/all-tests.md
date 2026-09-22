@@ -157,11 +157,15 @@ Fully-Automated (G1–G3, G7–G9) and Hybrid (G4–G6, Playwright sandbox) gate
 Completion Rules call this out before calling the feature strictly "VERIFIED", not just
 code-verified); (2) on-site real-printer fidelity for a location with more than 29 shops (same
 pre-existing agent-probe-only pattern as the rest of this project's print surface — see this file's
-"On-site real-printer mm fidelity" row below). Also noted: the sandbox `orderstock` DB is an
-ERP-shaped clone containing unrelated ERP tables (e.g. `krs_log`), so `prisma migrate dev`'s
-shadow-diff is unusable against it — future schema changes on this sandbox should use a
-hand-authored migration file + idempotent sqlcmd ALTER + `prisma generate` instead (see
-`database/all-database.md` for the exact pattern this plan used).
+"On-site real-printer mm fidelity" row below). Also noted: the sandbox `orderstock` DB was bootstrapped via hand-authored SQL rather than a full
+linear migration history, so `prisma migrate dev`'s shadow-diff is unusable against it — future
+schema changes on this sandbox should use a hand-authored migration file + idempotent sqlcmd ALTER
++ `prisma generate` instead (see `database/all-database.md` for the exact pattern this plan used).
+**Correction, 18-09-26 (erp-dashboards Phase 0):** earlier wording here described this sandbox DB
+as "an ERP-shaped clone containing unrelated ERP tables (e.g. `krs_log`)" — that was inaccurate;
+this DB has never contained ERP tables. A genuinely ERP-shaped fixture database (`erp_fixture`),
+introduced by the `erp-dashboards` program's Phase 1, is a separate, deliberately provisioned
+sandbox database and must never be confused with this one.
 
 **`responsive-drawer-sidebar_11-07-26` residual (Agent-Probe only, pending-manual as of 11-07-26 UPDATE PROCESS):** iPad 768px/1024px real-viewport usability, dark-mode legibility with the drawer/backdrop open, and `prefers-reduced-motion` OS-level behavior were not re-verified in the UPDATE PROCESS closeout session (no browser/dev-server session available). All Fully-Automated/Hybrid gates are green; plan stays `CODE DONE` until this manual pass is done. No automated Playwright emulation exists repo-wide for `prefers-reduced-motion` or dark-mode visual diffing (pre-existing gap, not newly introduced).
 
@@ -193,3 +197,83 @@ hand-authored migration file + idempotent sqlcmd ALTER + `prisma generate` inste
 - The actual `process.exit`/NSSM restart on a real Windows host is not exercised by any automated gate — the Hybrid round-trip gate stops at the `.env` write under `ORDERSTOCK_NO_EXIT=1`; the restart itself is a documented manual/NSSM step verified only by the deployment guide's agent-probe.
 - Customer SQL Server version/compatibility level is unconfirmed — `db/create-database-and-login.sql` ships with a TODO-flagged `COMPATIBILITY_LEVEL 140/150` pending confirmation.
 - No CI pipeline configured yet — all gates run locally/manually per phase.
+
+---
+
+## ERP fixture / guard testing (erp-dashboards Phase 1)
+
+Added 22-09-26 by `phase-01-erp-read-foundation`. Covers how the read-only ERP layer is tested.
+
+### Unit suites (no DB connection is opened in any of them)
+
+| File | Tests | Proves |
+|---|---|---|
+| `src/lib/__tests__/erp-adapter.test.ts` | 57 | The full read-only guard: 19 forbidden-keyword rules (one case each) + statement-shape cases (empty, whitespace, comment-only, DECLARE/EXEC/SET prefixes, stacked semicolons, unterminated string/comment, trailing-semicolon allowed, valid SELECT, valid WITH CTE, parameterized SELECT) + normalizer false-positive defense (`update_flag`, `[Update Date]`, forbidden word inside a string literal, semicolon smuggling, BOM) + `guardedQuery` ordering/parameterization + `verifyReadOnlyBoot` mocked refusal/acceptance |
+| `src/lib/__tests__/erp-cache-degrade.test.ts` | 24 | TTL cache (fresh / within-TTL / expired), the degrade path (stale fallback, empty-cache rethrow, repeated failures), `erpDegradeState` banner mapping, `shouldVerifyBootProbe` dev-mode gating, and the JDBC-to-mssql-config URL parser |
+| `src/lib/__tests__/resolve-erp-database-url.test.ts` | 12 | `$`-in-password verbatim round-trip, quote stripping, CRLF, first-match, `process.env` fallback, clear throw when unset, and key isolation from plain `DATABASE_URL` |
+| `src/lib/__tests__/dashboard-data-table.test.tsx` | 17 | The shared table's sort/paginate URL contract, other-searchParam preservation, and the mobile card branch |
+
+Suite total moved 100 → **212 tests across 20 files**.
+
+### Component testing WITHOUT jsdom — the established pattern here
+
+This repo has **no `jsdom`, no `happy-dom`, and no `@testing-library/react`**, and
+`vitest.config.ts` stays `environment: "node"`. `dashboard-data-table.test.tsx` therefore renders
+the server component directly with `renderToStaticMarkup` from `react-dom/server` (already present
+via `react-dom`) and asserts on the returned HTML string, mocking `next/link` to a plain anchor.
+**Reuse this pattern for future shared-component tests** rather than adding a DOM test dependency.
+
+Two consequences worth knowing:
+- It proves markup and URL contracts, NOT pixel layout or browser-runtime behavior. Those stay
+  e2e/agent-probe concerns.
+- Vitest does **not** resolve the `@/` TS path alias (no alias in `vitest.config.ts`). Components
+  that need to be unit-testable must use **relative imports** — `src/components/dashboard-data-
+  table.tsx`, `pilot-banner.tsx`, and `degrade-banner.tsx` do. Route handlers and pages are not
+  vitest-loaded and keep using `@/`.
+
+### E2E
+
+`e2e/dashboards-nav-visibility.spec.ts` runs under BOTH the `chromium` and `mobile` projects; each
+describe block self-skips outside its viewport tier via `test.skip(({ viewport }) => ...)`.
+
+- chromium (4 tests): the "แดชบอร์ด" group renders 3 links for ADMIN and STAFF, and the hrefs are
+  exactly `/dashboards/{sales,purchase,production}`.
+- mobile 390×844 (3 tests): the phone bottom tab bar is UNCHANGED — still 3 tabs for ADMIN, 2 for
+  STAFF, zero dashboard tabs, and the sidebar stays hidden.
+
+`playwright.config.ts`'s `mobile` project `testMatch` was broadened from `/mobile\.spec\.ts/` to
+`/mobile\.spec\.ts|dashboards-nav-visibility\.spec\.ts/`. **Without that edit the phone-tier block
+would silently run zero tests** — a reminder that adding a spec file is not enough when a project
+uses a narrow `testMatch`. E2E count: 49 → **56** (excluding `[setup]`).
+
+Note: the 3 dashboard routes 404 until Phases 2/3/4 land their pages. The spec asserts the LINKS,
+never that the pages render — that is deliberate, not a missing assertion.
+
+### Hybrid gates (require the local sandbox)
+
+Precondition: `orderstock-sql` container running and `db/erp-fixture/00-schema.sql` + `01-seed.sql`
+applied (see `database/all-database.md` § ERP Read Layer for the exact sqlcmd invocation).
+
+1. **Fixture present** — `SELECT COUNT(*) FROM dbo.InventoryItem` in `erp_fixture` returns 10;
+   re-running the seed affects 0 rows (idempotent).
+2. **Live health probe** — with the dev server up and `ERP_DATABASE_URL` pointed at `erp_fixture`:
+   `curl localhost:3000/api/health/erp` returns `{"ok":true,"latencyMs":...,"stale":false,"rows":1}`
+   at HTTP 200. This exercises the real resolver → parser → pool → guard → cache chain.
+3. **Live refusal proof (optional but recommended)** — re-run the same probe with
+   `ERP_VERIFY_BOOT_PROBE=1`. Because the sandbox `sa` login IS write-capable, layer 4 must refuse:
+   the route returns `{"ok":false,"error":"ERP connection failed"}` at HTTP 200 and the server log
+   shows `ErpWritePermissionError ... INSERT, UPDATE, DELETE, ALTER, CREATE TABLE`. This is the
+   strongest available proof of the boot probe short of the real scoped login.
+
+**Never run any ERP fixture script, probe, or test against `db_TCL`.** Every gate above targets
+localhost only; the live-ERP smoke test is Phase 5's Agent-Probe and needs the DBA-provisioned
+read-only login first.
+
+### Known gaps
+
+- The positive live boot-probe case (real `db_TCL` scoped read-only login returning all-zero write
+  permissions) is untested — the login does not exist yet. Deferred to Phase 5.
+- Degrade-banner visual placement is unverified; no dashboard page exists yet to render it on
+  (Phase 2/3/4 agent-probe).
+- The guard's denylist is proven against every case enumerable from the ported source; it cannot
+  prove the absence of an unknown bypass shape. Layers 3–5 exist because of that residual.

@@ -408,8 +408,13 @@ deploy step (see Known Gaps below).
 
 Sandbox migration note: `prisma/migrations/20260713000000_shop_location/migration.sql` is a
 hand-authored `ALTER TABLE [dbo].[Shop] ADD [location] NVARCHAR(200)` (the sandbox `orderstock` DB
-is an ERP-shaped clone with unrelated ERP tables like `krs_log`, so `prisma migrate dev`'s
-shadow-diff is unusable there — see `tests/all-tests.md` Test Infra Gaps for the same finding);
+was bootstrapped via hand-authored SQL rather than a full linear migration history, so `prisma
+migrate dev`'s shadow-diff is unusable there — see `tests/all-tests.md` Test Infra Gaps for the
+same finding; **correction, 18-09-26 (erp-dashboards Phase 0):** earlier context wording described
+this sandbox DB as "an ERP-shaped clone with unrelated ERP tables like `krs_log`" — that is
+inaccurate; the `orderstock` sandbox DB has never contained ERP tables. A genuinely ERP-shaped
+fixture database (`erp_fixture`), separate from this sandbox, is introduced in the
+`erp-dashboards` program's Phase 1 — see that phase's report for the fixture-DB pattern);
 applied via an idempotent `IF COL_LENGTH(...) IS NULL` sqlcmd ALTER + `prisma generate`, not
 `migrate dev` directly. Any future schema change against THIS sandbox should use the same hand-SQL
 + `prisma generate` path rather than `migrate dev`.
@@ -473,3 +478,143 @@ date+location TOCTOU pattern (see Known Gaps below); low-probability, single-adm
   as of 13-07-26 archival (see the archived plan's Archival note). On-site >29-shop-location print
   fidelity is the same pre-existing agent-probe-only residual pattern as the rest of this project's
   print surface.
+
+---
+
+## ERP Read Layer (erp-dashboards Phase 1)
+
+Added 22-09-26 by `phase-01-erp-read-foundation`. This section documents the SECOND, strictly
+read-only database connection the ERP dashboards use. It is independent of Prisma in every respect.
+
+### Hard safety constraints (non-negotiable)
+
+- The customer's ERP database `db_TCL` is **READ-ONLY to this application**. Only `SELECT`/`WITH`
+  statements may ever be sent. No INSERT/UPDATE/DELETE/MERGE/TRUNCATE, no DDL, no `EXEC`, no
+  stored-procedure call, no migration, no login/permission change from app code.
+- **No ERP table is ever added to `prisma/schema.prisma`**, and **no ERP read ever goes through
+  Prisma** (`prisma.$queryRaw` included) or the `orderstock_app` login. ERP reads use only the
+  separate `mssql` pool below.
+- ERP login provisioning is a DBA delivery step (`db/create-erp-readonly-login.sql`), never run by
+  application code or by an agent.
+
+### Files
+
+| File | Role |
+|---|---|
+| `src/lib/erp/erp-adapter.ts` | The guard + `guardedQuery` single choke point, `ErpAdapter` marker type + compile-time no-write-method guard, `verifyReadOnlyBoot` permission probe |
+| `src/lib/erp/pool.ts` | The separate `mssql.ConnectionPool` singleton (lazy, `globalThis`-cached), JDBC-URL to mssql-config parser, `shouldVerifyBootProbe` gating |
+| `src/lib/erp/resolve-erp-database-url.ts` | Raw-read `ERP_DATABASE_URL` resolver (same `$`-in-password fix as `resolve-database-url.ts`) |
+| `src/lib/erp/cache.ts` | 5-minute TTL cache with last-known-good fallback (`getCached`, `clearErpCache`) |
+| `src/lib/erp/degrade.ts` | `erpDegradeState()` produces the "ข้อมูลอาจไม่ล่าสุด" banner decision |
+| `src/components/dashboard-data-table.tsx` | THE shared dashboard table (URL-driven sort/paginate, mobile card list) — Phases 2/3/4 import it |
+| `src/components/pilot-banner.tsx` / `degrade-banner.tsx` | Shared "ข้อมูลนำร่อง" / "ข้อมูลอาจไม่ล่าสุด" banners |
+| `src/app/api/health/erp/route.ts` | ERP connectivity probe; **public by design** (see below); never returns 500 |
+
+### 5-layer read-only enforcement (defense in depth — none is load-bearing alone)
+
+1. **Normalizer** (`normalizeSqlForGuard`) — strips comments and masks string-literal and
+   bracketed-identifier CONTENT, so neither keyword nor `;` scanning can be fooled by literal text,
+   and a legitimate column like `[Update Date]` or `update_flag` does not false-positive.
+2. **Denylist** (`assertReadOnlySql`) — single statement only, must start with `SELECT`/`WITH`, and
+   must contain none of **19** forbidden keyword rules (INSERT, UPDATE, DELETE, MERGE, TRUNCATE,
+   DROP, ALTER, CREATE, GRANT, REVOKE, EXEC/EXECUTE, sp_executesql, xp_cmdshell, BULK, OPENROWSET,
+   INTO, BACKUP, RESTORE, SHUTDOWN). Ported from the sibling KRS TCL project's shipping guard.
+3. **Parameterized requests only** — `guardedQuery` binds every value via `request.input(...)`;
+   values are never concatenated into SQL. The guard runs BEFORE `pool.request()` is called, so a
+   forbidden statement never reaches the connection at all (proven by test, not by convention).
+4. **Boot permission probe** (`verifyReadOnlyBoot`) — runs `HAS_PERMS_BY_NAME(...)` and REFUSES to
+   serve ERP reads if the connected login holds INSERT/UPDATE/DELETE/ALTER/CREATE TABLE. An
+   inconclusive probe is also treated as unsafe. Never silently downgrades.
+5. **`ApplicationIntent=ReadOnly`** — set via `options.readOnlyIntent` on the pool config. A no-op
+   on a non-AlwaysOn server; additive hardening only.
+
+Plus a **compile-time guard**: `ErpAdapter` fails typecheck if a write-shaped method name
+(`insert`/`update`/`delete`/`write`/`save`/`upsert`/`merge`/`exec`/`execute`) is ever added.
+
+### Env vars
+
+- `ERP_DATABASE_URL` — JDBC-style, resolved by raw file read (dotenv-expand bypass, same `$`-in-
+  password gotcha as `DATABASE_URL`). Dev points at the LOCAL sandbox `erp_fixture` database;
+  production at `db_TCL` with the DBA-provisioned scoped read-only login (never `sa`, never
+  `orderstock_app`). Placeholder documented in the committed env template only, never a real value.
+- `ERP_VERIFY_BOOT_PROBE=1` — optional; forces layer 4 to run outside production. Left UNSET
+  locally because the sandbox `sa` login legitimately has write permission and the probe would
+  (correctly) refuse to start. Layer 4 always runs in production regardless of this flag.
+
+The pool is built **lazily on first ERP read**, never at module load — a missing `ERP_DATABASE_URL`
+must never crash non-ERP pages.
+
+### Accepted known-gap — `ERP_ALLOW_WRITE_CAPABLE_LOGIN` (charter exception, 22-09-26)
+
+- **Who approved:** the repo owner (user), in-session, 22-09-26 — an explicit decision to proceed
+  on the existing write-capable login rather than wait for the DBA-provisioned scoped read-only
+  login. The standing rule "ดึงมาเท่านั้น ห้ามเขียนกลับ" (read only, never write back) is unchanged.
+- **What it is:** `ERP_ALLOW_WRITE_CAPABLE_LOGIN=1` (the exact string `"1"` only) makes layer 4 warn
+  instead of throw when the probe finds write permissions. Absent, empty, `"0"`, `"true"` — any
+  other value — keeps today's fail-closed refusal in EVERY environment, production included. The
+  probe STILL RUNS and still reports what it found; with the switch on it logs exactly ONE
+  credential-free warning per pool creation (never per query) naming the granted permissions and
+  pointing at `db/create-erp-readonly-login.sql`. `/api/health/erp` surfaces the same state as
+  `readOnlyLogin: false` + a short `warning`, so ops can see it without reading logs.
+- **What it costs:** the DATABASE-LEVEL enforcement layer (a login that physically cannot write) is
+  gone while the switch is on. Layers 1, 2, 3 and 5 — normalizer, SELECT-only denylist, single
+  `guardedQuery` choke point with parameterized requests, no-write-method compile guard,
+  `ApplicationIntent=ReadOnly` — are UNCHANGED and become the only protection. A real, named
+  reduction in defense-in-depth, not a cosmetic one.
+- **Exit condition (hard Phase 5 rollout gate):** production go-live requires EITHER the scoped
+  read-only login provisioned and in use, OR a dated, named re-confirmation of this exception.
+  "The switch works" is never sufficient for production sign-off.
+- **Code:** `allowsWriteCapableLogin` / `runBootProbeWithOptIn` / `erpReadOnlyLoginState` in
+  `src/lib/erp/pool.ts`; proven by `src/lib/__tests__/erp-pool-write-capable-switch.test.ts`
+  (fail-closed by default, warn-once + `readOnlyLogin:false`, silent + `readOnlyLogin:true` on a
+  read-only login, and a negative assertion that the warning leaks no credential).
+
+### `erp_fixture` — the local ERP-shaped fixture database
+
+`db/erp-fixture/00-schema.sql` + `01-seed.sql` create an `erp_fixture` database with
+`dbo.InventoryItem` (`Roworder`, `ItemCode`, `Description`, `MainUnits`, `ItemGRP`) and 10 seeded
+rows (mixed `ItemGRP`, several units, one NULL `MainUnits` row on purpose). Both scripts are
+**LOCAL SANDBOX ONLY** — they run against the `orderstock-sql` container and must NEVER be run
+against `db_TCL`. They live outside `prisma/migrations` on purpose: `erp_fixture` is a separate
+database from the Prisma-managed `orderstock` sandbox DB, and SQL Server hosts both in the same
+instance with no `docker-compose.yml` change (confirmed 22-09-26).
+
+Apply with (container running):
+
+```bash
+docker cp db/erp-fixture/00-schema.sql orderstock-sql:/tmp/ && \
+docker exec orderstock-sql sh -c '/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa \
+  -P "$MSSQL_SA_PASSWORD" -C -i /tmp/00-schema.sql'
+# then repeat for 01-seed.sql
+```
+
+Both are idempotent (re-running the seed affects 0 rows and leaves the count at 10). Drop and
+recreate freely — local only.
+
+**Forward note for Phases 2/3/4:** in the REAL ERP, `InventoryItem`'s primary key is composite
+(`Roworder`, `ItemCode`) — `ItemCode` alone is NOT unique. Confirm the `Roworder` tie-break rule
+before writing domain queries. Per-domain fixture tables go in each phase's own seed file; Phase 1
+owns only the shared/base file.
+
+### `/api/health/erp` is intentionally public
+
+Like the existing `/api/health`, it applies no auth guard. It is an operator/uptime probe returning
+only `{ ok, latencyMs, stale, rows }` or `{ ok: false, error: "ERP connection failed" }` — no ERP
+business data, no money field, no connection detail (the real error is logged server-side only). It
+always returns HTTP 200, never 500, matching the degrade contract. `auth-guard-coverage.test.ts`
+records this exemption explicitly rather than omitting the route silently; a future ERP route that
+returns business data MUST be auth-guarded and gets its own coverage entry.
+
+### Known gaps (as of 22-09-26)
+
+- **Live boot-probe against the real `db_TCL` scoped read-only login** — the DBA-provisioned login
+  does not exist yet (`db/create-erp-readonly-login.sql` is written and NOT run). Deferred to
+  Phase 5. Phase 1 proved the refusal logic both by mocked unit tests AND live against a real
+  write-capable connection (the sandbox `sa` login with `ERP_VERIFY_BOOT_PROBE=1`): the probe
+  refused, naming INSERT/UPDATE/DELETE/ALTER/CREATE TABLE, and the route degraded to
+  `{ ok: false }` at HTTP 200. What remains unproven is only the positive case — that the real
+  scoped login returns all-zero write permissions.
+- **Denylist residual risk** — any denylist can in principle miss a novel bypass shape. Mitigated,
+  not eliminated, by layers 1, 3, 4, and 5.
+- TLS / connection-string edge cases against the customer's actual SQL Server version are untested
+  (no customer-representative server available in dev).

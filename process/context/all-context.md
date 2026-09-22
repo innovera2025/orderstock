@@ -7,8 +7,16 @@ metadata:
 ---
 # orderstock - All Context
 
-Last updated: 2026-07-19 (`per-location-shop-numbering` plan ✅ VERIFIED and archived — `/shops`
-"ลำดับ" column now shows a per-location 1..N display number, matching the order sheet's
+Last updated: 2026-09-22 (`erp-dashboards` Phase 1 "ERP Read Foundation" ✅ VERIFIED at agent level,
+UPDATE PROCESS closeout — see `process/features/erp-dashboards/active/erp-dashboards_18-09-26/
+phase-01-erp-read-foundation_REPORT_22-09-26.md`; the read-only ERP pipe (`src/lib/erp/*`), local
+`erp_fixture` sandbox DB, `/api/health/erp`, shared `dashboard-data-table.tsx`/`pilot-banner.tsx`/
+`degrade-banner.tsx`, and the 3-link "แดชบอร์ด" nav group are all built and EVL-confirmed green;
+db_TCL never contacted; zero schema change; unit 100→212 tests/20 files, e2e 49→56 excl. `[setup]`;
+program advances to Phase 2 (Sales dashboard); nothing committed yet — see program details in
+Current Features below); prior: 2026-07-19 (`per-location-shop-numbering` plan ✅ VERIFIED and
+archived — `/shops` "ลำดับ" column now shows a per-location 1..N display number, matching the order
+sheet's
 `displayNo`, instead of the global `rosterOrder` identity value; ZERO schema change, `rosterOrder`
 stays the untouched `@unique` DB identity field; two new pure, DB-free helpers added to
 `src/lib/roster.ts` — `perLocationDisplayNo(activeShops)` (groups by location, numbers 1..N per
@@ -176,6 +184,7 @@ For most substantial tasks:
 | implementation planning | `all-context.md`, `planning/all-planning.md` | the active plan in `process/general-plans/active/` |
 | order-form domain questions | `all-context.md` | `process/features/order-system/completed/phase1-order-system_06-07-26/form-canonical_REF_06-07-26.md` (canonical transcription; raw scan at repo root) |
 | order-system implementation (program complete — reference only) | `all-context.md` | the umbrella plan + phase plans in `process/features/order-system/completed/phase1-order-system_06-07-26/`, plus follow-up plans (e.g. `process/features/order-system/completed/shop-location-roster_13-07-26/` for the per-location roster pattern, `process/features/order-system/completed/per-location-shop-numbering_19-07-26/` for the `/shops` per-location display-numbering pattern); check `process/features/order-system/backlog/` first for any new order-system request |
+| ERP dashboard / read-only ERP query work | `all-context.md`, `database/all-database.md` | the active phase plan in `process/features/erp-dashboards/active/erp-dashboards_18-09-26/`, plus `erp-dashboards-proposal_REF_18-09-26.md` and `erp-data-dictionary_REF_18-09-26.md` for the tested query patterns |
 | test planning or verification | `all-context.md`, `tests/all-tests.md` | — |
 | database/schema/seed/migration work | `all-context.md`, `database/all-database.md` | `prisma/schema.prisma`, the relevant phase plan for decision rationale |
 | auth/session/role/new server action work | `all-context.md`, `auth/all-auth.md` | `src/lib/auth-guard.ts`, `src/auth.ts`/`src/auth.config.ts` |
@@ -188,6 +197,7 @@ For most substantial tasks:
 |---|---|---|
 | `order-system` | `process/features/order-system/` | **COMPLETE (07-07-26); +6 follow-up plans VERIFIED/verified-at-code-level (latest 19-07-26)** — phase program `phase1-order-system_06-07-26` (umbrella + 6 phase plans), all 6 phases ✅ VERIFIED, archived to `completed/`. Follow-up plans `ordersheet-soft-delete_11-07-26` (ADMIN-only OrderSheet soft-delete, additive `active` column), `remove-settings-db_11-07-26` (removed the `/settings/db` runtime DB-connection page), `shop-location-roster_13-07-26` (`Shop.location` + per-location roster via `src/lib/roster.ts`, db_TCL delivery script `db/alter-shop-add-location.sql` pending), `location-management_14-07-26` (managed `/locations` list via a single JSON `AppSetting` row, zero schema change, feeding both the shop-form and order-sheet location pickers), `shop-location-filter_17-07-26` (per-location LIST filtering on `/shops` + `/orders` via `?location=`, zero schema change, VALIDATE intentionally skipped), and `per-location-shop-numbering_19-07-26` (`/shops` "ลำดับ" column shows a per-location 1..N display number via two new `roster.ts` helpers, zero schema change, VALIDATE intentionally skipped) all archived to `completed/`; `per-location-shop-numbering` is ✅ VERIFIED (all Fully-Automated/Hybrid gates green via full EVL confirmation run). A related dark-mode/print-footer fix (`matrix-print-darkmode-fixes_13-07-26`) lives in `process/general-plans/completed/`, not this feature folder. `active/` is currently empty for this feature. 7 backlog items remain, pending customer answers or optional hardening — see `process/features/order-system/backlog/` |
 | `pguard-redesign` | `process/features/pguard-redesign/` | **COMPLETE (08-07-26)** — 5-phase program (`pguard-redesign_07-07-26`) re-skinning the frontend to the pguard Design System (no schema/backend rewrite); all 5 phases ✅ VERIFIED — Phase 01 (Foundation: tokens, IBM Plex fonts, sidebar+topbar shell, `src/components/ui/*` primitives, dark mode), Phase 02 (Core desktop: 20-col order-matrix replaces Order Pad, login/shops/products/users/settings reskin, print toolbar), Phase 03 (New screens: สรุปยอดผลิต bar-chart `/summary` + ประวัติออเดอร์ real-rows `/history`), Phase 04 (Mobile: 5 responsive screens + bottom tab bar over the SAME order-matrix state/payload), Phase 05 (Data align + verify — FINAL: ตีลานนิ่ม/ตีลาน product renames + role labels + idempotent reseed + full regression). Program folder archived to `process/features/pguard-redesign/completed/pguard-redesign_07-07-26/`. 1 backlog item remains — see `process/features/pguard-redesign/backlog/`. Any new pguard-related work should get its own new task folder. |
+| `erp-dashboards` | `process/features/erp-dashboards/` | **IN PROGRESS (started 18-09-26)** — 6-phase program (`erp-dashboards_18-09-26`) adding 3 read-only ERP dashboards (Sales/Purchase/Production) over the customer's shared ERP database `db_TCL`, via a separate guarded `mssql` connection pool (never Prisma). Phase 0 (Prerequisites) done; **Phase 1 (ERP read foundation) ✅ VERIFIED at agent level, 22-09-26** (EVL confirmation run independently re-ran all gates; `gates_green: true`, no fix cycle) — `src/lib/erp/*` guarded read layer (5-layer read-only defense: normalizer, 19-rule denylist, parameterized-only `guardedQuery` choke point, `HAS_PERMS_BY_NAME` boot probe, `ApplicationIntent=ReadOnly`, plus a compile-time no-write-method type guard), lazy separate `mssql` pool + `ERP_DATABASE_URL` raw-read resolver, 5-min TTL cache with last-known-good degrade, public `/api/health/erp`, shared `dashboard-data-table.tsx`/`pilot-banner.tsx`/`degrade-banner.tsx`, the 3-link "แดชบอร์ด" nav group, and a LOCAL-sandbox-only `erp_fixture` database (`db/erp-fixture/*.sql`). Unit suite 100 → 212 tests/20 files; e2e 49 → 56. Zero schema change; no ERP table in `prisma/schema.prisma`; db_TCL never contacted. Known gap: the live boot probe against the real DBA-provisioned scoped read-only login (Phase 5, deferred, non-blocking). Nothing committed yet. `active/` continues — program advances to Phase 2 (Sales dashboard). See the umbrella plan for the full charter and hard safety constraints (read-only ERP access, no `sa`/`orderstock_app` login on the ERP pool, money hidden server-side for STAFF). |
 
 When routing any new order-system-related work, pass `Feature: order-system`; check
 `process/features/order-system/backlog/` for deferred items first, and reference the archived
@@ -465,7 +475,8 @@ orderstock/
 
 ## Scan Metadata
 
-- Generated: 2026-07-19 (`per-location-shop-numbering` plan ✅ VERIFIED, archived — UPDATE-PROCESS)
-- HEAD: e1cd926 (pending commit for per-location-shop-numbering changes — see git status; a separate vc-git-manager pass handles the commit)
-- Mode: delta update (per-location shop DISPLAY numbering on /shops via two new roster.ts helpers; test-count refresh 92→100 unit/16 files, 48→49 e2e excl. setup)
+- Generated: 2026-09-22 (`erp-dashboards` Phase 1 "ERP Read Foundation" ✅ VERIFIED at agent level — UPDATE PROCESS)
+- HEAD: bd11700 (Phase 1 changes are uncommitted in the working tree — see git status; a separate vc-git-manager pass handles the commit, execution and process changes split per the umbrella's commit-hygiene rule)
+- Mode: delta update (erp-dashboards Phase 1: `src/lib/erp/*` guarded read layer, `erp_fixture` local sandbox DB, `/api/health/erp`, shared dashboard-data-table/pilot-banner/degrade-banner components, "แดชบอร์ด" nav group; test-count refresh 100→212 unit/16→20 files, 49→56 e2e excl. setup)
 - Package manager: pnpm 11.5.0
+- Prior: 2026-07-19 (`per-location-shop-numbering` plan ✅ VERIFIED, archived — UPDATE-PROCESS), HEAD e1cd926

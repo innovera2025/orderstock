@@ -58,3 +58,6 @@ e2e/.auth/
 test-results/
 playwright-report/
 playwright/.cache/
+
+# REAL customer/ERP data extracted for design purposes — must never enter git history
+*REAL-DATA-DO-NOT-COMMIT*
