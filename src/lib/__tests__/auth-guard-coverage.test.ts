@@ -149,4 +149,71 @@ describe("requireAuth coverage over all server actions (ELEV-guard)", () => {
       "softDeleteOrderSheet must call requireAuthState(\"ADMIN\")",
     ).toBe(true);
   });
+
+  // ---------------------------------------------------------------------------------------------
+  // erp-dashboards Phase 2 — APPEND ONLY (registry rule: each phase appends its OWN routes here and
+  // never removes or reorders another phase's entries).
+  //
+  // `/dashboards/sales` is a business-data ERP route, so unlike Phase 1's `/api/health/erp` health
+  // probe it MUST be auth-guarded, and it carries the money-visibility gate (AC9).
+  // ---------------------------------------------------------------------------------------------
+  const ERP_DASHBOARD_PAGES = ["src/app/(main)/dashboards/sales/page.tsx"];
+
+  for (const file of ERP_DASHBOARD_PAGES) {
+    it(`ERP dashboard page ${file} calls requireAuth`, () => {
+      const source = readFileSync(resolve(ROOT, file), "utf8");
+      expect(/export default async function/.test(source), `${file} is a default async page`).toBe(
+        true,
+      );
+      expect(/requireAuth\(/.test(source), `${file} must call requireAuth()`).toBe(true);
+    });
+
+    it(`${file} derives money visibility from the SERVER session, not the client`, () => {
+      const source = readFileSync(resolve(ROOT, file), "utf8");
+      // AC9: canSeeMoney comes from the awaited requireAuth() result's role — the one sanctioned
+      // shape. A client-side check or a CSS hide would not match this.
+      expect(
+        /const\s+canSeeMoney\s*=\s*user\.role\s*===\s*"ADMIN"/.test(source),
+        `${file} must compute canSeeMoney from the server-side session role`,
+      ).toBe(true);
+      expect(/"use client"/.test(source), `${file} must stay a server component`).toBe(false);
+    });
+  }
+
+  it("no Sales dashboard component hides money with CSS instead of omitting it server-side", () => {
+    const files = [
+      "src/app/(main)/dashboards/sales/sales-kpi-tiles.tsx",
+      "src/app/(main)/dashboards/sales/do-list-table.tsx",
+      "src/app/(main)/dashboards/sales/do-lines-table.tsx",
+      "src/app/(main)/dashboards/sales/sales-breakdown-tables.tsx",
+      "src/app/(main)/dashboards/sales/sales-chart.tsx",
+    ];
+    for (const file of files) {
+      const source = readFileSync(resolve(ROOT, file), "utf8");
+      // A money value must never be rendered and then hidden — the markup simply must not exist.
+      expect(
+        /canSeeMoney[^\n]*(hidden|invisible|sr-only|display:\s*none)/.test(source),
+        `${file} appears to hide money with a class instead of omitting it`,
+      ).toBe(false);
+    }
+  });
+
+  it("the Sales dashboard reaches the ERP only through guardedQuery, never Prisma", () => {
+    const erpModules = [
+      "src/lib/sales-queries.ts",
+      "src/app/(main)/dashboards/sales/page.tsx",
+    ];
+    for (const file of erpModules) {
+      // Strip comments first: these modules DOCUMENT the ban in prose, and a comment naming the
+      // forbidden call must not read as the forbidden call itself.
+      const source = readFileSync(resolve(ROOT, file), "utf8")
+        .replace(/\/\*[\s\S]*?\*\//g, "")
+        .replace(/^\s*\/\/[^\n]*$/gm, "");
+      expect(/\$queryRaw/.test(source), `${file} must not use $queryRaw for ERP reads`).toBe(false);
+      expect(
+        /prisma\.(?!appSetting)/.test(source),
+        `${file} must not read ERP tables through Prisma`,
+      ).toBe(false);
+    }
+  });
 });
