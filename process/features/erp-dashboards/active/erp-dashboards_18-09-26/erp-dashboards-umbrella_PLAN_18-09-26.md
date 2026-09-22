@@ -297,8 +297,8 @@ During /goal execution of a phase program:
 | Phase | Report path (inside task folder) |
 |---|---|
 | 0 — Prerequisites | `process/features/erp-dashboards/active/erp-dashboards_18-09-26/phase-00-prerequisites_REPORT_18-09-26.md` |
-| 1 — ERP Read Foundation | `process/features/erp-dashboards/active/erp-dashboards_18-09-26/phase-01-erp-read-foundation_REPORT_18-09-26.md` |
-| 2 — Sales Dashboard | `process/features/erp-dashboards/active/erp-dashboards_18-09-26/phase-02-sales-dashboard_REPORT_18-09-26.md` |
+| 1 — ERP Read Foundation | `process/features/erp-dashboards/active/erp-dashboards_18-09-26/phase-01-erp-read-foundation_REPORT_22-09-26.md` (sole report; the 18-09-26 EXECUTE-time report was folded into its Appendix and deleted, 22-09-26) |
+| 2 — Sales Dashboard | `process/features/erp-dashboards/active/erp-dashboards_18-09-26/phase-02-sales-dashboard_REPORT_22-09-26.md` (sole report; the 18-09-26 EXECUTE-time report was folded into its Appendix and deleted, 22-09-26) |
 | 3 — Purchase Dashboard | `process/features/erp-dashboards/active/erp-dashboards_18-09-26/phase-03-purchase-dashboard_REPORT_18-09-26.md` |
 | 4 — Production Dashboard | `process/features/erp-dashboards/active/erp-dashboards_18-09-26/phase-04-production-dashboard_REPORT_18-09-26.md` |
 | 5 — Hardening, Export & Rollout | `process/features/erp-dashboards/active/erp-dashboards_18-09-26/phase-05-hardening-export-rollout_REPORT_18-09-26.md` |
@@ -311,7 +311,7 @@ During /goal execution of a phase program:
 |---|---|
 | 0 — Prerequisites | ✅ VERIFIED (agent level; 4 USER-RUN items pending, non-blocking) |
 | 1 — ERP Read Foundation | ✅ VERIFIED (agent level; 1 pre-declared known-gap, AC18 live login, owned by Phase 5, non-blocking) |
-| 2 — Sales Dashboard | ⏳ PLANNED |
+| 2 — Sales Dashboard | ✅ VERIFIED at agent level (22-09-26) |
 | 3 — Purchase Dashboard | ⏳ PLANNED |
 | 4 — Production Dashboard | ⏳ PLANNED |
 | 5 — Hardening, Export & Rollout | ⏳ PLANNED |
@@ -379,15 +379,17 @@ node .claude/skills/vc-audit-context/scripts/validate-context-discovery.mjs
 ## Resume and Execution Handoff
 
 - Selected plan file path: `process/features/erp-dashboards/active/erp-dashboards_18-09-26/erp-dashboards-umbrella_PLAN_18-09-26.md`
-- Last completed phase: Phase 0 — Prerequisites (✅ VERIFIED at agent level, 18-09-26)
-- Validate-contract status: Phase 0 PASS (inner-pvl); Phases 1-5 PASS (outer-pvl, pending their own
-  inner-loop passes)
-- Next step for a fresh agent: read this umbrella plan, read Phase 0's report
-  (`phase-00-prerequisites_REPORT_18-09-26.md`), then read
-  `phase-01-erp-read-foundation_PLAN_18-09-26.md` and run Phase 1's RESEARCH subagent.
-- Current phase: Phase 1 — ERP Read Foundation (RESEARCH, Step 1, not started)
-- Next action: spawn vc-research-agent for Phase 1
-- Execute-agent start instruction: read this file, read the Phase 1 plan, run the RESEARCH
+- Last completed phase: Phase 2 — Sales Dashboard (✅ VERIFIED at agent level, 22-09-26)
+- Validate-contract status: Phases 0, 1, 2 PASS (inner-pvl); Phases 3-5 PASS (outer-pvl, pending
+  their own inner-loop passes)
+- Next step for a fresh agent: read this umbrella plan, read Phase 2's report
+  (`phase-02-sales-dashboard_REPORT_22-09-26.md`), then read `phase-03-purchase-dashboard_PLAN_18-09-26.md`
+  and `phase-04-production-dashboard_PLAN_18-09-26.md` and run each phase's own RESEARCH subagent
+  (may parallelize — disjoint blast radii per the registry).
+- Current phase: Phase 3 — Purchase Dashboard AND Phase 4 — Production Dashboard (RESEARCH, Step 1,
+  not started for either)
+- Next action: spawn vc-research-agent for Phase 3 and/or Phase 4
+- Execute-agent start instruction: read this file, read the target phase's plan, run the RESEARCH
   subagent first — do not spawn execute-agent until PVL (step 4) is green.
 
 ---
@@ -395,57 +397,68 @@ node .claude/skills/vc-audit-context/scripts/validate-context-discovery.mjs
 ## Current Execution State
 
 Last updated: 22-09-26
-Current phase: 1 of 6 complete (Phase 0 ✅ VERIFIED, Phase 1 ✅ VERIFIED; program advancing to
-  Phases 2/3/4, which may run in parallel per the join conditions)
-Phase 1 name: ERP Read Foundation
-Phase 1 status: ✅ VERIFIED at agent level — all inner-loop steps 1–7 complete. Inner-PVL Gate:
-  PASS (22-09-26); the EVL confirmation run independently re-ran every validate-contract gate
-  (unit 212/212 across 20 files, e2e chromium 4/4 + mobile 3/3, lint, build) with `gates_green:
-  true` and no fix cycle. The read-only ERP pipe (`src/lib/erp/*`, 5-layer defense + compile-time
-  no-write-method guard), the local `erp_fixture` sandbox DB, `/api/health/erp`, the shared
-  `dashboard-data-table.tsx`/`pilot-banner.tsx`/`degrade-banner.tsx` components, and the 3-link
-  "แดชบอร์ด" nav group are all built and proven; db_TCL was never contacted; zero schema change.
-  1 pre-declared known-gap remains (AC18 live-login boot probe — no DBA-provisioned login exists
-  yet, owned by Phase 5, non-blocking). See
-  `phase-01-erp-read-foundation_REPORT_22-09-26.md` for full detail (supersedes the EXECUTE-time
-  `..._REPORT_18-09-26.md` as the closeout record). **Nothing from Phase 1 is committed yet** — the
-  report's Closeout Packet recommends an execution commit (source/test/fixture files) followed by
-  a separate process commit (this UPDATE PROCESS session's plan/report/context artifacts) before
-  Phase 2 starts, per the umbrella charter's commit-hygiene hard constraint.
-Phase 1 EVL: PASS — unit 212/212, e2e chromium 4/4 + mobile 3/3, lint clean, build exit 0;
-  orchestrator-run 22-09-26, no fix cycle.
-Phase 1 report: `process/features/erp-dashboards/active/erp-dashboards_18-09-26/phase-01-erp-read-foundation_REPORT_22-09-26.md`
-Next phase: Phase 2 (Sales Dashboard), loop step RESEARCH (Step 1) — spawn vc-research-agent
-  against `phase-02-sales-dashboard_PLAN_18-09-26.md`. Phase 3 (Purchase) and Phase 4 (Production)
-  may be started in parallel by separate agents/teammates once their own RESEARCH steps begin, per
-  the registry's Parallel-Safety Statement (disjoint blast radii). All three continue against the
-  local `erp_fixture` sandbox database; real production go-live for any dashboard remains gated on
-  the scoped read-only ERP login (AC18) — owned by Phase 5, not a blocker for Phases 2/3/4.
+Current phase: 2 of 6 complete (Phase 0 ✅ VERIFIED, Phase 1 ✅ VERIFIED, Phase 2 ✅ VERIFIED;
+  program advancing to Phases 3/4, which may run in parallel per the join conditions — both are
+  disjoint from Phase 2's blast radius and from each other)
+Phase 2 name: Sales Dashboard
+Phase 2 status: ✅ VERIFIED at agent level — all inner-loop steps 1–7 complete. Inner-PVL Gate:
+  PASS (22-09-26, `generated-by: inner-pvl: phase-2`). `/dashboards/sales` is built: DO/DOdtl basis
+  via `resolveSalesBasis()`, count/qty-per-unit KPIs, priced-only THB + coverage % + reconciliation
+  footnote, product/customer drilldown, hand-rolled CSS/SVG charts (donut+pie+bars — `recharts`
+  never adopted). EVL ran 2 cycles: Cycle 1 was env-blocked (11/17 gates skipped, no
+  `ERP_DATABASE_URL` in that session) but found and fixed a real defect — a cold-cache ERP failure
+  was 500ing instead of showing the Thai unavailable state (`sales-unavailable.tsx`, new, within
+  Phase 2's owned paths). Cycle 2 (this session, env configured against local `erp_fixture`) is
+  `all_pass: true`, `gates_green: true` — every gate independently re-confirmed with real fixture
+  data (10,111.00 บาท reconciliation match, 19.4% coverage, 858,937.21 บาท excluded pool). db_TCL
+  was never contacted; zero schema change. Known-gaps (non-blocking, owned elsewhere): duplicate-
+  `ItemCode` tie-break proof against a real duplicate row (routed to Phase 1 as PLAN-SUPPLEMENT
+  P1-SUPP-1), a human's visual UX sign-off. See `phase-02-sales-dashboard_REPORT_22-09-26.md` for
+  full detail (supersedes the EXECUTE-time `..._REPORT_18-09-26.md`, now deleted, as the closeout
+  record — folded into that report's Appendix). Also this session: the duplicate Phase 1 report
+  (`..._REPORT_18-09-26.md` vs `..._REPORT_22-09-26.md`) was consolidated — the 18-09-26 file is
+  deleted, its unique step detail folded into the 22-09-26 report's Appendix, and all cross-file
+  references updated. **Nothing from Phase 2 is committed yet** — the report's Closeout Packet
+  recommends an execution commit (source/test/fixture files) followed by a separate process commit
+  (this UPDATE PROCESS session's plan/report/registry/context artifacts), per the umbrella
+  charter's commit-hygiene hard constraint. Phase 1's own execution commit is ALSO still
+  outstanding from the prior phase closeout — both remain to be made by the user/vc-git-manager.
+Phase 2 EVL: PASS (`all_pass: true`) after 1 in-flight fix cycle — unit 23 files/282 passed/1 todo,
+  e2e 17 passed (16 sales scenarios + `[setup]`), lint clean, build exit 0, agent-parity clean;
+  orchestrator-run 22-09-26.
+Phase 2 report: `process/features/erp-dashboards/active/erp-dashboards_18-09-26/phase-02-sales-dashboard_REPORT_22-09-26.md`
+Next phase: Phase 3 (Purchase Dashboard) and Phase 4 (Production Dashboard), each starting their
+  own loop step RESEARCH (Step 1) — spawn vc-research-agent against
+  `phase-03-purchase-dashboard_PLAN_18-09-26.md` and `phase-04-production-dashboard_PLAN_18-09-26.md`
+  respectively. Both may run in parallel by separate agents/teammates per the registry's
+  Parallel-Safety Statement (disjoint blast radii from each other and from Phase 2). All continue
+  against the local `erp_fixture` sandbox database; real production go-live remains gated on the
+  scoped read-only ERP login (AC18) — owned by Phase 5, not a blocker for Phases 3/4.
 
-Validate-contracts written for all phases (outer PVL pass, 18-09-26; Phases 0 and 1 additionally
-re-validated via inner-PVL, superseding their outer-pvl contracts):
+Validate-contracts written for all phases (outer PVL pass, 18-09-26; Phases 0, 1, and 2
+additionally re-validated via inner-PVL, superseding their outer-pvl contracts):
 | Phase | Gate |
 |---|---|
 | phase-00-prerequisites | PASS (inner-pvl: phase-0, supersedes outer-pvl) |
 | phase-01-erp-read-foundation | PASS (inner-pvl: phase-1, supersedes outer-pvl) |
-| phase-02-sales-dashboard | PASS (outer-pvl) |
+| phase-02-sales-dashboard | PASS (inner-pvl: phase-2, supersedes outer-pvl) |
 | phase-03-purchase-dashboard | PASS (outer-pvl) |
 | phase-04-production-dashboard | PASS (outer-pvl) |
 | phase-05-hardening-export-rollout | PASS (outer-pvl) |
 
-Program Net Gate: PASS — Phases 0 and 1 fully closed (RIPEV+UP complete, both ✅ VERIFIED).
-  Phases 2/3/4's outer-pvl contracts remain current pending their own inner-loop RESEARCH/INNOVATE
+Program Net Gate: PASS — Phases 0, 1, and 2 fully closed (RIPEV+UP complete, all ✅ VERIFIED).
+  Phases 3/4's outer-pvl contracts remain current pending their own inner-loop RESEARCH/INNOVATE
   passes, which may each trigger inner-PVL re-validation per the Inner Loop Refresh Note mechanism.
 Latest validator run: 22-09-26 — `validate-context-discovery.mjs`, `validate-plan-inventory.mjs`,
-  and `validate-agent-parity.mjs` all re-run at this UPDATE PROCESS step for Phase 1's closeout
+  and `validate-agent-parity.mjs` all re-run at this UPDATE PROCESS step for Phase 2's closeout
   (see the phase report's Closeout Packet / this UPDATE PROCESS session's audit results for exact
   exit codes).
 
 Loop step values: RESEARCH | INNOVATE | PLAN-SUPPLEMENT | PVL | EXECUTE | EVL | UPDATE-PROCESS
 Orchestrator rule: read each phase plan's own "## Phase Loop Progress" checkboxes before spawning
 any subagent. Never spawn execute-agent for a phase whose Validate Contract is still a placeholder
-or reads BLOCKED. Next action: spawn vc-research-agent for Phase 2 (and, when ready to parallelize,
-Phase 3 and Phase 4) — Step 1 of each phase's own inner loop.
+or reads BLOCKED. Next action: spawn vc-research-agent for Phase 3 and Phase 4 (may parallelize) —
+Step 1 of each phase's own inner loop.
 
 Note: The Stable Program Goal above is fixed. This section is the only part that changes —
 update-process-agent rewrites it after every phase closeout (overwrite, not append — git history

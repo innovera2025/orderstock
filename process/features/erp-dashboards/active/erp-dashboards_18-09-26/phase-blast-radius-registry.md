@@ -75,7 +75,8 @@ status: DONE (22-09-26 — EXECUTE complete, all owned paths created/edited as l
   if Phase 1 needs to change shared/base DDL that a domain seed depends on, it documents the
   change in its own report and the domain phase re-checks compatibility at its next PLAN-SUPPLEMENT
   step — Phase 1 does not reach into a domain seed file to "fix it up."
-- `process/features/erp-dashboards/active/erp-dashboards_18-09-26/phase-01-erp-read-foundation_REPORT_18-09-26.md`
+- `process/features/erp-dashboards/active/erp-dashboards_18-09-26/phase-01-erp-read-foundation_REPORT_22-09-26.md`
+  (sole report; the 18-09-26 EXECUTE-time report was folded into its Appendix and deleted, 22-09-26)
 
 **Per-Domain Fixture Seed Split (resolves the Phase-1-vs-P2/P3/P4 fixture-ownership ambiguity):**
 
@@ -151,7 +152,8 @@ phase's own report.
   sales-money-coverage-footnote fixture tests
 - `e2e/dashboards-sales.spec.ts` (or equivalent) — Sales-specific e2e gates (AC3, AC4, plus Sales'
   share of AC1/AC9/AC10-AC13)
-- `process/features/erp-dashboards/active/erp-dashboards_18-09-26/phase-02-sales-dashboard_REPORT_18-09-26.md`
+- `process/features/erp-dashboards/active/erp-dashboards_18-09-26/phase-02-sales-dashboard_REPORT_22-09-26.md`
+  (sole report; the 18-09-26 EXECUTE-time report was folded into its Appendix and deleted, 22-09-26)
 
 **Recharts spike (Phase 2 only):**
 - `package.json` — ONLY Phase 2 may add `recharts` as a dependency, and only if its INNOVATE-step
@@ -303,7 +305,7 @@ only; always write `status: BLOCKED-skipped` for new entries.
 |---|---|
 | Phase 0 | DONE — all owned paths touched exactly as claimed; no shared-file collision; 12/12 EVL gates PASS (18-09-26) |
 | Phase 1 | DONE — all owned paths touched exactly as claimed; no shared-file collision; EVL confirmation PASS, `gates_green: true`, no fix cycle (22-09-26); ✅ VERIFIED at agent level |
-| Phase 2 | (no field — not started) |
+| Phase 2 | DONE — all owned paths touched exactly as claimed (plus one within-radius resilience fix, `sales-unavailable.tsx`); no shared-file collision; EVL confirmation `all_pass: true`/`gates_green: true` after 1 in-flight fix cycle (22-09-26); ✅ VERIFIED at agent level |
 | Phase 3 | (no field — not started) |
 | Phase 4 | (no field — not started) |
 | Phase 5 | (no field — not started) |

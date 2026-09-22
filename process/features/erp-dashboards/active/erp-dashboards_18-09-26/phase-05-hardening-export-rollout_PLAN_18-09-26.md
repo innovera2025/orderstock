@@ -226,7 +226,7 @@ export is a serialization of the SAME query result, not a parallel query path. C
 
 - **Sales:** reuse whatever function Phase 2 exposes for the DO list (`tbl_DOhdr`/`tbl_Dodtl` basis
   via `resolveSalesBasis()`) and DO-line detail. Confirm the exact exported function name/path from
-  `phase-02-sales-dashboard_REPORT_18-09-26.md` during RESEARCH (Step 0) — do not guess it.
+  `phase-02-sales-dashboard_REPORT_22-09-26.md` during RESEARCH (Step 0) — do not guess it.
 - **Purchase:** reuse Phase 3's PO list (`PurchaseInvoiceHdr`/`PurchaseOrderHdr` dual-basis) and
   PO-line detail functions.
 - **Production:** reuse Phase 4's MO list (`tbl_MoHdr`/`tbl_BatchOrder` plan-only) and
@@ -284,10 +284,11 @@ export is a serialization of the SAME query result, not a parallel query path. C
 
 ### Step 0 — Confirm real interfaces before writing code (RESEARCH prerequisite)
 
-- [ ] 0.1. Read `phase-01-erp-read-foundation_REPORT_18-09-26.md` to confirm the exact file names and
+- [ ] 0.1. Read `phase-01-erp-read-foundation_REPORT_22-09-26.md` (the 18-09-26 EXECUTE-time
+      report was folded into its Appendix and deleted, 22-09-26) to confirm the exact file names and
   exported function signatures for: `guardedQuery`, `assertReadOnlySql`, the cache wrapper, the
   degrade-path helper, and `dashboard-data-table.tsx`'s real prop shape (sort/paginate API surface).
-- [ ] 0.2. Read `phase-02-sales-dashboard_REPORT_18-09-26.md`, `phase-03-purchase-dashboard_REPORT_18-09-26.md`,
+- [ ] 0.2. Read `phase-02-sales-dashboard_REPORT_22-09-26.md`, `phase-03-purchase-dashboard_REPORT_18-09-26.md`,
   `phase-04-production-dashboard_REPORT_18-09-26.md` to confirm each dashboard's exact data-fetch
   function names/paths for its main list and line/detail data, and each dashboard's exact
   `canSeeMoney` gating implementation (confirm it is truly server-side in every case — this is the

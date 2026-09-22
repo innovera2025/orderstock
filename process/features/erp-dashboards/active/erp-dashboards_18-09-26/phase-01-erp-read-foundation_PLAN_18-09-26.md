@@ -17,8 +17,9 @@ metadata:
 **SPEC (frozen, governs this phase):** `process/features/erp-dashboards/active/erp-dashboards_18-09-26/erp-dashboards_SPEC_18-09-26.md`
 **Phase status:** ✅ VERIFIED at agent level (22-09-26)
 **Report destination:** `process/features/erp-dashboards/active/erp-dashboards_18-09-26/phase-01-erp-read-foundation_REPORT_22-09-26.md`
-(EXECUTE-time report at `phase-01-erp-read-foundation_REPORT_18-09-26.md` remains as
-Steps-A–G detail; the 22-09-26 report is the final UPDATE PROCESS closeout record)
+(the EXECUTE-time report, formerly `phase-01-erp-read-foundation_REPORT_18-09-26.md`, was folded
+into the 22-09-26 report's Appendix and deleted at UPDATE PROCESS, 22-09-26 — the 22-09-26 report
+is now the sole closeout record, Steps A–F detail included)
 Date: 18-09-26
 Status: ✅ VERIFIED at agent level (22-09-26) — see Phase Completion Rules; 1 pre-declared
 known-gap (AC18 live login, owned by Phase 5), non-blocking
@@ -241,7 +242,9 @@ permitted shared-file appends:
 - `e2e/dashboards-nav-visibility.spec.ts` (proves AC1's infra half: nav renders 3 links, phone tab
   bar unchanged — the full AC1 e2e scenario per dashboard is completed once Phase 2/3/4 land real
   pages, but the nav-shell assertion itself is Phase 1's to prove now)
-- `process/features/erp-dashboards/active/erp-dashboards_18-09-26/phase-01-erp-read-foundation_REPORT_18-09-26.md`
+- `process/features/erp-dashboards/active/erp-dashboards_18-09-26/phase-01-erp-read-foundation_REPORT_22-09-26.md`
+  (this is now the sole report; the original 18-09-26 EXECUTE-time report was folded into its
+  Appendix and deleted at UPDATE PROCESS, 22-09-26)
 
 **Edited (existing files, append-only per registry rule):**
 - `src/app/nav-links.tsx` — add the entire "แดชบอร์ด" group (all 3 links) in one pass
@@ -832,8 +835,8 @@ loop `R → I → P → PVL → E → EVL → UP` SKIPS SPEC (the umbrella SPEC 
 - [x] 5. EXECUTE — vc-execute-agent (22-09-26): all checklist items Steps A-F done; per-section
       test gates (Step G1-G6) run and green. Unit 212/212 (20 files), e2e chromium 4/4 + mobile
       3/3, lint clean, build exit 0. Hybrid: `erp_fixture` + 10 rows applied to the LOCAL sandbox
-      only; `/api/health/erp` returned `{"ok":true,...,"rows":1}`. db_TCL never contacted. See
-      `phase-01-erp-read-foundation_REPORT_18-09-26.md`.
+      only; `/api/health/erp` returned `{"ok":true,...,"rows":1}`. db_TCL never contacted. See the
+      Appendix of `phase-01-erp-read-foundation_REPORT_22-09-26.md` for full step detail.
 - [x] 6. EVL — orchestrator-run EVL confirmation (22-09-26): all gates independently re-run and
       green (unit 212/212, e2e chromium 4/4 + mobile 3/3, lint, build); `gates_green: true`, no fix
       cycle required. No new follow-up stubs; EVL HANDOFF SUMMARY consumed by UPDATE PROCESS.

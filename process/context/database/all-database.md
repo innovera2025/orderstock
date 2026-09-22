@@ -618,3 +618,39 @@ returns business data MUST be auth-guarded and gets its own coverage entry.
   not eliminated, by layers 1, 3, 4, and 5.
 - TLS / connection-string edge cases against the customer's actual SQL Server version are untested
   (no customer-representative server available in dev).
+
+### Sales dashboard query contract (erp-dashboards Phase 2)
+
+Added 22-09-26 by `phase-02-sales-dashboard`. Establishes the pattern every later domain dashboard
+(Purchase, Production) should follow when adding its own `db/erp-queries/{domain}/*.sql` set.
+
+- **Basis**: `tbl_DOhdr`/`tbl_Dodtl` (delivery orders), selected via an `AppSetting`-backed
+  `resolveSalesBasis()` switch (Sales-only key, additive — does not change any existing
+  `AppSetting` meaning). Only the `"do"` branch is implemented; `"so"`/`"invoice"` are recorded as
+  `it.todo` extension points, explicitly out of SPEC scope.
+- **Query files**: `db/erp-queries/sales/{do-headers,do-lines,do-by-product,do-by-customer,
+  sales-invoice-excluded-total}.sql` — each a single `WITH … SELECT` statement. Optional filters
+  use `(@p IS NULL OR col = @p)` so ONE static statement serves every filter combination; no string
+  concatenation anywhere (enforced by a unit sweep, not just convention).
+- **Runtime embedding gotcha**: `next.config.ts` sets `output: "standalone"`, and neither the
+  standalone bundle nor the production `Dockerfile`'s COPY list includes `db/`. Reading the `.sql`
+  files from disk at runtime (`readFileSync`) would work in dev/`pnpm start` and then fail **only
+  inside the production container** — a break no other gate in this repo would catch. The fix:
+  the SQL is embedded as string constants (`src/lib/sales-sql.ts`), with a Fully-Automated unit
+  test asserting each constant is **byte-identical** to its source `.sql` file (plus
+  single-statement / read-only-keyword / no-concatenation sweeps), so the two cannot silently
+  diverge. **Any future domain adding its own `db/erp-queries/{domain}/*.sql` should follow this
+  same embed-plus-byte-identity-gate pattern**, not read from disk at runtime.
+- **`InventoryItem` tie-break applied**: every query joining a transactional table to
+  `InventoryItem` by `ItemCode` uses `ROW_NUMBER() OVER (PARTITION BY ItemCode ORDER BY Roworder
+  DESC)` and takes the highest-`Roworder` row (see the Cross-Phase Precondition in the program's
+  blast-radius registry). Proven so far only by a SQL-pattern grep — proving it against a REAL
+  duplicate `ItemCode` row needs a fixture change Phase 2 may not make unilaterally (it would edit
+  Phase 1's shared base fixture file); routed as a PLAN-SUPPLEMENT to Phase 1.
+- **Money-gate contract**: money figures are ALWAYS accompanied by a coverage % and a reconciliation
+  footnote naming the excluded total, never presented as if they were the whole picture. This
+  reconciliation-footnote pattern (not just role-based hiding) is the durable convention for any
+  ERP-sourced money figure that only covers a subset of underlying documents.
+- **Quantity aggregation**: quantities are summed strictly PER `MainUnits` value, never across
+  different units — the same rule Phase 1 established structurally now has a proven Phase-2 example
+  (`sumQuantityByUnit()`).

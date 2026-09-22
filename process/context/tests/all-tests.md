@@ -1,6 +1,6 @@
 ---
 name: context:all-tests
-description: Testing entrypoint for orderstock — Vitest 3.2.6 (100 tests/16 files) and Playwright E2E (49 tests excl. [setup], incl. mobile + tablet projects) both real and wired, sandbox SQL Server constraint
+description: Testing entrypoint for orderstock — Vitest 3.2.6 (282 tests/23 files) and Playwright E2E (49+ tests excl. [setup], incl. mobile + tablet projects, plus the erp-dashboards suite) both real and wired, sandbox SQL Server constraint
 keywords: tests, testing, vitest, playwright, e2e, unit, integration, verification, coverage, sandbox, sql server, health check, build, lint, storage state, fixtures, totals, be-date, order-save, mobile, mobile viewport, mobile project, tablet, tablet project, sidebar drawer, clean-state, print page count, pdf page count, one-page print, print footer, roster, location, shop location, per-location, buildLocationRoster, locations, location management, locations.test, managed list, shop location filter, location filter, searchParam filter, shops.spec, orders filter gate
 related: [context:all-database, context:all-auth]
 metadata:
@@ -268,6 +268,57 @@ applied (see `database/all-database.md` § ERP Read Layer for the exact sqlcmd i
 **Never run any ERP fixture script, probe, or test against `db_TCL`.** Every gate above targets
 localhost only; the live-ERP smoke test is Phase 5's Agent-Probe and needs the DBA-provisioned
 read-only login first.
+
+---
+
+## Sales dashboard testing (erp-dashboards Phase 2)
+
+Added 22-09-26 by `phase-02-sales-dashboard`. Extends the ERP fixture/guard pattern above with a
+domain-specific fixture (`db/erp-fixture/sales-seed.sql`) and reconciliation-style Hybrid gates.
+
+### Unit suites
+
+| File | Proves |
+|---|---|
+| `src/lib/__tests__/sales-basis-reconciliation.test.ts` | Fully-Automated half: `resolveSalesBasisFromValue()` decision, `sumQuantityByUnit()` never-sums-across-units, period-bin boundaries, SQL byte-identity/read-only-keyword/no-concatenation/`Roworder`-tie-break sweeps over the `db/erp-queries/sales/*.sql` files. Hybrid half (same file, ERP-connected): header `TotalAmount` sum == detail `Amount` sum exactly against `erp_fixture` |
+| `src/lib/__tests__/sales-money-coverage-footnote.test.ts` | Fully-Automated wording assertions + Hybrid numeric half: coverage % and the excluded `SalesInvoiceHdr` total, against real fixture rows |
+| `src/lib/__tests__/sales-fixture-expected.ts` | Non-`.test.ts` module holding the shared fixture constants both suites above import (vitest only collects `*.test.ts`, so this avoids re-executing describe blocks) |
+
+Suite total moved 212 → **282 tests across 23 files**.
+
+### Hybrid gate preconditions (this domain adds one requirement beyond Phase 1's)
+
+Both Hybrid gates above **actually run** (not vacuously skip) only when BOTH are set:
+```bash
+export ERP_DATABASE_URL="sqlserver://localhost:1433;database=erp_fixture;user=sa;password=<sandbox sa>;encrypt=true;trustServerCertificate=true"
+export ERP_ALLOW_WRITE_CAPABLE_LOGIN=1   # LOCAL FIXTURE ONLY — sandbox `sa` is write-capable, never set in production
+```
+Without `ERP_DATABASE_URL`, both Hybrid gates self-skip with a loud `console.warn` and every
+fixture-backed e2e scenario fails with a generic page error rather than a useful assertion —
+confirm the env is set before treating a red run as a code regression.
+
+### E2E
+
+`e2e/dashboards-sales.spec.ts` — 19 tests: the 16 original scenarios (nav+page load both roles,
+unauth redirect, reconciliation display, coverage+footnote, money role gate via raw-HTML assertion
+— never CSS-hidden, filter URL round-trip, period-toggle round-trip, donut/pie render + cross-filter
+×2, customer/product drilldown, sort+paginate preserving filters, 390×844 mobile card view via an
+in-file `test.use()` override) plus 2 resilience gates added during EVL: the page always returns 200
+with a dashboard root (never Next's generic error screen), and with the ERP unreachable the Thai
+unavailable state renders with filters still round-tripping and zero money markup for any role. The
+second resilience gate self-skips via `/api/health/erp` when the ERP is actually healthy.
+
+**Gotcha:** `pnpm test:e2e -- <spec>` does NOT filter — the `--` argument is swallowed and the full
+suite runs. Use `pnpm exec playwright test <spec>` for a scoped run.
+
+### New pattern: degrade-on-cold-cache
+
+Phase 1's `getCached()` deliberately rethrows when an ERP read fails and nothing has ever been
+cached (cold process, or an outage starting before the first successful read) — this is by design,
+not a bug. Phase 2 is the reference implementation for handling that at the page level: wrap the
+ERP read in `try/catch` and render a dedicated unavailable view (`sales-unavailable.tsx`) instead of
+letting the throw escape into Next's generic 500 page. Phases 3/4 should reuse this pattern; it is
+not yet lifted into a shared component.
 
 ### Known gaps
 

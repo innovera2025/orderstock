@@ -548,6 +548,47 @@ once a day had more than a handful of หมายเหตุ notes. Fixed WITH
 - Real Chrome print-preview visual confirmation remains Agent-Probe only (not yet re-verified with
   a live browser) — see `process/general-plans/backlog/matrix-darkmode-print-agent-probe-residuals_NOTE_13-07-26.md`.
 
+## ERP dashboard UI patterns (`erp-dashboards` program, Phase 1 + Phase 2)
+
+New shared components/patterns introduced by the `erp-dashboards` program, all under
+`src/components/` (shared, Phase-1-owned) or `src/app/(main)/dashboards/sales/**`
+(Sales-specific, Phase-2-owned — not yet lifted to a shared component):
+
+- **`dashboard-data-table.tsx`** (Phase 1, shared) — server-rendered, data-shape-agnostic table:
+  URL-driven sort (`?sort=`, `-` prefix = desc) and pagination (`?page=`), every other searchParam
+  preserved, desktop table + `md`-breakpoint mobile card list (mirrors `admin/users/users-mobile.tsx`'s
+  established card pattern), empty state. Reused as-is by `do-list-table.tsx`/`do-lines-table.tsx`.
+- **`pilot-banner.tsx`** / **`degrade-banner.tsx`** (Phase 1, shared) — the two reusable dashboard
+  banners: an always-visible pilot-data notice, and a "ข้อมูลอาจไม่ล่าสุด" stale-data banner driven by
+  `erpDegradeState()`.
+- **`sales-unavailable.tsx`** (Phase 2, new — EVL fix) — the reference pattern for a cold-cache ERP
+  outage: same `data-testid="sales-dashboard"` root, pilot banner, a working filter bar (so the
+  date range/period survive a retry), zero figures, Thai notice "ไม่สามารถเชื่อมต่อระบบ ERP ได้ในขณะนี้".
+  Wrap any future dashboard's ERP read in `try/catch` and render an equivalent view rather than
+  letting `getCached()`'s cold-cache rethrow escape into Next's generic error page.
+- **`sales-slice-chart.tsx`** (Phase 2, shared SVG renderer within Sales) — one hand-rolled
+  donut/pie renderer (SVG arc paths, outer+inner radius for the donut's centre total) powering both
+  `sales-status-donut.tsx` and `sales-category-pie.tsx`. **Charting decision: hand-rolled CSS/SVG,
+  `recharts` was evaluated as a time-boxed optional spike and NOT adopted** — every chart form the
+  approved mockup needs (period bar charts, status donut, category pie) was deliverable without a
+  new dependency, keeping these components pure server components shipping zero client JS and
+  inheriting light/dark correctness from pguard tokens automatically. Phases 3/4 should reuse this
+  renderer's pattern (or lift it to a shared component) rather than re-running the spike.
+- **`sales-period-toggle.tsx`** (Phase 2) — สัปดาห์/เดือน/ปี as three links, URL-synced via `?period=`,
+  default เดือน. The two bar charts (count + ADMIN-only money) always read the SAME bin set so their
+  bars can never be cut on different period boundaries.
+- **`sales-filter-bar.tsx`** (Phase 2) — ONE native `method="get"` form (INNOVATE decision over a
+  per-field `useRouter` push pattern), hidden inputs preserve params with no visible control, plus
+  dismissible chips for every active non-date filter.
+- **Money-visibility gating** — `canSeeMoney` is computed ONCE server-side in `page.tsx`
+  (`user.role === "ADMIN"`) and every consumer conditionally OMITS markup
+  (`if (canSeeMoney)` / `{canSeeMoney && (...)}`) — never CSS-hidden. This is the pattern any future
+  money-bearing dashboard (Purchase, Production) must follow; it is proven by an e2e assertion
+  against the raw server-rendered HTML, not just the visible DOM.
+- **"แดชบอร์ด" nav group** (Phase 1) — additive 3-link group in `nav-links.tsx` (Sales/Purchase/
+  Production), ADMIN+STAFF, phone bottom-tab-bar UNCHANGED at 3 tabs (dashboards are not tab-bar
+  entries — never add a 4th tab per the umbrella charter's hard safety constraint).
+
 ## Update triggers
 
 Update this file when: a new token is added, a semantic alias changes value or a new one is

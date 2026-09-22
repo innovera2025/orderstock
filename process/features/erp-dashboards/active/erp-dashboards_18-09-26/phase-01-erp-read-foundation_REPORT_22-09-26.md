@@ -14,10 +14,11 @@ read-only ERP pipe (`src/lib/erp/*`), the local `erp_fixture` sandbox DB, `/api/
 shared `dashboard-data-table.tsx`/`pilot-banner.tsx`/`degrade-banner.tsx` components, and the
 3-link "แดชบอร์ด" nav group are all built and proven. db_TCL was never contacted. Nothing is
 committed yet. One pre-declared known-gap remains (AC18 live-login boot probe, owned by Phase 5).
-This report supersedes the EXECUTE-time report
+This report supersedes and REPLACES the EXECUTE-time report
 (`phase-01-erp-read-foundation_REPORT_18-09-26.md`, status `COMPLETE_WITH_GAPS`) as the phase's
-final closeout record — see that file for full per-step EXECUTE detail (Steps A–G), which is not
-re-derived here.
+sole closeout record. That file has been deleted (UPDATE PROCESS, 22-09-26); its full per-step
+EXECUTE detail (Steps A–F, the Read-Only Proof table, and the granular per-file test gate table)
+is folded in verbatim below as an Appendix so nothing is lost.
 
 ---
 
@@ -288,3 +289,99 @@ This is an **accepted known-gap**, recorded in `all-database.md`, not a closed i
 go-live for the ERP dashboards still requires EITHER the scoped read-only login provisioned and in
 use, OR a dated, named re-confirmation of this exception — a hard Phase 5 rollout gate. "The switch
 works" is never sufficient for production sign-off on its own.
+
+---
+
+## Appendix — EXECUTE-time step detail (folded in from the deleted 18-09-26 report)
+
+Preserved verbatim for historical fidelity. Steps E/F test counts and the Read-Only Proof table
+below are the EXECUTE-session evidence; the "Test Gate Outcomes" section above is the independent
+EVL re-confirmation of the same claims and is the authoritative gate record.
+
+### Step A — pattern confirmation (all 6 items)
+
+- **A1** `src/lib/db.ts` + `resolve-database-url.ts` re-read; singleton + raw-read contract
+  unchanged since 18-09-26. Mirrored exactly.
+- **A2** Confirmed empirically (not just by doc): `CREATE DATABASE erp_fixture` succeeded inside
+  the existing `orderstock-sql` container, and `sys.databases` now lists BOTH `orderstock` and
+  `erp_fixture`. No `docker-compose.yml` change was needed or made.
+- **A3** Sibling reference read READ-ONLY at `/Users/innovera/Documents/TCL/server/src/erp/
+  erp-adapter.ts` (normalizer, `FORBIDDEN_KEYWORDS`, `assertReadOnlySql`) and
+  `drivers/mssql.driver.ts` (`PERMISSION_PROBE_SQL`). Logic and structure ported; nothing imported,
+  no Thai comments copied — everything re-commented in English.
+- **A4** `admin/users/users-mobile.tsx` read; its `md`-breakpoint card-list pattern is what
+  `dashboard-data-table.tsx`'s mobile branch mirrors.
+- **A5** `src/app/api/health/route.ts` read: it calls no auth guard and hits the DB directly.
+  Confirms `/api/health/erp` should follow the same unauthenticated-probe precedent.
+- **A6** `ui/card.tsx` + `ui/chip.tsx` read; both reused rather than restyled.
+
+### Step B — guard, pool, resolver (5 new files under `src/lib/erp/`)
+
+- `resolve-erp-database-url.ts` — raw-read `ERP_DATABASE_URL` resolver, same `$`-in-password
+  dotenv-expand bypass as `DATABASE_URL`, never logs the value.
+- `erp-adapter.ts` — the whole guard: `normalizeSqlForGuard`, `assertReadOnlySql` (19 keyword
+  rules), `guardedQuery` (the single choke point), `ErpAdapter` + compile-time no-write-method
+  type guard, `PERMISSION_PROBE_SQL` + `verifyReadOnlyBoot`, and two typed error classes.
+- `pool.ts` — the separate `mssql.ConnectionPool` singleton, a small JDBC→mssql-config parser,
+  `readOnlyIntent: true`, and `shouldVerifyBootProbe()` gating.
+- `cache.ts` — 5-minute TTL `Map` cache with last-known-good fallback + `clearErpCache()`.
+- `degrade.ts` — `erpDegradeState()` and the exact `"ข้อมูลอาจไม่ล่าสุด"` constant.
+
+Grepped `src/lib/erp/*` for `prisma` / `$queryRaw` / `@prisma` before closing Step B: the only
+matches are comment lines stating the rule. Zero code usage.
+
+### Step C — fixture database (LOCAL SANDBOX ONLY)
+
+`db/erp-fixture/00-schema.sql` (idempotent `erp_fixture` DB + `dbo.InventoryItem` with the real
+composite `(Roworder, ItemCode)` PK) and `01-seed.sql` (10 idempotent rows: mixed `ItemGRP`,
+several units, one deliberate NULL `MainUnits`). Both carry a prominent
+"NEVER RUN AGAINST db_TCL" header. Applied to the `orderstock-sql` container only; target was
+verified as localhost before each command. Re-running the seed affects 0 rows and the count stays
+at 10.
+
+### Step D — route, components, nav
+
+- `src/app/api/health/erp/route.ts` — reads through `getCached` → `getErpPool` → `guardedQuery`.
+  Returns HTTP 200 always (`{ok:true, latencyMs, stale, rows}` or `{ok:false, error}`), never 500,
+  never echoes driver/connection detail to the client.
+- `src/components/dashboard-data-table.tsx` — shared, data-shape-agnostic, server-rendered table:
+  URL-driven sort (`?sort=`, `-` prefix = desc), pagination (`?page=`), every other searchParam
+  preserved, desktop table + mobile card list, empty state.
+- `src/components/pilot-banner.tsx` and `degrade-banner.tsx` — the two reusable banners Phases
+  2/3/4 import.
+- `src/app/nav-links.tsx` — new "แดชบอร์ด" group (additive), 3 links, no `adminOnly` (ADMIN+STAFF).
+- Verified: `git status` confirmed `src/components/bottom-tab-bar.tsx`, `prisma/`, and
+  `package.json` were untouched at EXECUTE time.
+
+### Step E/F — tests and docs (EXECUTE-time counts)
+
+57 guard tests, 24 cache/degrade/parser tests, 12 resolver tests, 17 data-table tests, 7 new e2e
+tests. `playwright.config.ts` `mobile` `testMatch` broadened. `auth-guard-coverage.test.ts` gained
+an explicit public-health-route exemption block. Context docs appended and the env template
+documents `ERP_DATABASE_URL` + `ERP_VERIFY_BOOT_PROBE` with placeholders only.
+
+### Read-Only Proof (EXECUTE-time, 5 mechanisms)
+
+| # | Mechanism | Where | Proven by |
+|---|---|---|---|
+| 1 | Comment-strip + literal/identifier masking before any scanning | `normalizeSqlForGuard` | 6 tests: `update_flag`, `[Update Date]`, forbidden word inside a string literal, `;` smuggling, BOM, whitespace collapse |
+| 2 | 19-rule keyword denylist + single-statement + must-start-SELECT/WITH | `assertReadOnlySql` | 19 keyword tests + 14 statement-shape tests + case-insensitivity |
+| 3 | Guard runs BEFORE the pool; params bound via `request.input` only | `guardedQuery` | "never touches the pool" test asserts `pool.request()` was not called at all for a forbidden statement, looped over all 19 rules; a separate test asserts the SQL sent still contains `@grp` and NOT the literal value |
+| 4 | `HAS_PERMS_BY_NAME` boot probe refuses a write-capable login | `verifyReadOnlyBoot` | 5 mocked per-permission refusal tests + multi-grant naming + no-rows refusal + probe-error refusal + a test that the probe SQL is itself SELECT-only. Also proven LIVE (see below) |
+| 5 | `ApplicationIntent=ReadOnly` | `parseJdbcSqlServerUrl` | asserts `options.readOnlyIntent === true` unconditionally |
+| + | Compile-time no-write-method guard on `ErpAdapter` | `erp-adapter.ts` | `pnpm build` / typecheck fails if a write-shaped method name is added |
+
+**Live refusal evidence (EXECUTE-time, stronger than the plan required).** With
+`ERP_VERIFY_BOOT_PROBE=1` against the real (write-capable `sa`) sandbox connection, the boot probe
+refused a genuine live connection and the route degraded safely:
+
+```
+GET /api/health/erp -> {"ok":false,"error":"ERP connection failed"}  HTTP 200
+server log: ErpWritePermissionError: [ERP read-only boot probe] refusing to serve ERP reads:
+  the connected login holds write/DDL permission(s): INSERT, UPDATE, DELETE, ALTER, CREATE TABLE.
+  at verifyReadOnlyBoot (src/lib/erp/erp-adapter.ts:411:11)
+```
+
+(This live-refusal proof predates the 22-09-26 write-capable-login opt-in switch documented in the
+Addendum above; both remain true — the opt-in only changes behavior when the switch is explicitly
+set to `"1"`.)
