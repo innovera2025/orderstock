@@ -216,4 +216,90 @@ describe("requireAuth coverage over all server actions (ELEV-guard)", () => {
       ).toBe(false);
     }
   });
+
+  // ---------------------------------------------------------------------------------------------
+  // erp-dashboards Phase 3 — APPEND ONLY. `/dashboards/purchase` (list + PO detail) is a
+  // business-data ERP route, so both pages MUST call requireAuth() and carry the money-visibility
+  // gate (AC9), same contract as Phase 2's Sales dashboard.
+  // ---------------------------------------------------------------------------------------------
+  const PURCHASE_DASHBOARD_PAGES = [
+    "src/app/(main)/dashboards/purchase/page.tsx",
+    "src/app/(main)/dashboards/purchase/[poNo]/page.tsx",
+  ];
+
+  for (const file of PURCHASE_DASHBOARD_PAGES) {
+    it(`ERP dashboard page ${file} calls requireAuth`, () => {
+      const source = readFileSync(resolve(ROOT, file), "utf8");
+      expect(/export default async function/.test(source), `${file} is a default async page`).toBe(
+        true,
+      );
+      expect(/requireAuth\(/.test(source), `${file} must call requireAuth()`).toBe(true);
+    });
+
+    it(`${file} derives money visibility from the SERVER session, not the client`, () => {
+      const source = readFileSync(resolve(ROOT, file), "utf8");
+      expect(
+        /const\s+canSeeMoney\s*=\s*user\.role\s*===\s*"ADMIN"/.test(source),
+        `${file} must compute canSeeMoney from the server-side session role`,
+      ).toBe(true);
+      expect(/"use client"/.test(source), `${file} must stay a server component`).toBe(false);
+    });
+  }
+
+  it("the Purchase dashboard reaches the ERP only through guardedQuery, never Prisma", () => {
+    const erpModules = [
+      "src/lib/purchase-data.ts",
+      "src/app/(main)/dashboards/purchase/page.tsx",
+      "src/app/(main)/dashboards/purchase/[poNo]/page.tsx",
+    ];
+    for (const file of erpModules) {
+      const source = readFileSync(resolve(ROOT, file), "utf8")
+        .replace(/\/\*[\s\S]*?\*\//g, "")
+        .replace(/^\s*\/\/[^\n]*$/gm, "");
+      expect(/\$queryRaw/.test(source), `${file} must not use $queryRaw for ERP reads`).toBe(false);
+      expect(
+        /prisma\.(?!appSetting)/.test(source),
+        `${file} must not read ERP tables through Prisma`,
+      ).toBe(false);
+    }
+  });
+
+  // ---------------------------------------------------------------------------------------------
+  // erp-dashboards Phase 4 — APPEND ONLY. `/dashboards/production` (MO list + MO detail) is a
+  // business-data ERP route. Unlike Sales/Purchase, Production has NO money data at all (no
+  // `canSeeMoney` gate exists by design — see phase-04 report), so only the requireAuth() +
+  // guardedQuery-only checks apply here.
+  // ---------------------------------------------------------------------------------------------
+  const PRODUCTION_DASHBOARD_PAGES = [
+    "src/app/(main)/dashboards/production/page.tsx",
+    "src/app/(main)/dashboards/production/[moNumber]/page.tsx",
+  ];
+
+  for (const file of PRODUCTION_DASHBOARD_PAGES) {
+    it(`ERP dashboard page ${file} calls requireAuth`, () => {
+      const source = readFileSync(resolve(ROOT, file), "utf8");
+      expect(/export default async function/.test(source), `${file} is a default async page`).toBe(
+        true,
+      );
+      expect(/requireAuth\(/.test(source), `${file} must call requireAuth()`).toBe(true);
+    });
+  }
+
+  it("the Production dashboard reaches the ERP only through guardedQuery, never Prisma", () => {
+    const erpModules = [
+      "src/lib/production-data.ts",
+      "src/app/(main)/dashboards/production/page.tsx",
+      "src/app/(main)/dashboards/production/[moNumber]/page.tsx",
+    ];
+    for (const file of erpModules) {
+      const source = readFileSync(resolve(ROOT, file), "utf8")
+        .replace(/\/\*[\s\S]*?\*\//g, "")
+        .replace(/^\s*\/\/[^\n]*$/gm, "");
+      expect(/\$queryRaw/.test(source), `${file} must not use $queryRaw for ERP reads`).toBe(false);
+      expect(
+        /prisma\.(?!appSetting)/.test(source),
+        `${file} must not read ERP tables through Prisma`,
+      ).toBe(false);
+    }
+  });
 });
