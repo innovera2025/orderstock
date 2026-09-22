@@ -548,7 +548,7 @@ once a day had more than a handful of หมายเหตุ notes. Fixed WITH
 - Real Chrome print-preview visual confirmation remains Agent-Probe only (not yet re-verified with
   a live browser) — see `process/general-plans/backlog/matrix-darkmode-print-agent-probe-residuals_NOTE_13-07-26.md`.
 
-## ERP dashboard UI patterns (`erp-dashboards` program, Phase 1–4)
+## ERP dashboard UI patterns (`erp-dashboards` program — PROGRAM COMPLETE, Phase 1–5)
 
 New shared components/patterns introduced by the `erp-dashboards` program, all under
 `src/components/` (shared, Phase-1-owned) or `src/app/(main)/dashboards/sales/**`
@@ -614,6 +614,34 @@ New shared components/patterns introduced by the `erp-dashboards` program, all u
   scope (Production) correctly has NO money-visibility gate at all; do not treat "no `canSeeMoney`
   found" as a defect when auditing a dashboard that was never supposed to carry money in the first
   place (Phase 5's cross-dashboard money audit must read this as correct-by-design).
+- **CSV export button — derived, zero call-site edits** (Phase 5) — `dashboard-data-table.tsx`
+  gained one optional prop, `exportHref`. Left undefined, it DERIVES the target URL from the
+  `basePath` + `searchParams` the table already receives, via the pure
+  `src/lib/erp/dashboard-export-target.ts`. Passing `false` suppresses the button; a string
+  overrides it. This is why Phase 5 needed ZERO edits to any Phase 2/3/4 page — reuse this "derive
+  from existing props, don't add a new prop at every call site" shape for any future cross-cutting
+  table feature (the alternative — threading a new required prop through every page — was
+  considered and rejected).
+- **CSV export contract** (Phase 5, `src/lib/erp/csv-export.ts`) — UTF-8 BOM + CRLF + RFC 4180
+  quoting + leading-formula neutralisation + a 5,000-row cap with a VISIBLE Thai truncation notice
+  row (never a silent cap) + ASCII filename. STAFF money columns are OMITTED ENTIRELY (header and
+  cell both absent — a Staff CSV has strictly fewer columns, nothing is blanked in place), mirroring
+  the on-screen `canSeeMoney` omission pattern, not a new gating mechanism. Reuse this module for
+  any future export surface rather than hand-rolling a second CSV serializer.
+- **Real ERP force-down / degraded-mode reference pattern** (Phase 5) — the FIRST real outage
+  mechanism in this codebase: an in-memory flag (`src/lib/erp/force-down.ts`) flipped by a gated
+  test-only route (`/api/test/erp-force-down`, `NODE_ENV !== "production" || ERP_TEST_FORCE_DOWN
+  === "1"`) and checked inside `guardedQuery` before the read-only guard/pool. Any future
+  outage-shaped e2e test should warm the dashboard's cache while healthy FIRST, then force the
+  outage — `getCached()`'s 5-min TTL otherwise masks the outage until it also bypasses freshness
+  (see `tests/all-tests.md`).
+- **Locked-tile money disclosure, not full omission, on Sales** (Phase 5 audit finding) — Sales's
+  DO-lines card and a summary tile deliberately show STAFF a LOCKED tile labelled `ยอดเงิน` whose
+  body reads "ยอดเงินแสดงเฉพาะผู้ดูแลระบบ" (money shown to admins only) — this is NOT a money leak; it
+  is the feature disclosing that a restricted figure exists without rendering its value. Any future
+  money-audit gate must assert "no money VALUE rendered" (matching `formatMoney()`'s
+  `1,234.00 บาท` shape), not "no money LABEL string anywhere" — the latter is the wrong assertion
+  and will false-positive on this exact, correct pattern.
 
 ## Update triggers
 

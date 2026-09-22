@@ -696,9 +696,16 @@ pattern exactly, with its own domain twist:
   `IF COL_LENGTH(...) IS NULL ALTER TABLE ... ADD` (add-missing-column) so BOTH domains' expected
   column spellings coexist on the same fixture tables, and reserves its own rows in a
   `TransactionNo` 7700-block (Phase 4 uses the 9000-block) so neither domain's rows collide. **The
-  fixture therefore carries both column spellings, which the live ERP does not — a future phase
-  (Phase 5 or later) should converge on ONE canonical naming for these two shared tables** before
-  this collision resolution is considered final.
+  fixture therefore carries both column spellings, which the live ERP does not.**
+  **Resolved by Phase 5 (22-09-26): the union is PERMANENT, not provisional.** Both column families
+  are genuinely live in `db_TCL` and both back a shipped query —
+  `VoucherNo`/`InOutDate`/`MainQuantity`/`Approved` by `db/erp-queries/purchase/po-received.sql`
+  (mirrors the ERP's own `sp_Popending`) and `DocuNo`/`TransactionDate`/`Qty`/`MONo` by
+  `db/erp-queries/production/material-issues.sql`. Dropping either spelling would break a shipped
+  query, so "converge on one spelling" was the wrong framing — `production-seed.sql` gained the
+  same symmetric `IF COL_LENGTH(...) IS NULL ALTER TABLE ... ADD` guards `purchase-seed.sql`
+  already had, proven order-independent by
+  `src/lib/__tests__/erp-fixture-seed-idempotency.test.ts` (both run orders, twice each).
 - Money-gate contract: identical mechanism to Sales (`canSeeMoney` computed once server-side,
   markup conditionally omitted, never CSS-hidden) — see `uxui/all-uxui.md`.
 
@@ -732,3 +739,44 @@ honest absence-of-data, not money gating.
   PVL — no such convention exists anywhere in the umbrella plan's text).
 - **Shared-fixture-table collision with Phase 3**: see Phase 3's entry above — resolved on Phase
   3's side, additively, with Phase 4's original rows (`TransactionNo` 9000-block) untouched.
+
+### Hardening, export & the manual live-reconcile script (erp-dashboards Phase 5 — PROGRAM FINAL)
+
+Added 22-09-26 by `phase-05-hardening-export-rollout`. This is the program's LAST database-adjacent
+work — the `erp-dashboards` program is now **PROGRAM COMPLETE**, all 6 phases ✅ VERIFIED at agent
+level.
+
+- **CSV export reuses the exact same query/fetch path as the screen it exports** — the export route
+  (`src/app/api/dashboards/export/route.ts` + `export-datasets.ts`) calls the SAME data function
+  each dashboard page calls, so an export can never disagree with the screen it came from, and every
+  read still passes through `guardedQuery` by construction. There is no second query path for
+  exports — do not add one for any future export target.
+- **`src/lib/erp/live-reconcile-script.ts`** (+ thin `scripts/erp-reconcile.ts` entrypoint) is the
+  USER-RUN manual reconciliation tool against real `db_TCL`. It deliberately does NOT use
+  `resolveErpDatabaseUrl()` — it takes `ERP_DATABASE_URL` and `ERP_RECONCILE_CONFIRM=1` as required,
+  explicit inputs so nobody can accidentally run it against a database they did not name on the
+  command line. Every statement goes through `guardedQuery` (so `EXEC` — needed to invoke
+  `sp_PurchaseInvoiceMonth`/`sp_Popending` directly — is denylisted; the script reproduces their SQL
+  rule in `SELECT` form instead and prints a diff against `--expect-*` flags the operator reads off
+  the ERP's own report). **This script has been run against `erp_fixture` only, never `db_TCL`.**
+  It reproduced every known fixture truth exactly (14 DOs, 10,111 priced amount, 858,937.21 excluded
+  pool, 461,140 invoice basis, 727,920 PO committed, 11 MOs).
+- **`ERP_ALLOW_WRITE_CAPABLE_LOGIN` exit condition (unchanged, now the program's single remaining
+  production blocker):** the temporary opt-in documented above under "Accepted known-gap" remains
+  exactly as specified — it is safe ONLY because the local sandbox `sa` login is the only login ever
+  used with it. Go-live requires: (1) the DBA runs `db/create-erp-readonly-login.sql` on `db_TCL`,
+  (2) `ERP_DATABASE_URL` on the production host repoints to that scoped login, (3)
+  `ERP_ALLOW_WRITE_CAPABLE_LOGIN` is REMOVED from the production `.env` entirely, (4) restart, (5)
+  confirm `/api/health/erp` reports `readOnlyLogin: true`. Procedure documented in
+  `docs/deployment-guide-docker.md` §12.3. **`ERP_TEST_FORCE_DOWN` must also never be set on a
+  production host** — it is test-only (see `tests/all-tests.md`).
+- **Fixture seed order-independence — see the Phase 3/4 union note above.** Phase 5's own
+  `src/lib/__tests__/erp-fixture-seed-idempotency.test.ts` is the permanent regression gate for this
+  contract; any future edit to `purchase-seed.sql` or `production-seed.sql` must keep both run
+  orders green.
+- **Money-gate contract, program-final statement:** across all three dashboards, `canSeeMoney` is
+  computed server-side ONLY, in exactly the pattern Sales established (Phase 2) — proven at 3
+  independent levels by Phase 5's cross-dashboard audit (98 tests): static source sweep (no
+  CSS-hiding, no client-derivable flag), a role-diffed byte comparison of the real CSV export
+  output, and a rendered-HTML STAFF/ADMIN check across every dashboard + drilldown. Production
+  correctly has NO `canSeeMoney` gate at all (no money data in scope, by design — not a gap).
