@@ -9,6 +9,8 @@
 // Backed by a module-level `Map` behind the same `globalThis` dev-hot-reload guard as
 // `src/lib/db.ts`, so fast-refresh does not reset the cache on every edit.
 
+import { isErpForcedDown } from "./force-down";
+
 /** One cache slot: the last SUCCESSFULLY fetched value plus when it landed. */
 interface CacheEntry {
   value: unknown;
@@ -49,7 +51,15 @@ export async function getCached<T>(
   const existing = cache.get(key);
   const now = Date.now();
 
-  if (existing && now - existing.storedAt < ttlMs) {
+  // erp-dashboards Phase 5 (test-only, additive): while the simulated-outage toggle is on, a FRESH
+  // entry must not short-circuit the read. Otherwise the 5-minute TTL would serve a cached value,
+  // the fetcher would never run, and the outage would be invisible — so AC15 would pass for the
+  // wrong reason. Bypassing freshness here makes the next read go live, fail in `guardedQuery`,
+  // and fall through to the degrade branch below: exactly the real-world "TTL lapsed during an
+  // outage" case. Default OFF; in a production deployment the toggle can never be set.
+  const forcedDown = isErpForcedDown();
+
+  if (existing && !forcedDown && now - existing.storedAt < ttlMs) {
     return { value: existing.value as T, stale: false };
   }
 

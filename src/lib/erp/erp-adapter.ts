@@ -25,6 +25,7 @@
 // never go through `prisma.$queryRaw` or the `orderstock_app` Prisma pool.
 
 import type { ConnectionPool } from "mssql";
+import { ErpForcedDownError, isErpForcedDown } from "./force-down";
 
 /** The ways a statement can fail the read-only guard. */
 export type ReadOnlySqlViolation =
@@ -327,6 +328,14 @@ export async function guardedQuery<T>(
   sql: string,
   params?: ErpQueryParams,
 ): Promise<T[]> {
+  // erp-dashboards Phase 5 (test-only, additive — see `force-down.ts` and the Registry Change
+  // Request in phase 5's report): a simulated-outage toggle, flipped only by a route that cannot
+  // exist in production. Default OFF; when on it throws BEFORE the guard and before the pool is
+  // touched, so it can never weaken a read-only layer or disturb the live pool.
+  if (isErpForcedDown()) {
+    throw new ErpForcedDownError();
+  }
+
   // LAYER 2 first — before any contact with the connection pool.
   assertReadOnlySql(sql);
 

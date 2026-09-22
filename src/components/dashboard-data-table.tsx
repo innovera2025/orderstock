@@ -1,6 +1,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { Card } from "./ui/card";
+import { buildExportHref, deriveExportTarget } from "@/lib/erp/dashboard-export-target";
 
 // THE shared dashboard data table (erp-dashboards Phase 1).
 //
@@ -45,6 +46,16 @@ export interface DashboardDataTableProps {
   mobileTitleKey?: string;
   /** Shown when `rows` is empty. */
   emptyText?: string;
+  /**
+   * erp-dashboards Phase 5 — ADDITIVE CSV export wiring.
+   *
+   * Left undefined (the normal case) the component DERIVES the export URL from `basePath` +
+   * `searchParams` via `deriveExportTarget()`, so no consumer had to change a single call site.
+   * Supply a string to override the URL, or `false` to suppress the button entirely.
+   *
+   * Nothing above this prop changed: the sort and pagination link builders are untouched.
+   */
+  exportHref?: string | false;
 }
 
 /**
@@ -98,10 +109,23 @@ export function DashboardDataTable({
   totalRows,
   mobileTitleKey,
   emptyText = "ไม่มีข้อมูล",
+  exportHref,
 }: DashboardDataTableProps) {
   const totalPages = Math.max(1, Math.ceil(totalRows / Math.max(1, pageSize)));
   const page = Math.min(Math.max(1, currentPage), totalPages);
   const titleKey = mobileTitleKey ?? columns[0]?.key;
+
+  // Phase 5: derive the export URL from what this component already knows. `false` opts out; an
+  // unrecognised basePath yields no target and therefore no button.
+  const exportTarget = exportHref === undefined ? deriveExportTarget(basePath, searchParams) : null;
+  const resolvedExportHref =
+    exportHref === false
+      ? null
+      : typeof exportHref === "string"
+        ? exportHref
+        : exportTarget
+          ? buildExportHref(exportTarget, searchParams)
+          : null;
 
   // Turning a page resets nothing else; sorting returns to page 1 so the user sees the new top.
   const prevHref = buildHref(basePath, searchParams, {
@@ -206,6 +230,16 @@ export function DashboardDataTable({
           หน้า {page} จาก {totalPages}
         </span>
         <div className="flex gap-2">
+          {resolvedExportHref && (
+            <a
+              href={resolvedExportHref}
+              download
+              data-testid="data-table-export-csv"
+              className="th rounded-[var(--r-md)] border border-[var(--border)] px-2.5 py-1 hover:bg-[var(--bg-sunken)]"
+            >
+              ส่งออก CSV
+            </a>
+          )}
           {page > 1 && (
             <Link
               href={prevHref}

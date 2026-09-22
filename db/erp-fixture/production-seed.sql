@@ -84,6 +84,19 @@ GO
 
 -- dbo.InventoryFlowHdr / dbo.InventoryFlowDtl — the stock-movement ledger. The MO linkage lives on
 -- the DETAIL row (`MONo`, nvarchar, no FK) together with its `ReasonName`.
+--
+-- SHARED TABLE, TWO LIVE COLUMN FAMILIES (Phase 5, residual (a) fix). These two tables are also
+-- seeded by `purchase-seed.sql`. Both column families are REAL on the live db_TCL table and both
+-- are used by shipped queries — `sp_Popending`'s `VoucherNo`/`InOutDate`/`MainQuantity`/`Approved`
+-- (see `db/erp-queries/purchase/po-received.sql`) and this domain's `DocuNo`/`TransactionDate`/
+-- `Qty`/`MONo` (see `db/erp-queries/production/material-issues.sql`). So the fixture converges on
+-- the live table's full column UNION rather than picking one spelling and breaking the other.
+--
+-- ORDER-INDEPENDENCE: `purchase-seed.sql` already tops its own columns up with
+-- `IF COL_LENGTH(...) IS NULL ALTER TABLE ... ADD`; this file previously did not, so
+-- purchase-then-production failed with "Invalid column name 'DocuNo'". The symmetric guards below
+-- fix that: whichever seed runs first creates the table, the other adds what it is missing, and
+-- both orders end at the same union. Nothing is ever dropped, renamed, or redefined.
 IF NOT EXISTS (
     SELECT 1 FROM sys.tables t JOIN sys.schemas s ON s.schema_id = t.schema_id
     WHERE s.name = 'dbo' AND t.name = 'InventoryFlowHdr'
@@ -97,6 +110,14 @@ BEGIN
         CONSTRAINT PK_InventoryFlowHdr PRIMARY KEY (TransactionNo)
     );
 END
+GO
+
+-- Top-up guards: needed when `purchase-seed.sql` created the table first with only its own columns.
+IF COL_LENGTH('dbo.InventoryFlowHdr', 'DocuNo')          IS NULL ALTER TABLE dbo.InventoryFlowHdr ADD DocuNo NVARCHAR(50) NULL;
+GO
+IF COL_LENGTH('dbo.InventoryFlowHdr', 'TransactionDate') IS NULL ALTER TABLE dbo.InventoryFlowHdr ADD TransactionDate DATE NULL;
+GO
+IF COL_LENGTH('dbo.InventoryFlowHdr', 'WarehouseCode')   IS NULL ALTER TABLE dbo.InventoryFlowHdr ADD WarehouseCode NVARCHAR(50) NULL;
 GO
 
 IF NOT EXISTS (
@@ -115,6 +136,16 @@ BEGIN
         CONSTRAINT PK_InventoryFlowDtl PRIMARY KEY (TransactionNo, Roworder)
     );
 END
+GO
+
+-- Same top-up guards for the detail table's own column family.
+IF COL_LENGTH('dbo.InventoryFlowDtl', 'Qty')        IS NULL ALTER TABLE dbo.InventoryFlowDtl ADD Qty DECIMAL(18, 2) NULL;
+GO
+IF COL_LENGTH('dbo.InventoryFlowDtl', 'MONo')       IS NULL ALTER TABLE dbo.InventoryFlowDtl ADD MONo NVARCHAR(50) NULL;
+GO
+IF COL_LENGTH('dbo.InventoryFlowDtl', 'SONo')       IS NULL ALTER TABLE dbo.InventoryFlowDtl ADD SONo NVARCHAR(50) NULL;
+GO
+IF COL_LENGTH('dbo.InventoryFlowDtl', 'ReasonName') IS NULL ALTER TABLE dbo.InventoryFlowDtl ADD ReasonName NVARCHAR(200) NULL;
 GO
 
 -- -------------------------------------------------------------------------------------------

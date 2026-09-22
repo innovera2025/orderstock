@@ -302,4 +302,94 @@ describe("requireAuth coverage over all server actions (ELEV-guard)", () => {
       ).toBe(false);
     }
   });
+
+  // ---------------------------------------------------------------------------------------------
+  // erp-dashboards Phase 5 — APPEND ONLY. The FIRST authenticated API ROUTE HANDLERS in this
+  // codebase, and therefore the first to need a route-handler coverage pattern here.
+  //
+  // The `extractExportedActions` parser above splits on `export async function` and works for
+  // server actions; a route handler is the same shape but the exported name is the HTTP verb, so
+  // `extractExportedHandlers` below reuses the identical "parse the exported function, assert the
+  // requireAuth call is inside it" logic, restricted to verb names.
+  //
+  // NOTE on the pre-existing `GET`-regex a few blocks up: that one asserts the two INTENTIONALLY
+  // PUBLIC health probes do NOT call requireAuth. It is the opposite assertion to this block, not
+  // an existing version of it.
+  // ---------------------------------------------------------------------------------------------
+  const HTTP_VERBS = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"] as const;
+
+  /** Split a route module into { verb, body } chunks, one per exported HTTP handler. */
+  function extractExportedHandlers(source: string): { verb: string; body: string }[] {
+    const parts = source.split(/export async function\s+/g);
+    return parts
+      .slice(1)
+      .map((chunk) => ({ verb: chunk.match(/^([A-Za-z0-9_]+)/)?.[1] ?? "<unknown>", body: chunk }))
+      .filter((h) => (HTTP_VERBS as readonly string[]).includes(h.verb));
+  }
+
+  // Business-data ERP routes. Unlike `/api/health/erp` these return real rows, so EVERY exported
+  // handler must be auth-guarded. `/api/test/erp-force-down` returns no business data but is a test
+  // affordance, so it is guarded too (and additionally refuses to exist outside development).
+  const AUTHED_API_ROUTES: { file: string; expected: string[] }[] = [
+    { file: "src/app/api/dashboards/export/route.ts", expected: ["GET"] },
+    { file: "src/app/api/test/erp-force-down/route.ts", expected: ["GET", "POST"] },
+  ];
+
+  for (const route of AUTHED_API_ROUTES) {
+    it(`every exported handler in ${route.file} calls requireAuth`, () => {
+      const source = readFileSync(resolve(ROOT, route.file), "utf8");
+      const handlers = extractExportedHandlers(source);
+      const verbs = handlers.map((h) => h.verb);
+
+      // Sanity: the parser found what we expect (guards against a rename/parse drift).
+      for (const verb of route.expected) {
+        expect(verbs, `expected handler ${verb} present in ${route.file}`).toContain(verb);
+      }
+
+      const missing = handlers.filter((h) => !/requireAuth/.test(h.body)).map((h) => h.verb);
+      expect(missing, `handlers missing a requireAuth call in ${route.file}`).toEqual([]);
+    });
+  }
+
+  it("the CSV export route derives money visibility from the SERVER session, not the request", () => {
+    const file = "src/app/api/dashboards/export/route.ts";
+    const source = readFileSync(resolve(ROOT, file), "utf8");
+    expect(
+      /const\s+canSeeMoney\s*=\s*user\.role\s*===\s*"ADMIN"/.test(source),
+      `${file} must compute canSeeMoney from the awaited requireAuth() result`,
+    ).toBe(true);
+    expect(/"use client"/.test(source), `${file} must stay server-side`).toBe(false);
+  });
+
+  it("the test-only ERP force-down route is off in production unless explicitly opted in", () => {
+    const file = "src/app/api/test/erp-force-down/route.ts";
+    const source = readFileSync(resolve(ROOT, file), "utf8");
+    // Every handler must consult the environment gate before doing anything else.
+    for (const handler of extractExportedHandlers(source)) {
+      expect(
+        /forceDownRouteEnabled\(\)/.test(handler.body),
+        `${file}:${handler.verb} must refuse to run when the environment gate is closed`,
+      ).toBe(true);
+    }
+    // The gate itself: production is off by default, and the opt-in accepts ONLY the exact "1".
+    const guard = readFileSync(resolve(ROOT, "src/lib/erp/force-down.ts"), "utf8");
+    expect(/NODE_ENV\s*!==\s*"production"/.test(guard)).toBe(true);
+    expect(/ERP_TEST_FORCE_DOWN\s*===\s*"1"/.test(guard)).toBe(true);
+  });
+
+  it("the force-down toggle can never weaken the read-only guard", () => {
+    const adapter = readFileSync(resolve(ROOT, "src/lib/erp/erp-adapter.ts"), "utf8");
+    // It may only THROW — it must never skip, relax or branch around assertReadOnlySql.
+    expect(/if \(isErpForcedDown\(\)\) \{\s*throw new ErpForcedDownError\(\);\s*\}/.test(adapter)).toBe(
+      true,
+    );
+    expect(/assertReadOnlySql\(sql\);/.test(adapter)).toBe(true);
+    // The module holds a boolean and nothing else — no SQL, no pool, no credentials. Comments are
+    // stripped first: this file DOCUMENTS why an env-var-based toggle was rejected, and naming
+    // `ERP_DATABASE_URL` in that explanation must not read as using it.
+    const guard = readFileSync(resolve(ROOT, "src/lib/erp/force-down.ts"), "utf8")
+      .replace(/\/\*[\s\S]*?\*\//g, "")
+      .replace(/^\s*\/\/[^\n]*$/gm, "");
+    expect(/mssql|ConnectionPool|DATABASE_URL|password/i.test(guard)).toBe(false);
+  });
 });
