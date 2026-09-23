@@ -15,7 +15,8 @@ import {
 // Proves the recorded charter exception is EXPLICIT and OFF BY DEFAULT: only the exact string
 // "1" relaxes the boot refusal, the probe still runs and still reports what it found, exactly one
 // credential-free warning is logged per pool creation, and the health state flips to
-// `readOnlyLogin: false`. No real SQL Server connection is opened here; db_TCL is never contacted.
+// `readOnlyLogin: false` / `loginCheck: "write-capable"`. No real SQL Server connection is opened
+// here; db_TCL is never contacted.
 
 /** A pool stand-in — never touched, the probe itself is injected. */
 const fakePool = {} as unknown as ConnectionPool;
@@ -57,7 +58,8 @@ describe("runBootProbeWithOptIn — behaviour matrix", () => {
     ).rejects.toThrow(ErpWritePermissionError);
 
     expect(warn).not.toHaveBeenCalled();
-    expect(erpReadOnlyLoginState()).toEqual({ readOnlyLogin: true });
+    // A refused boot concluded nothing — the state stays honestly "not probed", never "read-only".
+    expect(erpReadOnlyLoginState()).toEqual({ readOnlyLogin: null, loginCheck: "not-probed" });
     // The probe still runs in production regardless of the new switch.
     expect(shouldVerifyBootProbe({ NODE_ENV: "production" })).toBe(true);
   });
@@ -104,6 +106,7 @@ describe("runBootProbeWithOptIn — behaviour matrix", () => {
 
     const state = erpReadOnlyLoginState();
     expect(state.readOnlyLogin).toBe(false);
+    expect(state.loginCheck).toBe("write-capable");
     expect(state.warning).toBe(message);
     expect(state.warning).not.toHaveLength(0);
   });
@@ -147,7 +150,7 @@ describe("runBootProbeWithOptIn — behaviour matrix", () => {
 
     expect(verify).toHaveBeenCalledTimes(1);
     expect(warn).not.toHaveBeenCalled();
-    expect(erpReadOnlyLoginState()).toEqual({ readOnlyLogin: true });
+    expect(erpReadOnlyLoginState()).toEqual({ readOnlyLogin: true, loginCheck: "read-only" });
     expect(erpReadOnlyLoginState().warning).toBeUndefined();
   });
 
@@ -161,7 +164,8 @@ describe("runBootProbeWithOptIn — behaviour matrix", () => {
       }),
     ).rejects.toThrow(/returned no rows/);
     expect(warn).not.toHaveBeenCalled();
-    expect(erpReadOnlyLoginState()).toEqual({ readOnlyLogin: true });
+    // An inconclusive probe must never be reported as read-only.
+    expect(erpReadOnlyLoginState()).toEqual({ readOnlyLogin: null, loginCheck: "not-probed" });
   });
 });
 

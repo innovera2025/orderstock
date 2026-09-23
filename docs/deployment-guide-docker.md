@@ -161,8 +161,13 @@ docker compose -f docker-compose.prod.yml run --rm -e SEED_ADMIN_PASSWORD=<ร�
 - เข้าสู่ระบบด้วยบัญชี ADMIN ที่ seed ไว้ — ต้องมาที่ราก `/` และไฟแสดงสถานะฐานข้อมูลเป็นสีเขียว
 - ตรวจ health: เปิด `https://orderstock.krs.co.th/api/health` (หลังล็อกอิน) — ต้องได้ `{"ok":true}`
 - ตรวจ health ของ ERP: เปิด `https://orderstock.krs.co.th/api/health/erp` (หลังล็อกอิน)
-  - ต้องได้ `{"ok":true, ..., "readOnlyLogin":true}`
-  - ถ้าได้ `"readOnlyLogin":false` แปลว่ายังใช้บัญชีที่เขียนฐานข้อมูลได้อยู่ — ดูหัวข้อ **12**
+  - ต้องได้ `"ok":true` และมีฟิลด์ `"loginCheck"` ซึ่งบอกผลตรวจสิทธิ์ของบัญชี ERP ได้ 3 แบบ:
+    - `"loginCheck":"read-only"` (`"readOnlyLogin":true`) — **สถานะเป้าหมาย** ใช้บัญชีอ่านอย่างเดียวแล้ว
+    - `"loginCheck":"write-capable"` (`"readOnlyLogin":false`) — ยังใช้บัญชีที่เขียนฐานข้อมูลได้อยู่
+      พร้อมข้อความ `warning` — **เป็นสถานะที่คาดไว้** ตราบใดที่ยังตั้ง `ERP_ALLOW_WRITE_CAPABLE_LOGIN=1`
+      รอบัญชีจาก DBA อยู่ (ดูหัวข้อ **12**)
+    - `"loginCheck":"not-probed"` (`"readOnlyLogin":null`) — **ยังไม่ได้ตรวจ** จึงยัง "ไม่ทราบ" สิทธิ์ของบัญชี
+      (เช่น ยังไม่ได้เปิดใช้การตรวจตอนบูต) — ห้ามตีความว่าเป็นอ่านอย่างเดียว
 - เปิดเมนู **แดชบอร์ด → ยอดขาย / การซื้อ / การผลิต** — ต้องเห็นข้อมูลและแถบ "ข้อมูลนำร่อง"
 - กดปุ่ม **ส่งออก CSV** ใต้ตาราง แล้วเปิดไฟล์ด้วย Excel — ภาษาไทยต้องไม่เป็นตัวต่างดาว
   (ถ้าเป็น แสดงว่าไฟล์ถูกแก้ไขระหว่างทาง — ไฟล์ที่ระบบสร้างมี UTF-8 BOM อยู่แล้ว)
@@ -226,7 +231,8 @@ docker compose -f docker-compose.prod.yml run --rm -e SEED_ADMIN_PASSWORD=<ร�
 | พิมพ์แล้วขนาดเพี้ยน | Scale = 100%, ปิด headers/footers, ใช้ Chrome/Edge |
 | แก้ `.env` แล้วรีสตาร์ทแต่ค่าไม่เปลี่ยน / แอปไม่กลับมา | ตรวจว่าแก้ไฟล์ `/opt/orderstock/.env` ถูกไฟล์และ bind-mount ถูกต้อง; สั่ง `docker compose -f docker-compose.prod.yml up -d` ด้วยมือ; ตรวจ `/api/health` |
 | แดชบอร์ดขึ้นว่าเชื่อมต่อ ERP ไม่ได้ | ตรวจ `ERP_DATABASE_URL` ใน `.env`, เปิด `/api/health/erp` ดูรายละเอียด, ตรวจว่าบัญชีอ่านอย่างเดียวมีสิทธิ์ `SELECT` บนตารางที่ใช้ |
-| `/api/health/erp` ได้ `"readOnlyLogin": false` | ยังใช้บัญชีที่เขียนได้อยู่ — ทำตามหัวข้อ 12.3 เพื่อเปลี่ยนไปใช้บัญชีอ่านอย่างเดียวแล้วลบ `ERP_ALLOW_WRITE_CAPABLE_LOGIN` |
+| `/api/health/erp` ได้ `"loginCheck":"write-capable"` | ยังใช้บัญชีที่เขียนได้อยู่ (คาดไว้ระหว่างรอบัญชีจาก DBA) — ทำตามหัวข้อ 12.3 เพื่อเปลี่ยนไปใช้บัญชีอ่านอย่างเดียวแล้วลบ `ERP_ALLOW_WRITE_CAPABLE_LOGIN` |
+| `/api/health/erp` ได้ `"loginCheck":"not-probed"` | ระบบยังไม่ได้ตรวจสิทธิ์บัญชี ERP — อย่าถือว่าปลอดภัย ตรวจว่ารันในโหมด production จริง และดู log ตอนบูต |
 | แดชบอร์ดขึ้นแถบ "ข้อมูลอาจไม่ล่าสุด" ตลอดเวลา | ระบบอ่าน ERP ไม่สำเร็จและกำลังแสดงข้อมูลชุดล่าสุด — ตรวจ `/api/health/erp` และการเชื่อมต่อไปยัง `db_TCL` |
 | เปิดไฟล์ CSV ใน Excel แล้วภาษาไทยเพี้ยน | ไฟล์ที่ระบบสร้างมี UTF-8 BOM อยู่แล้ว ให้เปิดไฟล์ต้นฉบับโดยตรง อย่าคัดลอก/แก้ไขผ่านโปรแกรมที่บันทึกทับเป็น ANSI |
 
@@ -261,21 +267,24 @@ docker compose -f docker-compose.prod.yml run --rm -e SEED_ADMIN_PASSWORD=<ร�
 
 ระหว่างรอบัญชีอ่านอย่างเดียว ระบบอนุญาตให้บูตด้วยบัญชีเดิมที่ยังเขียนได้ โดยตั้ง
 `ERP_ALLOW_WRITE_CAPABLE_LOGIN=1` — ในสถานะนี้ระบบจะ **เตือนดังๆ ใน log ทุกครั้งที่บูต** และ
-`/api/health/erp` จะรายงาน `"readOnlyLogin": false`
+`/api/health/erp` จะรายงาน `"loginCheck":"write-capable"` (`"readOnlyLogin":false`) ซึ่ง **เป็นผลที่ถูกต้อง
+และคาดไว้** สำหรับสถานะชั่วคราวนี้
 
 **นี่เป็นมาตรการชั่วคราวเท่านั้น** เมื่อ DBA สร้างบัญชีอ่านอย่างเดียวเสร็จแล้ว ให้ทำตามลำดับนี้:
 
 1. แก้ `ERP_DATABASE_URL` ใน `.env` ให้ชี้ไปที่บัญชีอ่านอย่างเดียวใหม่
 2. **ลบบรรทัด `ERP_ALLOW_WRITE_CAPABLE_LOGIN` ออกจาก `.env`** (หรือเปลี่ยนเป็นค่าอื่นที่ไม่ใช่ `1`)
 3. รีสตาร์ท: `docker compose -f docker-compose.prod.yml up -d`
-4. เปิด `/api/health/erp` — ต้องได้ `"readOnlyLogin": true` และ log ต้องไม่มีคำเตือนอีก
+4. เปิด `/api/health/erp` — ต้องได้ `"loginCheck":"read-only"` (`"readOnlyLogin":true`) และ log ต้องไม่มีคำเตือนอีก
 
 > ถ้าตั้ง `ERP_DATABASE_URL` เป็นบัญชีที่ยังเขียนได้ **โดยไม่มี** สวิตช์นี้ ระบบจะ **ปฏิเสธการให้บริการ
 > แดชบอร์ด** โดยตั้งใจ (fail-closed) ซึ่งเป็นพฤติกรรมที่ถูกต้อง
 
 ### 12.4 ตรวจสอบหลังติดตั้ง (Checklist)
 
-- [ ] `/api/health/erp` ได้ `{"ok":true, "readOnlyLogin":true}`
+- [ ] `/api/health/erp` ได้ `"ok":true` และ `"loginCheck":"read-only"`
+      (ระหว่างที่ยังตั้ง `ERP_ALLOW_WRITE_CAPABLE_LOGIN=1` ค่าที่ได้จะเป็น `"write-capable"` ซึ่งถูกต้องตามสถานะชั่วคราว
+      — ข้อนี้จะผ่านสมบูรณ์เมื่อเปลี่ยนไปใช้บัญชีจาก DBA ตามหัวข้อ 12.3 แล้ว)
 - [ ] ทั้งสามแดชบอร์ดแสดงข้อมูลจริง และมีแถบ **"ข้อมูลนำร่อง"**
 - [ ] ผู้ใช้สิทธิ์ **พนักงาน (STAFF)** เปิดแดชบอร์ดได้ แต่ **ไม่เห็นคอลัมน์ยอดเงิน** ทั้งบนหน้าจอและในไฟล์ CSV
 - [ ] ผู้ใช้สิทธิ์ **ผู้ดูแลระบบ (ADMIN)** เห็นยอดเงินครบ

@@ -26,13 +26,13 @@ interface ProbeRow {
 
 export async function GET() {
   const startedAt = Date.now();
-  // Boot-probe conclusion about the login backing the ERP pool. `readOnlyLogin: false` means the
-  // recorded `ERP_ALLOW_WRITE_CAPABLE_LOGIN=1` exception is active — surfaced here so ops can see
-  // it without reading server logs. The `warning` string is credential-free by construction.
-  const loginState = erpReadOnlyLoginState();
 
   try {
     const result = await getCached<ProbeRow[]>("erp-health", ERP_CACHE_TTL_MS, async () => {
+      // Establishing the pool is what RUNS the layer-4 boot probe. It must be awaited BEFORE the
+      // login state is read — otherwise a cold process would report a verdict that does not exist
+      // yet. (This was the 2026-09-23 defect: the first request after a container start reported
+      // a read-only login while the pool was in fact backed by a write-capable one.)
       const pool = await getErpPool();
       return guardedQuery<ProbeRow>(pool, "SELECT 1 AS ok");
     });
@@ -43,12 +43,21 @@ export async function GET() {
       // `true` when this is a last-known-good value served because the live read failed.
       stale: result.stale,
       rows: result.value.length,
-      ...loginState,
+      // Read AFTER the pool is established. `loginCheck: "write-capable"` means the recorded
+      // `ERP_ALLOW_WRITE_CAPABLE_LOGIN=1` exception is active; `"not-probed"` means the probe has
+      // not concluded (never assume read-only). The `warning` is credential-free by construction.
+      ...erpReadOnlyLoginState(),
     });
   } catch (error) {
     // Log the real error server-side only — never returned to the client (it can contain host
     // and login details from the driver).
     console.error("[health/erp] ERP read-only connectivity check failed:", error);
-    return NextResponse.json({ ok: false, error: "ERP connection failed", ...loginState });
+    // Also read after the attempt: if the pool DID boot and only the query failed, the probe
+    // verdict is real and worth surfacing; if it never booted it stays honestly "not-probed".
+    return NextResponse.json({
+      ok: false,
+      error: "ERP connection failed",
+      ...erpReadOnlyLoginState(),
+    });
   }
 }

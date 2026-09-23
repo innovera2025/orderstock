@@ -119,28 +119,51 @@ export function allowsWriteCapableLogin(
   return env.ERP_ALLOW_WRITE_CAPABLE_LOGIN === "1";
 }
 
+/**
+ * The three distinguishable states of the layer-4 boot probe.
+ *
+ * `"not-probed"` is a FIRST-CLASS state, not an alias for "safe". Before the probe has run (cold
+ * process, pool not yet established, or the probe disabled in local dev) the permission set of the
+ * connected login is genuinely UNKNOWN. Reporting "read-only" there would be reporting the safe
+ * answer for an unknown truth — the wrong direction for a security signal, and exactly the defect
+ * this type exists to make impossible.
+ */
+export type ErpLoginCheck = "not-probed" | "read-only" | "write-capable";
+
 /** What the boot probe concluded about the login currently backing the ERP pool. */
 export interface ErpReadOnlyLoginState {
   /**
-   * `false` ONLY when the probe found write permissions and boot proceeded anyway because the
-   * opt-in switch was on. `true` otherwise (probe passed, or probe not run in local dev).
+   * `null` when the probe has NOT run yet (unknown — never assume safe).
+   * `true` when the probe ran and the login is read-only.
+   * `false` when the probe found write permissions and boot proceeded anyway because the opt-in
+   * switch was on.
    */
-  readOnlyLogin: boolean;
-  /** Present only when `readOnlyLogin` is false. Credential-free by construction. */
+  readOnlyLogin: boolean | null;
+  /** Machine-readable form of the same three cases. Always present. */
+  loginCheck: ErpLoginCheck;
+  /** Present only when `loginCheck` is `"write-capable"`. Credential-free by construction. */
   warning?: string;
 }
 
-// Set ONCE per pool creation (never per query), read by `/api/health/erp`.
-let readOnlyLoginState: ErpReadOnlyLoginState = { readOnlyLogin: true };
+/** The initial/reset state: nothing has been probed yet. */
+const NOT_PROBED: ErpReadOnlyLoginState = { readOnlyLogin: null, loginCheck: "not-probed" };
 
-/** Current boot-probe conclusion. Used by `/api/health/erp` so ops can see it without logs. */
+// Set ONCE per pool creation (never per query), read by `/api/health/erp`.
+let readOnlyLoginState: ErpReadOnlyLoginState = NOT_PROBED;
+
+/**
+ * Current boot-probe conclusion. Used by `/api/health/erp` so ops can see it without logs.
+ *
+ * CALLER CONTRACT: this is only meaningful AFTER `getErpPool()` has resolved — that is where the
+ * probe runs. Reading it on a cold process returns the honest `"not-probed"` state.
+ */
 export function erpReadOnlyLoginState(): ErpReadOnlyLoginState {
   return readOnlyLoginState;
 }
 
-/** Test-only: restore the default state between cases. */
+/** Test-only: restore the default (not-probed) state between cases. */
 export function resetErpReadOnlyLoginState(): void {
-  readOnlyLoginState = { readOnlyLogin: true };
+  readOnlyLoginState = NOT_PROBED;
 }
 
 /** Build the loud, credential-free warning. Built from permission LABELS only — never config. */
@@ -159,12 +182,14 @@ export function buildWriteCapableLoginWarning(grantedPermissions: readonly strin
 /**
  * Run the layer-4 boot probe, applying the opt-in exception above.
  *
- * - Probe passes (read-only login) → resolves, nothing logged, state stays `readOnlyLogin: true`.
- * - Probe finds write permissions + switch OFF → rethrows (unchanged fail-closed behaviour).
+ * - Probe passes (read-only login) → resolves, nothing logged, state becomes
+ *   `{ readOnlyLogin: true, loginCheck: "read-only" }`.
+ * - Probe finds write permissions + switch OFF → rethrows (unchanged fail-closed behaviour); the
+ *   state stays `"not-probed"` because nothing was concluded for a pool that never booted.
  * - Probe finds write permissions + switch ON → resolves, logs EXACTLY ONE credential-free
- *   warning, state becomes `{ readOnlyLogin: false, warning }`.
+ *   warning, state becomes `{ readOnlyLogin: false, loginCheck: "write-capable", warning }`.
  * - Probe is inconclusive (connection/shape error) → always rethrows; the switch never covers an
- *   unproven permission set.
+ *   unproven permission set, and the state stays `"not-probed"`.
  *
  * Dependencies are injectable so this is unit-testable without a real SQL Server.
  */
@@ -182,7 +207,7 @@ export async function runBootProbeWithOptIn(
 
   try {
     await verify(pool);
-    readOnlyLoginState = { readOnlyLogin: true };
+    readOnlyLoginState = { readOnlyLogin: true, loginCheck: "read-only" };
   } catch (error) {
     // Only a PROVEN write-capable permission set is covered by the exception. Any other failure
     // (probe errored, probe returned no rows) stays fail-closed.
@@ -190,7 +215,7 @@ export async function runBootProbeWithOptIn(
       throw error;
     }
     const warning = buildWriteCapableLoginWarning(error.grantedPermissions);
-    readOnlyLoginState = { readOnlyLogin: false, warning };
+    readOnlyLoginState = { readOnlyLogin: false, loginCheck: "write-capable", warning };
     warn(warning);
   }
 }
@@ -239,6 +264,9 @@ export function getErpPool(): Promise<ConnectionPool> {
       // Allow a later request to retry a transient connection failure.
       globalForErp.erpPoolConnect = undefined;
       globalForErp.erpPool = undefined;
+      // The discarded pool's probe conclusion no longer describes anything — go back to the
+      // honest "not probed" state rather than leaving a stale verdict behind.
+      resetErpReadOnlyLoginState();
       throw error;
     });
   }
