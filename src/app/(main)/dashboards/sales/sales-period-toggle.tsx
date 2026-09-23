@@ -1,7 +1,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { SALES_PERIODS, type SalesPeriod } from "@/lib/sales-basis-core";
-import { salesHref, type RawSearchParams } from "./sales-url";
+import { clearPageParams, salesHref, type RawSearchParams } from "./sales-url";
 
 // erp-dashboards Phase 2 — "แบ่งกราฟตาม" (สัปดาห์ / เดือน / ปี), the ONE period-granularity control.
 //
@@ -35,7 +35,7 @@ export function SalesPeriodToggle({
           return (
             <Link
               key={period.key}
-              href={salesHref(searchParams, { period: period.key, page: null })}
+              href={salesHref(searchParams, { period: period.key, ...clearPageParams() })}
               data-testid={`sales-period-${period.key}`}
               aria-pressed={active}
               className={

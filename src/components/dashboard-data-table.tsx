@@ -56,6 +56,15 @@ export interface DashboardDataTableProps {
    * Nothing above this prop changed: the sort and pagination link builders are untouched.
    */
   exportHref?: string | false;
+  /**
+   * sales-breakdown-pagination (23-09-26) — ADDITIVE, backwards-compatible.
+   *
+   * Stamps a `data-testid` on each rendered row (desktop `<tr>` AND mobile card), so a consumer
+   * whose rows are addressed by a stable business key can keep that contract while moving onto
+   * this component. Left undefined (every pre-existing call site) no attribute is emitted and the
+   * markup is byte-identical to before.
+   */
+  rowTestId?: (row: DataTableRow, index: number) => string | undefined;
 }
 
 /**
@@ -110,6 +119,7 @@ export function DashboardDataTable({
   mobileTitleKey,
   emptyText = "ไม่มีข้อมูล",
   exportHref,
+  rowTestId,
 }: DashboardDataTableProps) {
   const totalPages = Math.max(1, Math.ceil(totalRows / Math.max(1, pageSize)));
   const page = Math.min(Math.max(1, currentPage), totalPages);
@@ -182,6 +192,7 @@ export function DashboardDataTable({
             {rows.map((row, i) => (
               <tr
                 key={String(row[titleKey ?? ""] ?? i)}
+                data-testid={rowTestId?.(row, i)}
                 className="border-b border-[var(--border)] last:border-b-0"
               >
                 {columns.map((col) => (
@@ -204,7 +215,11 @@ export function DashboardDataTable({
       {/* ---------- Mobile: card list (below md) ---------- */}
       <div className="flex flex-col gap-2 md:hidden" data-testid="dashboard-data-cards">
         {rows.map((row, i) => (
-          <Card key={String(row[titleKey ?? ""] ?? i)} className="flex flex-col gap-1.5 p-3">
+          <Card
+            key={String(row[titleKey ?? ""] ?? i)}
+            data-testid={rowTestId?.(row, i)}
+            className="flex flex-col gap-1.5 p-3"
+          >
             {titleKey && (
               <span className="th text-[13.5px] font-semibold text-[var(--text)]">
                 {row[titleKey]}

@@ -1,11 +1,39 @@
 import * as React from "react";
 import Link from "next/link";
-import { Card } from "@/components/ui/card";
+import {
+  DashboardDataTable,
+  type DataTableColumn,
+  type DataTableRow,
+} from "@/components/dashboard-data-table";
 import { formatMoney, formatQty } from "@/lib/sales-basis-core";
 import type { DoCustomerRow, DoProductRow } from "@/lib/sales-queries";
-import { salesHref, type RawSearchParams } from "./sales-url";
+import {
+  CUSTOMER_PAGE_PARAM,
+  PRODUCT_PAGE_PARAM,
+  SALES_BASE_PATH,
+  SALES_PAGE_SIZE,
+  clearPageParams,
+  paginate,
+  salesHref,
+  type RawSearchParams,
+} from "./sales-url";
 
 // erp-dashboards Phase 2 — the summary view's two breakdown tables: ยอดตามสินค้า / ยอดตามลูกค้า.
+//
+// PAGINATION (sales-breakdown-pagination, 23-09-26): these two tables used to be hand-rolled and
+// rendered EVERY row — on the live ERP that was 135 products / 21 customers and a ~9,000px page.
+// They now go through the SAME shared `DashboardDataTable` the PO and MO lists use, so page size,
+// footer wording ("หน้า X จาก Y"), the mobile card branch and the "preserve every other search
+// param" link contract are all inherited rather than re-implemented. Nothing about this component
+// needed a second pagination implementation:
+//   - the per-unit customer quantities were always ONE cell (a " · "-joined string), not sub-rows;
+//   - row-click filtering is just a `<Link>` INSIDE the first cell's ReactNode, which the shared
+//     table renders verbatim;
+//   - the only genuinely missing capability was a per-row `data-testid` keyed on the business code
+//     (ItemCode / CustCode), added to the shared component as the optional, default-off
+//     `rowTestId` prop rather than by forking it.
+// The two tables page INDEPENDENTLY via their own query keys (`productPage` / `customerPage`), so
+// turning one never moves the other, and `page` still belongs to the DO list alone.
 //
 // DRILLDOWN: every row links to the DO list filtered by that product or customer — step one of
 // breakdown → DO list → DO lines (AC11).
@@ -22,10 +50,12 @@ import { salesHref, type RawSearchParams } from "./sales-url";
 //
 // MONEY (AC9): money columns are omitted from the markup entirely when `canSeeMoney` is false.
 //
-// CSV-EXPORT READINESS (this phase's own convention, consumed by Phase 5's export route — Phase 1's
-// shared data-table has no export wiring): each column below declares a `csvLabel` (header text)
-// and a `csvValue` (raw, unformatted cell value) next to its rendered form, so a future export can
-// be generated from the same definition rather than re-deriving it from rendered HTML.
+// CSV-EXPORT READINESS (this phase's own convention, consumed by Phase 5's export route): each
+// column below declares a `csvLabel` (header text) and a `csvValue` (raw, unformatted cell value)
+// next to its rendered form, so an export can be generated from the same definition rather than
+// re-derived from rendered HTML. The breakdown tables themselves opt OUT of the shared table's
+// export button (`exportHref={false}`) — `deriveExportTarget()` would resolve `/dashboards/sales`
+// to the DO-LIST dataset, so an inherited button here would silently download the wrong file.
 
 export interface BreakdownColumn<T> {
   key: string;
@@ -80,6 +110,13 @@ const productColumns = (canSeeMoney: boolean): Array<BreakdownColumn<DoProductRo
   return columns;
 };
 
+/**
+ * One breakdown table: its own heading, its own page key, and the shared data table underneath.
+ *
+ * The heading stays OUTSIDE `DashboardDataTable` (which is deliberately data-shape agnostic and
+ * owns no title), and the wrapping element keeps `data-testid={testId}` so existing selectors that
+ * scope into this table — including the drilldown gates — are unchanged.
+ */
 function BreakdownCard<T>({
   title,
   subtitle,
@@ -89,6 +126,9 @@ function BreakdownCard<T>({
   rowHref,
   testId,
   emptyText,
+  pageParam,
+  currentPage,
+  searchParams,
 }: {
   title: string;
   subtitle: string;
@@ -98,63 +138,57 @@ function BreakdownCard<T>({
   rowHref: (row: T) => string;
   testId: string;
   emptyText: string;
+  pageParam: string;
+  currentPage: number;
+  searchParams: RawSearchParams;
 }) {
+  // The row's business key rides along as a hidden field so `rowTestId` can read it back out of
+  // the (deliberately shape-agnostic) row object the shared table receives.
+  const keyField = "__key";
+
+  const tableColumns: DataTableColumn[] = columns.map((col) => ({
+    key: col.key,
+    label: col.label,
+    align: col.align,
+  }));
+
+  const tableRows: DataTableRow[] = paginate(rows, currentPage).map((row) => {
+    const out: DataTableRow = { [keyField]: rowKey(row) };
+    columns.forEach((col, i) => {
+      // Only the FIRST cell is the drilldown link — the same click target as before.
+      out[col.key] =
+        i === 0 ? (
+          <Link href={rowHref(row)} className="hover:underline">
+            {col.render(row)}
+          </Link>
+        ) : (
+          col.render(row)
+        );
+    });
+    return out;
+  });
+
   return (
-    <Card className="overflow-hidden" data-testid={testId}>
-      <div className="border-b border-[var(--border)] p-4">
+    <div className="flex flex-col gap-2" data-testid={testId}>
+      <div>
         <h2 className="th text-[var(--t-base)] font-semibold text-[var(--text-strong)]">{title}</h2>
         <p className="th text-[var(--t-xs)] text-[var(--text-muted)]">{subtitle}</p>
       </div>
-      {rows.length === 0 ? (
-        <p className="th p-6 text-center text-[var(--t-sm)] text-[var(--text-faint)]">{emptyText}</p>
-      ) : (
-        <table className="w-full border-collapse text-[var(--t-sm)]">
-          <thead>
-            <tr className="border-b border-[var(--border)] bg-[var(--bg-sunken)]">
-              {columns.map((col) => (
-                <th
-                  key={col.key}
-                  scope="col"
-                  className={
-                    "th px-3 py-2 font-medium text-[var(--text-muted)] " +
-                    (col.align === "right" ? "text-right" : "text-left")
-                  }
-                >
-                  {col.label}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr
-                key={rowKey(row)}
-                data-testid={`${testId}-row-${rowKey(row)}`}
-                className="border-b border-[var(--border)] last:border-b-0 hover:bg-[var(--bg-sunken)]"
-              >
-                {columns.map((col, i) => (
-                  <td
-                    key={col.key}
-                    className={
-                      "px-3 py-2 text-[var(--text)] " +
-                      (col.align === "right" ? "text-right tabular-nums" : "text-left")
-                    }
-                  >
-                    {i === 0 ? (
-                      <Link href={rowHref(row)} className="hover:underline">
-                        {col.render(row)}
-                      </Link>
-                    ) : (
-                      col.render(row)
-                    )}
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </Card>
+      <DashboardDataTable
+        columns={tableColumns}
+        rows={tableRows}
+        basePath={SALES_BASE_PATH}
+        searchParams={searchParams}
+        pageParam={pageParam}
+        currentPage={currentPage}
+        pageSize={SALES_PAGE_SIZE}
+        totalRows={rows.length}
+        mobileTitleKey={columns[0]?.key}
+        emptyText={emptyText}
+        rowTestId={(row) => `${testId}-row-${String(row[keyField] ?? "")}`}
+        exportHref={false}
+      />
+    </div>
   );
 }
 
@@ -188,11 +222,15 @@ export function SalesBreakdownTables({
   customers,
   canSeeMoney,
   searchParams,
+  productPage,
+  customerPage,
 }: {
   products: readonly DoProductRow[];
   customers: readonly DoCustomerRow[];
   canSeeMoney: boolean;
   searchParams: RawSearchParams;
+  productPage: number;
+  customerPage: number;
 }) {
   const customerGroups = groupCustomers(customers);
 
@@ -229,8 +267,12 @@ export function SalesBreakdownTables({
     });
   }
 
+  // Drilling down leaves the summary view entirely, so every page key resets — including the other
+  // table's, which would otherwise linger in the URL as dead state.
+  const drilldownReset = clearPageParams();
+
   return (
-    <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">
+    <div className="grid grid-cols-1 items-start gap-3 lg:grid-cols-2">
       <BreakdownCard<DoProductRow>
         title="ยอดตามสินค้า"
         subtitle="คลิกแถวเพื่อดูใบส่งสินค้าของสินค้านั้น"
@@ -239,15 +281,18 @@ export function SalesBreakdownTables({
         rowKey={(r) => r.ItemCode}
         rowHref={(r) =>
           salesHref(searchParams, {
+            ...drilldownReset,
             view: "documents",
             product: r.ItemCode,
             customer: null,
             doNo: null,
-            page: null,
           })
         }
         testId="sales-product-breakdown"
         emptyText="ไม่พบใบส่งสินค้าตามเงื่อนไขที่เลือก"
+        pageParam={PRODUCT_PAGE_PARAM}
+        currentPage={productPage}
+        searchParams={searchParams}
       />
 
       <BreakdownCard<CustomerGroup>
@@ -258,15 +303,18 @@ export function SalesBreakdownTables({
         rowKey={(r) => r.custCode}
         rowHref={(r) =>
           salesHref(searchParams, {
+            ...drilldownReset,
             view: "documents",
             customer: r.custCode,
             product: null,
             doNo: null,
-            page: null,
           })
         }
         testId="sales-customer-breakdown"
         emptyText="ไม่พบใบส่งสินค้าตามเงื่อนไขที่เลือก"
+        pageParam={CUSTOMER_PAGE_PARAM}
+        currentPage={customerPage}
+        searchParams={searchParams}
       />
     </div>
   );

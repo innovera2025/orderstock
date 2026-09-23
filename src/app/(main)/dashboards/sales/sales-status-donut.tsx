@@ -1,7 +1,7 @@
 import * as React from "react";
 import { SALES_STATUSES, salesStatusLabel } from "@/lib/sales-basis-core";
 import { SalesSliceChart, type ChartSlice } from "./sales-slice-chart";
-import { salesHref, type RawSearchParams } from "./sales-url";
+import { clearPageParams, salesHref, type RawSearchParams } from "./sales-url";
 
 // erp-dashboards Phase 2 — "สัดส่วนสถานะการส่งมอบ": a DONUT with the total in its centre,
 // exactly as the approved mockup draws it (Defaults Taken #2).
@@ -47,7 +47,7 @@ export function SalesStatusDonut({
       value: counts.get(key) ?? 0,
       color: tones[tone],
       // Clicking the selected slice clears the filter — a toggle, not a one-way trip.
-      href: salesHref(searchParams, { status: selected === key ? null : key, page: null }),
+      href: salesHref(searchParams, { status: selected === key ? null : key, ...clearPageParams() }),
       selected: selected === key,
     };
   });

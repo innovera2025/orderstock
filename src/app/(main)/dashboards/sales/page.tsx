@@ -4,7 +4,14 @@ import { requireAuth } from "@/lib/auth-guard";
 import { PilotBanner } from "@/components/pilot-banner";
 import { DegradeBanner } from "@/components/degrade-banner";
 import { erpDegradeState } from "@/lib/erp/degrade";
-import { formatInt, quantityByUnitList, coveragePercent, timeBins, inBin } from "@/lib/sales-basis-core";
+import {
+  buildCategoryLabels,
+  formatInt,
+  quantityByUnitList,
+  coveragePercent,
+  timeBins,
+  inBin,
+} from "@/lib/sales-basis-core";
 import {
   fetchDoByCustomer,
   fetchDoByProduct,
@@ -25,7 +32,7 @@ import { SalesCategoryPie } from "./sales-category-pie";
 import { SalesBreakdownTables } from "./sales-breakdown-tables";
 import { DoListTable } from "./do-list-table";
 import { DoLinesTable } from "./do-lines-table";
-import { parseSalesUrl, salesHref, type RawSearchParams } from "./sales-url";
+import { clearPageParams, parseSalesUrl, salesHref, type RawSearchParams } from "./sales-url";
 import { SalesUnavailable } from "./sales-unavailable";
 
 // ยอดขาย — /dashboards/sales (erp-dashboards Phase 2).
@@ -118,6 +125,11 @@ export default async function SalesDashboardPage({
     (products?.stale ?? false) ||
     (customers?.stale ?? false);
 
+  // The ERP's own category labels, taken from the SAME rows the pie draws (that query runs with
+  // `skipCat: true`, so every category is present even while one is selected). One source means the
+  // chip and the pie can never disagree about what a code is called.
+  const catLabels = buildCategoryLabels(catLines.value);
+
   const headerRows: DoHeaderRow[] = headers.value;
   const lineRows: DoLineRow[] = lines.value;
 
@@ -141,15 +153,22 @@ export default async function SalesDashboardPage({
       .reduce((a, l) => a + Number(l.Amount), 0),
   }));
 
+  // Every page key resets on a view change — `page` (DO list/lines) plus the two breakdown keys.
+  const pageReset = clearPageParams();
   const summaryHref = salesHref(state.raw, {
+    ...pageReset,
     view: null,
     customer: null,
     product: null,
     doNo: null,
-    page: null,
     sort: null,
   });
-  const documentsHref = salesHref(state.raw, { view: "documents", doNo: null, page: null, sort: null });
+  const documentsHref = salesHref(state.raw, {
+    ...pageReset,
+    view: "documents",
+    doNo: null,
+    sort: null,
+  });
 
   return (
     <main className="flex w-full flex-col gap-4 p-4 sm:p-6" data-testid="sales-dashboard">
@@ -163,7 +182,7 @@ export default async function SalesDashboardPage({
       <PilotBanner />
       <DegradeBanner state={erpDegradeState({ stale })} />
 
-      <SalesFilterBar state={state} />
+      <SalesFilterBar state={state} catLabels={catLabels} />
 
       <SalesKpiTiles
         doCount={headerRows.length}
@@ -214,6 +233,8 @@ export default async function SalesDashboardPage({
             customers={customers.value}
             canSeeMoney={canSeeMoney}
             searchParams={state.raw}
+            productPage={state.productPage}
+            customerPage={state.customerPage}
           />
         </>
       )}

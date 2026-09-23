@@ -14,7 +14,7 @@ import {
   computeBarScale,
   yAxisWidth,
 } from "@/lib/sales-chart-scale";
-import { salesHref, type RawSearchParams } from "./sales-url";
+import { clearPageParams, salesHref, type RawSearchParams } from "./sales-url";
 
 // erp-dashboards Phase 2 — the period bar charts.
 //
@@ -110,7 +110,7 @@ function BarChart({
               return (
                 <Link
                   key={bin.key}
-                  href={salesHref(searchParams, { from: bin.from, to: bin.to, page: null })}
+                  href={salesHref(searchParams, { from: bin.from, to: bin.to, ...clearPageParams() })}
                   data-testid={`${testId}-bar-${bin.key}`}
                   title={`${bin.full}: ${formatValue(value)}`}
                   aria-label={`${bin.full}: ${formatValue(value)} — คลิกเพื่อกรองเฉพาะช่วงนี้`}

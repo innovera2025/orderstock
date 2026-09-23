@@ -19,13 +19,17 @@ const SALES = `/dashboards/sales?${RANGE}`;
 /** The seeded fixture's truth — mirrors `db/erp-fixture/sales-seed.sql`. */
 const FIXTURE = {
   doCount: 14,
-  lineCount: 31,
+  lineCount: 35,
   pricedLineCount: 6,
   total: "10,111.00",
   excludedTotal: "858,937.21",
-  coverage: "19.4",
+  coverage: "17.1",
   checkedStatusCount: 5,
   pageSize: 10,
+  /** Distinct ItemCode across the seeded lines — deliberately > one 10-row breakdown page. */
+  productCount: 14,
+  /** Distinct CustCode across the seeded headers — one breakdown page. */
+  customerCount: 4,
 };
 
 async function openAs(page: Page, url: string) {
@@ -327,6 +331,38 @@ test.describe("status donut + category pie cross-filter", () => {
 
     await context.close();
   });
+
+  // DEFECT GATE (23-09-26): the live pie showed "หมวด W" — a raw ItemGRP code with no Thai label —
+  // because the label map was hardcoded in the app. Labels now come from dbo.tbl_ItemGroup.
+  test("the category legend shows the ERP's own Thai labels, and still filters by CODE", async ({
+    browser,
+  }) => {
+    const context = await ctx(browser, "admin");
+    const page = await context.newPage();
+    await openAs(page, SALES);
+
+    const pie = page.getByTestId("sales-category-pie");
+
+    // F and R both exist in the fixture's tbl_ItemGroup, so both must read as the ERP's label.
+    await expect(pie.getByTestId("sales-category-pie-legend-F")).toContainText("สินค้าสำเร็จรูป");
+    await expect(pie.getByTestId("sales-category-pie-legend-R")).toContainText("วัตถุดิบหลัก");
+
+    // No legend entry anywhere may be the raw-code fallback for a code the ERP CAN label.
+    await expect(pie).not.toContainText("หมวด F");
+    await expect(pie).not.toContainText("หมวด R");
+
+    // The filter identity is still the CODE, never the Thai label.
+    await expect(pie.getByTestId("sales-category-pie-legend-R")).toHaveAttribute(
+      "href",
+      /[?&]cat=R(&|$)/,
+    );
+    await pie.getByTestId("sales-category-pie-legend-R").click();
+    await expect(page).toHaveURL(/cat=R/);
+    await expect(page).not.toHaveURL(/%E0%B8%A7%E0%B8%B1%E0%B8%95/); // วัต… never in the URL
+    await expect(page.getByTestId("chip-cat")).toContainText("วัตถุดิบหลัก");
+
+    await context.close();
+  });
 });
 
 // ---------------------------------------------------------------------------------------------
@@ -421,6 +457,106 @@ test.describe("AC12 — sort + paginate preserve filters", () => {
 
     const sorted = await desktopDoLinks.allInnerTexts();
     expect(sorted).toEqual([...sorted].sort());
+
+    await context.close();
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// sales-breakdown-pagination (23-09-26) — the two summary breakdown tables must PAGE, not render
+// every row. They shipped hand-rolled and unbounded: on the live ERP that was 135 products and a
+// ~9,000px page. The local fixture deliberately seeds 14 distinct products so this is a real
+// assertion rather than a vacuous one (10 products would fit on one page and prove nothing).
+// ---------------------------------------------------------------------------------------------
+test.describe("breakdown tables paginate at 10 rows and keep the filters", () => {
+  /** Rows of one breakdown table, scoped to the DESKTOP table so the mobile cards are not counted. */
+  function breakdownRows(page: Page, testId: string) {
+    return page.locator(`[data-testid="${testId}"] table [data-testid^="${testId}-row-"]`);
+  }
+
+  test("the product breakdown shows at most one page of rows, with a page footer", async ({
+    browser,
+  }) => {
+    const context = await ctx(browser, "admin");
+    const page = await context.newPage();
+    await openAs(page, SALES);
+
+    const productTable = page.getByTestId("sales-product-breakdown");
+    await expect(productTable).toBeVisible();
+
+    // The defect this guards: every row rendered, no footer at all.
+    expect(await breakdownRows(page, "sales-product-breakdown").count()).toBe(FIXTURE.pageSize);
+    expect(FIXTURE.productCount).toBeGreaterThan(FIXTURE.pageSize);
+    await expect(productTable.getByTestId("data-table-page-label")).toContainText("หน้า 1 จาก 2");
+
+    // The customer table has one page of its own and must show the same footer wording.
+    const customerTable = page.getByTestId("sales-customer-breakdown");
+    expect(await breakdownRows(page, "sales-customer-breakdown").count()).toBe(
+      FIXTURE.customerCount,
+    );
+    await expect(customerTable.getByTestId("data-table-page-label")).toContainText("หน้า 1 จาก 1");
+
+    await context.close();
+  });
+
+  test("paging the product breakdown keeps the active filters and leaves the other table alone", async ({
+    browser,
+  }) => {
+    const context = await ctx(browser, "admin");
+    const page = await context.newPage();
+    // The pinned date range plus a non-default period — both must survive the page turn. A status
+    // filter is deliberately NOT used here: it narrows the product set to a single page, which
+    // would leave no "ถัดไป" link to click and make the assertion vacuous.
+    await openAs(page, `${SALES}&period=week`);
+
+    const productTable = page.getByTestId("sales-product-breakdown");
+    const firstPage = await breakdownRows(page, "sales-product-breakdown").allInnerTexts();
+
+    await productTable.getByTestId("data-table-next").click();
+    await expect(productTable.getByTestId("data-table-page-label")).toContainText("หน้า 2 จาก");
+
+    // Every filter preserved, and only the product table's own page key was written.
+    await expect(page).toHaveURL(/from=2026-08-01/);
+    await expect(page).toHaveURL(/to=2026-09-30/);
+    await expect(page).toHaveURL(/period=week/);
+    await expect(page).toHaveURL(/productPage=2/);
+    await expect(page).not.toHaveURL(/customerPage=/);
+    // The date filter is still the one in force, i.e. paging rewrote nothing but its own page key.
+    await expect(page.getByTestId("sales-from")).toHaveValue("2026-08-01");
+    await expect(page.getByTestId("sales-to")).toHaveValue("2026-09-30");
+
+    // Genuinely different rows, and still bounded by the page size.
+    const secondPage = await breakdownRows(page, "sales-product-breakdown").allInnerTexts();
+    expect(secondPage.length).toBeGreaterThan(0);
+    expect(secondPage.length).toBeLessThanOrEqual(FIXTURE.pageSize);
+    expect(secondPage[0]).not.toBe(firstPage[0]);
+
+    // The customer table did not move.
+    await expect(
+      page.getByTestId("sales-customer-breakdown").getByTestId("data-table-page-label"),
+    ).toContainText("หน้า 1 จาก 1");
+
+    // Drilling down from page 2 still filters by the clicked product and clears the page keys.
+    await breakdownRows(page, "sales-product-breakdown").first().locator("a").first().click();
+    await expect(page).toHaveURL(/product=/);
+    await expect(page).not.toHaveURL(/productPage=/);
+    await expect(page.getByTestId("do-list-table")).toBeVisible();
+
+    await context.close();
+  });
+
+  test("the page is not an unbounded single-page dump — the summary view stays a sane height", async ({
+    browser,
+  }) => {
+    const context = await ctx(browser, "admin");
+    const page = await context.newPage();
+    await page.setViewportSize({ width: 1440, height: 900 });
+    await openAs(page, SALES);
+
+    // With 14 products the old unbounded markup added rows without limit; paginated, the whole
+    // summary view stays within a few screens.
+    const height = await page.evaluate(() => document.documentElement.scrollHeight);
+    expect(height).toBeLessThan(4000);
 
     await context.close();
   });

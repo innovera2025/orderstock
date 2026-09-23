@@ -70,7 +70,7 @@ describe.skipIf(!erpConfigured)("AC4 numeric half — coverage % and excluded to
     const coverage = coveragePercent(priced.length, lines.value.length);
     expect(coverage).toBeGreaterThan(0);
     expect(coverage).toBeLessThan(100);
-    expect(formatPercent(coverage)).toBe("19.4");
+    expect(formatPercent(coverage)).toBe(SALES_FIXTURE_EXPECTED.coverageLabel);
   });
 
   it("the priced-only money total counts ONLY priced lines", async () => {

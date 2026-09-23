@@ -9,8 +9,14 @@ export const SALES_FIXTURE_EXPECTED = {
   from: "2026-08-01",
   to: "2026-09-30",
   doCount: 14,
-  lineCount: 31,
+  lineCount: 35,
   pricedLineCount: 6,
+  /** `formatPercent(coveragePercent(6, 35))` — priced lines are 6 of 35. */
+  coverageLabel: "17.1",
+  /** Distinct ItemCode across the seeded lines — > one 10-row breakdown page on purpose. */
+  productCount: 14,
+  /** Distinct CustCode across the seeded headers. */
+  customerCount: 4,
   /** header TotalAmount sum === detail Amount sum, exactly (AC3). */
   total: 10111,
   excludedInvoiceCount: 3,

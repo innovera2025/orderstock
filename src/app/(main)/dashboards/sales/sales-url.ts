@@ -37,6 +37,10 @@ export interface SalesUrlState {
   doNo: string | null;
   sort: string | null;
   page: number;
+  /** 1-based page of the ยอดตามสินค้า breakdown table (independent of `page`). */
+  productPage: number;
+  /** 1-based page of the ยอดตามลูกค้า breakdown table (independent of `page`). */
+  customerPage: number;
   /** Everything as given, for href preservation. */
   raw: RawSearchParams;
 }
@@ -44,6 +48,28 @@ export interface SalesUrlState {
 function one(value: string | string[] | undefined): string | null {
   const v = Array.isArray(value) ? value[0] : value;
   return v == null || v === "" ? null : v;
+}
+
+// sales-breakdown-pagination (23-09-26) — the two summary breakdown tables page INDEPENDENTLY, so
+// each owns its own query key. `page` stays the DO-list/DO-lines key it always was, untouched.
+export const PRODUCT_PAGE_PARAM = "productPage";
+export const CUSTOMER_PAGE_PARAM = "customerPage";
+
+/** Every page key this dashboard understands — cleared as a set when the view changes. */
+export const SALES_PAGE_PARAMS = ["page", PRODUCT_PAGE_PARAM, CUSTOMER_PAGE_PARAM] as const;
+
+/**
+ * Read a 1-based page number out of a search-param bag. Anything absent, non-numeric, zero,
+ * negative, or fractional collapses to page 1 — a bad URL must never blank a table.
+ */
+export function pageFromParam(raw: RawSearchParams, key: string): number {
+  const n = Number(one(raw[key]) ?? "1");
+  return Number.isFinite(n) && n >= 1 ? Math.floor(n) : 1;
+}
+
+/** `{ page: null, productPage: null, customerPage: null }` — for `salesHref` overrides. */
+export function clearPageParams(): Record<string, null> {
+  return Object.fromEntries(SALES_PAGE_PARAMS.map((k) => [k, null]));
 }
 
 export function parseSalesUrl(raw: RawSearchParams, today: Date = new Date()): SalesUrlState {
@@ -60,8 +86,6 @@ export function parseSalesUrl(raw: RawSearchParams, today: Date = new Date()): S
   const view: SalesView =
     doNo != null ? "lines" : rawView === "documents" || customer || product ? "documents" : "summary";
 
-  const pageNumber = Number(one(raw.page) ?? "1");
-
   return {
     from,
     to,
@@ -73,7 +97,9 @@ export function parseSalesUrl(raw: RawSearchParams, today: Date = new Date()): S
     cat: one(raw.cat),
     doNo,
     sort: one(raw.sort),
-    page: Number.isFinite(pageNumber) && pageNumber >= 1 ? Math.floor(pageNumber) : 1,
+    page: pageFromParam(raw, "page"),
+    productPage: pageFromParam(raw, PRODUCT_PAGE_PARAM),
+    customerPage: pageFromParam(raw, CUSTOMER_PAGE_PARAM),
     raw,
   };
 }

@@ -1,9 +1,14 @@
 import * as React from "react";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
-import { beShort, categoryLabel, salesStatusLabel } from "@/lib/sales-basis-core";
+import {
+  beShort,
+  categoryLabel,
+  salesStatusLabel,
+  type CategoryLabels,
+} from "@/lib/sales-basis-core";
 import { SalesPeriodToggle } from "./sales-period-toggle";
-import { salesHref, type SalesUrlState } from "./sales-url";
+import { clearPageParams, salesHref, type SalesUrlState } from "./sales-url";
 
 // erp-dashboards Phase 2 — the filter bar.
 //
@@ -19,13 +24,22 @@ import { salesHref, type SalesUrlState } from "./sales-url";
 
 const hiddenKeys = ["view", "customer", "product", "status", "cat", "period"] as const;
 
-export function SalesFilterBar({ state }: { state: SalesUrlState }) {
+// `catLabels` carries the ERP's own `tbl_ItemGroup` labels (see `sales-basis-core.ts`) so the
+// "หมวดสินค้า" chip names the selected category the same way the pie does. It is optional: without
+// it the chip still renders the safe "หมวด {code}" fallback rather than nothing.
+export function SalesFilterBar({
+  state,
+  catLabels,
+}: {
+  state: SalesUrlState;
+  catLabels?: CategoryLabels;
+}) {
   const chips: Array<{ label: string; value: string; clear: string; testId: string }> = [];
   if (state.customer) {
     chips.push({
       label: "ลูกค้า",
       value: state.customer,
-      clear: salesHref(state.raw, { customer: null, view: null, page: null }),
+      clear: salesHref(state.raw, { customer: null, view: null, ...clearPageParams() }),
       testId: "chip-customer",
     });
   }
@@ -33,7 +47,7 @@ export function SalesFilterBar({ state }: { state: SalesUrlState }) {
     chips.push({
       label: "สินค้า",
       value: state.product,
-      clear: salesHref(state.raw, { product: null, view: null, page: null }),
+      clear: salesHref(state.raw, { product: null, view: null, ...clearPageParams() }),
       testId: "chip-product",
     });
   }
@@ -41,15 +55,15 @@ export function SalesFilterBar({ state }: { state: SalesUrlState }) {
     chips.push({
       label: "สถานะการส่งมอบ",
       value: salesStatusLabel(state.status),
-      clear: salesHref(state.raw, { status: null, page: null }),
+      clear: salesHref(state.raw, { status: null, ...clearPageParams() }),
       testId: "chip-status",
     });
   }
   if (state.cat) {
     chips.push({
       label: "หมวดสินค้า",
-      value: categoryLabel(state.cat),
-      clear: salesHref(state.raw, { cat: null, page: null }),
+      value: categoryLabel(state.cat, catLabels),
+      clear: salesHref(state.raw, { cat: null, ...clearPageParams() }),
       testId: "chip-cat",
     });
   }

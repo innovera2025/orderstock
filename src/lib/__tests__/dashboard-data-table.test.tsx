@@ -199,3 +199,64 @@ describe("DashboardDataTable — pagination via ?page= (AC12 filter preservation
     expect(html).toContain("หน้า 2 จาก 2");
   });
 });
+
+// ---------------------------------------------------------------------------------------------
+// sales-breakdown-pagination (23-09-26) — the optional `rowTestId` / `pageParam` / `exportHref`
+// extension points the Sales breakdown tables needed in order to REUSE this component instead of
+// forking a second pagination implementation. Both must stay default-off so no pre-existing call
+// site changes behaviour.
+// ---------------------------------------------------------------------------------------------
+describe("DashboardDataTable — additive extension points", () => {
+  it("emits no per-row data-testid unless rowTestId is supplied", () => {
+    expect(render()).not.toContain('data-testid="row-');
+  });
+
+  it("stamps rowTestId on both the desktop row and the mobile card", () => {
+    const html = renderToStaticMarkup(
+      React.createElement(DashboardDataTable, {
+        columns: COLUMNS,
+        rows: ROWS,
+        basePath: "/dashboards/sales",
+        pageSize: 10,
+        totalRows: ROWS.length,
+        rowTestId: (row: Record<string, React.ReactNode>) => `brk-row-${String(row.item)}`,
+      }),
+    );
+    // Once in the table, once in the card list.
+    expect(html.match(/data-testid="brk-row-FG-1001"/g)).toHaveLength(2);
+    expect(html).toContain('data-testid="brk-row-FG-1002"');
+  });
+
+  it("paginates on a custom pageParam, leaving the default `page` key untouched", () => {
+    const html = renderToStaticMarkup(
+      React.createElement(DashboardDataTable, {
+        columns: COLUMNS,
+        rows: ROWS,
+        basePath: "/dashboards/sales",
+        searchParams: { page: "7", status: "checked" },
+        pageParam: "productPage",
+        currentPage: 1,
+        pageSize: 10,
+        totalRows: 25,
+      }),
+    );
+    const next = hrefOf(html, "data-table-next");
+    expect(next).toContain("productPage=2");
+    expect(next).toContain("page=7");
+    expect(next).toContain("status=checked");
+  });
+
+  it("suppresses the export button when exportHref is false", () => {
+    const html = renderToStaticMarkup(
+      React.createElement(DashboardDataTable, {
+        columns: COLUMNS,
+        rows: ROWS,
+        basePath: "/dashboards/sales",
+        pageSize: 10,
+        totalRows: ROWS.length,
+        exportHref: false as const,
+      }),
+    );
+    expect(html).not.toContain("data-table-export-csv");
+  });
+});
