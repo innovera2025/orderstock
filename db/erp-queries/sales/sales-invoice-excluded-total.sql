@@ -1,14 +1,23 @@
--- erp-dashboards Phase 2 — Sales: the RECONCILIATION FOOTNOTE query.
+-- erp-dashboards Phase 2 — Sales: the UNFILTERED sales-invoice pool total.
 --
--- READ-ONLY single statement through `guardedQuery()`. Takes no filter parameters on purpose: the
--- footnote discloses the WHOLE excluded pool, not a date-sliced slice of it, so a narrow filter can
--- never make the excluded figure look smaller than it is.
+-- FILENAME IS HISTORICAL. It was `sales-invoice-excluded-total.sql` when this pool was genuinely
+-- outside the dashboard's money figure, and the name is kept because renaming a versioned query
+-- file churns its TS mirror, its column contract and every importer for zero behavioural gain.
+-- Read the name as "the whole-pool total", not as a claim that anything is left out.
 --
--- WHY THIS EXISTS: this dashboard's sales total is built on the DELIVERY-ORDER basis
--- (tbl_DOhdr/tbl_Dodtl). A separate, larger pool of sales-invoice value lives in SalesInvoiceHdr
--- (DocuType='SI') and is deliberately NOT part of that total. The umbrella charter forbids silently
--- dropping a larger real number, so the dashboard names this amount out loud directly under the
--- money tile. These rows are NEVER added to any dashboard figure — they are disclosure only.
+-- READ-ONLY single statement through `guardedQuery()`. Takes no filter parameters on purpose.
+--
+-- WHAT CHANGED (sales-invoice-basis, 23-09-26): this money is no longer held back from anything.
+-- The customer's own ERP team named `sp_SalesInvoice` as the source of truth for sales, so the
+-- SalesInvoiceHdr pool IS the dashboard's primary figure now, and the delivery-order figures moved
+-- to the secondary "การส่งมอบ" section. Deliveries carry the goods; invoices carry the money.
+--
+-- WHY THIS QUERY STILL EXISTS ALONGSIDE `invoice-headers.sql`: this one is UNCONDITIONAL — the
+-- whole pool, every date — while `invoice-headers.sql` is bounded by the page's selected date
+-- range. Two genuinely different shapes for two different callers: the manual live-reconcile
+-- script needs the whole pool to check against the ERP's own reports, the dashboard needs the
+-- filtered slice the user is looking at. Both scope on `DocuType = 'SI'`, so the filtered figure
+-- is always a subset of this one and the two can never describe different document sets.
 SELECT
     COUNT(*) AS InvoiceCount,
     COALESCE(SUM(h.TotalAmount), 0) AS ExcludedTotal

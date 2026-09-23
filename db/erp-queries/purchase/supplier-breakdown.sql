@@ -13,6 +13,10 @@
 -- Cancelled POs are excluded here for the same reason as the committed-basis total: this chart is
 -- a money/commitment view, and a cancelled order commits nothing.
 --
+-- DELIBERATE DIVERGENCE FROM `sp_Purchase` (documented 23-09-26, sales-invoice-basis plan Step P1 —
+-- comment only, no logic change): `sp_Purchase` applies no `IsCancel` filter. The `IsCancel = 0`
+-- here is defensive intent, currently a no-op (zero cancelled POs live today), and is KEPT.
+--
 -- Params:
 --   @from, @to      inclusive CE date range over PODate (required)
 --   @supplier       SupplierCode; NULL = every supplier. The bar chart passes NULL even when a

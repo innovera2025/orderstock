@@ -5,10 +5,14 @@ import {
   formatMoney,
   formatPercent,
   formatQty,
-  reconciliationNote,
+  deliveryCoverageNote,
 } from "@/lib/sales-basis-core";
 
-// erp-dashboards Phase 2 — KPI tiles.
+// erp-dashboards Phase 2 — the DELIVERY section's KPI tiles ("การส่งมอบ").
+//
+// SECONDARY SECTION as of sales-invoice-basis (23-09-26): the dashboard's headline money now comes
+// from the invoice basis (`invoice-kpi-tiles.tsx`). These tiles answer the other half of the
+// question — what actually left the warehouse — and keep their own, unchanged coverage caveat.
 //
 // PRIMARY FIGURES ARE COUNTS AND QUANTITIES, not money: those are the only Sales numbers the live
 // ERP can currently back in full. Quantities render ONE ROW PER UNIT and are never combined into a
@@ -20,8 +24,10 @@ import {
 // class, never a client-side check.
 //
 // The money tile ALWAYS ships three things together (AC4): the priced-only amount, the coverage %,
-// and the reconciliation footnote naming the excluded pool. They are one unit — the footnote sits
-// directly under the amount and can never be hidden separately from it.
+// and the footnote naming the priced/total line counts. They are one unit — the footnote sits
+// directly under the amount and can never be hidden separately from it. The footnote NO LONGER
+// mentions the invoice pool: that money is not excluded any more, it is this dashboard's primary
+// figure, and the invoice tile carries the cross-reference in the other direction.
 
 export interface SalesKpiProps {
   doCount: number;
@@ -31,8 +37,6 @@ export interface SalesKpiProps {
   pricedAmount: number;
   pricedLineCount: number;
   coverage: number;
-  excludedInvoiceCount: number;
-  excludedInvoiceTotal: number;
 }
 
 function Tile({
@@ -66,8 +70,6 @@ export function SalesKpiTiles(props: SalesKpiProps) {
     pricedAmount,
     pricedLineCount,
     coverage,
-    excludedInvoiceCount,
-    excludedInvoiceTotal,
   } = props;
 
   return (
@@ -134,15 +136,13 @@ export function SalesKpiTiles(props: SalesKpiProps) {
                 style={{ width: `${Math.max(0, Math.min(100, coverage))}%` }}
               />
             </div>
-            {/* AC4 — the footnote NAMES the excluded amount and sits directly under the figure. */}
-            {excludedInvoiceCount > 0 && (
-              <p
-                data-testid="kpi-money-footnote"
-                className="th mt-1 text-[11px] leading-relaxed text-[var(--text-faint)]"
-              >
-                {reconciliationNote(excludedInvoiceCount, excludedInvoiceTotal)}
-              </p>
-            )}
+            {/* AC4 — the footnote NAMES the counts and sits directly under the figure. */}
+            <p
+              data-testid="kpi-money-footnote"
+              className="th mt-1 text-[11px] leading-relaxed text-[var(--text-faint)]"
+            >
+              {deliveryCoverageNote(pricedLineCount, lineCount)}
+            </p>
           </Tile>
         ) : (
           <Tile label="ยอดเงิน" testId="kpi-money-locked">

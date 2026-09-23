@@ -439,6 +439,78 @@ BEGIN
 END
 GO
 
+-- dbo.SalesInvoiceDtl — 58 columns. Column NAMES/ORDER are a verified live `sys.columns` read
+-- (23-09-26); TYPES/NULLABILITY are inferred from sibling live tables — see this manifest's
+-- `partialCaptureNotes`. Generated from the manifest, never hand-edited.
+IF NOT EXISTS (
+    SELECT 1 FROM sys.tables t JOIN sys.schemas s ON s.schema_id = t.schema_id
+    WHERE s.name = 'dbo' AND t.name = 'SalesInvoiceDtl'
+)
+BEGIN
+    CREATE TABLE dbo.SalesInvoiceDtl (
+        RowOrder         INT            NOT NULL,
+        TransactionNo    DECIMAL(18,0)  NOT NULL,
+        ItemOrder        INT            NULL,
+        ItemCode         NVARCHAR(50)   NULL,
+        ItemSubCode      NVARCHAR(50)   NULL,
+        Description      NVARCHAR(100)  NULL,
+        MainQuantity     DECIMAL(18,2)  NULL,
+        MainUnits        NVARCHAR(20)   NULL,
+        ConvertRate      DECIMAL(18,4)  NULL,
+        SecondQuantity   DECIMAL(18,2)  NULL,
+        SecondUnits      NVARCHAR(20)   NULL,
+        SourceType       NVARCHAR(20)   NULL,
+        OrderNo          NVARCHAR(20)   NULL,
+        OrderTrNo        DECIMAL(18,0)  NULL,
+        CustPONo         NVARCHAR(50)   NULL,
+        ItemType         NVARCHAR(20)   NULL,
+        Material         NVARCHAR(80)   NULL,
+        ItemRefCode      NVARCHAR(50)   NULL,
+        AccountCode      NVARCHAR(20)   NULL,
+        AccountName      NVARCHAR(100)  NULL,
+        CustOrSuppCode   NVARCHAR(15)   NULL,
+        OEMNo            NVARCHAR(30)   NULL,
+        OTNNo            NVARCHAR(30)   NULL,
+        Model            NVARCHAR(30)   NULL,
+        Year             NVARCHAR(20)   NULL,
+        Currency         NVARCHAR(20)   NULL,
+        UnitPrice        DECIMAL(18,4)  NULL,
+        DiscountPercent  DECIMAL(18,2)  NULL,
+        DiscountAmount   DECIMAL(18,2)  NULL,
+        Amount           DECIMAL(18,2)  NULL,
+        AmountBaht       DECIMAL(18,2)  NULL,
+        QtyCnt           DECIMAL(18,2)  NULL,
+        Carton           DECIMAL(18,2)  NULL,
+        NW               DECIMAL(18,4)  NULL,
+        GW               DECIMAL(18,4)  NULL,
+        Cum              DECIMAL(18,4)  NULL,
+        CumTTL           DECIMAL(18,4)  NULL,
+        TotalNw          DECIMAL(18,4)  NULL,
+        TotalGw          DECIMAL(18,4)  NULL,
+        InventoryJnl     NVARCHAR(20)   NULL,
+        RevenueJnl       NVARCHAR(20)   NULL,
+        CostOfSaleJnl    NVARCHAR(20)   NULL,
+        ForItemCode      NVARCHAR(50)   NULL,
+        ReturnQty        DECIMAL(18,2)  NULL,
+        IsPrintActual    TINYINT        NULL,
+        IsPrintBank      TINYINT        NULL,
+        IsPrintCustom    TINYINT        NULL,
+        Notes            NVARCHAR(MAX)  NULL,
+        SecondUnitPrice  DECIMAL(18,4)  NULL,
+        OurCode          NVARCHAR(50)   NULL,
+        FlowNo           NVARCHAR(20)   NULL,
+        FlowTrNo         DECIMAL(18,0)  NULL,
+        JobNo            NVARCHAR(20)   NULL,
+        JobTrNo          DECIMAL(18,0)  NULL,
+        MAI_REPORT       NVARCHAR(50)   NULL,
+        PackingNo        NVARCHAR(20)   NULL,
+        PackingTrNo      DECIMAL(18,0)  NULL,
+        NoRatePrice      TINYINT        NULL,
+        CONSTRAINT PK_SalesInvoiceDtl PRIMARY KEY (RowOrder)
+    );
+END
+GO
+
 -- dbo.PurchaseOrderHdr — 122 columns, generated verbatim from the live manifest.
 IF NOT EXISTS (
     SELECT 1 FROM sys.tables t JOIN sys.schemas s ON s.schema_id = t.schema_id

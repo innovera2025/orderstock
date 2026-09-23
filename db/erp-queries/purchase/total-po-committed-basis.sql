@@ -13,6 +13,13 @@
 -- in the status donut (a cancelled order is a real thing that happened) — that difference is
 -- deliberate and lives in the page layer, not here.
 --
+-- DELIBERATE DIVERGENCE FROM `sp_Purchase` (documented 23-09-26, sales-invoice-basis plan Step P1 —
+-- comment only, no logic change). The ERP's own `sp_Purchase` reads `PurchaseOrderHdr` ⋈
+-- `PurchaseOrderDtl` with NO `IsCancel` filter at all. This dashboard adds `IsCancel = 0` as
+-- DEFENSIVE INTENT. On today's live data the filter is a NO-OP — zero cancelled POs exist — so the
+-- two agree exactly (727,920 THB / 4 POs). The filter is intentionally KEPT, not removed to match
+-- the proc: the day a PO is cancelled, a committed-spend total that still counts it would be wrong.
+--
 -- Params:
 --   @from, @to      inclusive CE date range over PODate (required)
 --   @supplier       SupplierCode — NEVER a supplier NAME

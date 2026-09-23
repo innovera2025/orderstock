@@ -324,17 +324,26 @@ ORDER BY q.CustCode ASC, Unit ASC;
 `;
 
 /** Verbatim copy of `db/erp-queries/sales/sales-invoice-excluded-total.sql`. */
-export const SALES_INVOICE_EXCLUDED_TOTAL_SQL = `-- erp-dashboards Phase 2 — Sales: the RECONCILIATION FOOTNOTE query.
+export const SALES_INVOICE_EXCLUDED_TOTAL_SQL = `-- erp-dashboards Phase 2 — Sales: the UNFILTERED sales-invoice pool total.
 --
--- READ-ONLY single statement through \`guardedQuery()\`. Takes no filter parameters on purpose: the
--- footnote discloses the WHOLE excluded pool, not a date-sliced slice of it, so a narrow filter can
--- never make the excluded figure look smaller than it is.
+-- FILENAME IS HISTORICAL. It was \`sales-invoice-excluded-total.sql\` when this pool was genuinely
+-- outside the dashboard's money figure, and the name is kept because renaming a versioned query
+-- file churns its TS mirror, its column contract and every importer for zero behavioural gain.
+-- Read the name as "the whole-pool total", not as a claim that anything is left out.
 --
--- WHY THIS EXISTS: this dashboard's sales total is built on the DELIVERY-ORDER basis
--- (tbl_DOhdr/tbl_Dodtl). A separate, larger pool of sales-invoice value lives in SalesInvoiceHdr
--- (DocuType='SI') and is deliberately NOT part of that total. The umbrella charter forbids silently
--- dropping a larger real number, so the dashboard names this amount out loud directly under the
--- money tile. These rows are NEVER added to any dashboard figure — they are disclosure only.
+-- READ-ONLY single statement through \`guardedQuery()\`. Takes no filter parameters on purpose.
+--
+-- WHAT CHANGED (sales-invoice-basis, 23-09-26): this money is no longer held back from anything.
+-- The customer's own ERP team named \`sp_SalesInvoice\` as the source of truth for sales, so the
+-- SalesInvoiceHdr pool IS the dashboard's primary figure now, and the delivery-order figures moved
+-- to the secondary "การส่งมอบ" section. Deliveries carry the goods; invoices carry the money.
+--
+-- WHY THIS QUERY STILL EXISTS ALONGSIDE \`invoice-headers.sql\`: this one is UNCONDITIONAL — the
+-- whole pool, every date — while \`invoice-headers.sql\` is bounded by the page's selected date
+-- range. Two genuinely different shapes for two different callers: the manual live-reconcile
+-- script needs the whole pool to check against the ERP's own reports, the dashboard needs the
+-- filtered slice the user is looking at. Both scope on \`DocuType = 'SI'\`, so the filtered figure
+-- is always a subset of this one and the two can never describe different document sets.
 SELECT
     COUNT(*) AS InvoiceCount,
     COALESCE(SUM(h.TotalAmount), 0) AS ExcludedTotal
@@ -366,6 +375,310 @@ SELECT
 FROM dbo.tbl_DOhdr h;
 `;
 
+/** Verbatim copy of `db/erp-queries/sales/invoice-headers.sql`. */
+export const INVOICE_HEADERS_SQL = `-- erp-dashboards / sales-invoice-basis (23-09-26) — Sales: filtered SALES-INVOICE headers.
+--
+-- READ-ONLY: a single SELECT/WITH statement, executed ONLY through \`guardedQuery()\`.
+-- PARAMETERIZED ONLY: every filter is a named parameter compared inside static SQL — no value is
+-- ever concatenated into this text. Optional filters use the \`(@p IS NULL OR col = @p)\` form so ONE
+-- static statement serves every filter combination.
+--
+-- WHY THIS EXISTS: the customer's own ERP team named \`sp_SalesInvoice\` as the source of truth for
+-- sales ("PO : sp_Purchase — SO : sp_SalesInvoice — ที่นี่ไม่ทำ SO ไปดึงที่ Invoice"). Delivery orders
+-- carry the GOODS; invoices carry the MONEY. This query backs the dashboard's PRIMARY money figure;
+-- the delivery-order queries (\`do-*.sql\`) still back the secondary "การส่งมอบ" section, unchanged.
+--
+-- LIVE COLUMN NAMES — read them off the manifest, not off a data dictionary. The invoice number is
+-- \`VoucherNo\`, its date is \`VoucherDate\`, and the customer is \`CustOrSuppCode\`/\`CustOrSuppName\`.
+-- There is NO \`InvoiceNo\`, \`InvoiceDate\`, \`InvDate\` or \`CustCode\` column on \`dbo.SalesInvoiceHdr\`;
+-- inventing one is the exact defect class that took every dashboard page down on 23-09-26.
+--
+-- DELIBERATE DIVERGENCE FROM \`sp_SalesInvoice\`: on live data that proc degenerates to every
+-- header/line pair WHERE \`IsClosed = 0\`. This query filters on \`DocuType = 'SI'\` instead. Both are
+-- no-ops on today's data (all 4 live invoices carry DocuType='SI' AND IsClosed=0), and \`DocuType\`
+-- is the better filter for two reasons: it is NOT NULL live, whereas \`IsClosed\` is nullable and
+-- \`IsClosed = 0\` would silently drop any future NULL row; and it is the SAME pool
+-- \`sales-invoice-excluded-total.sql\` already reports, so that query stays the exact unfiltered
+-- variant of this one rather than describing a different set of documents.
+--
+-- Params:
+--   @from, @to        date range over SalesInvoiceHdr.VoucherDate (required)
+--   @invoiceNo        single invoice drilldown (NULL = no restriction)
+--   @customer         CustOrSuppCode — NEVER a customer NAME (codes are the stable identity)
+--   @product          ItemCode; a header matches when ANY of its lines carries it
+--   @cat              InventoryItem.ItemGRP category key ('-' = no group)
+--   @skipCat          1 = ignore @cat
+--
+-- NO @status PARAMETER, on purpose: all four live invoices share identical flag values
+-- (IsClosed=0, IsApproved=NULL, IVStatus=NULL), so an invoice status filter would have exactly one
+-- possible value. The dashboard gives the invoice section no status filter and no status donut.
+--
+-- \`LineAmount\` is the NULL-SAFE line total (\`SUM(ISNULL(Amount,0))\`) and \`LineCount\` counts EVERY
+-- line including the ones whose Amount is NULL: live invoice lines DO exist with a NULL Amount
+-- (the partial DO-2608-0007 case), and such a line is still a real line that was shipped.
+WITH CanonicalItem AS (
+    -- Highest-Roworder-wins tie-break: ItemCode is NOT unique in InventoryItem (composite PK).
+    SELECT ItemCode, ItemGRP,
+           ROW_NUMBER() OVER (PARTITION BY ItemCode ORDER BY Roworder DESC) AS RowRank
+    FROM dbo.InventoryItem
+),
+Item AS (
+    SELECT ItemCode, ItemGRP FROM CanonicalItem WHERE RowRank = 1
+),
+Qualified AS (
+    SELECT h.TransactionNo, h.VoucherNo, h.VoucherDate, h.CustOrSuppCode, h.CustOrSuppName,
+           h.TotalAmount
+    FROM dbo.SalesInvoiceHdr h
+    WHERE h.DocuType = 'SI'
+      AND h.VoucherDate >= @from
+      AND h.VoucherDate <= @to
+      AND (@invoiceNo IS NULL OR h.VoucherNo = @invoiceNo)
+      AND (@customer IS NULL OR h.CustOrSuppCode = @customer)
+      AND (@product IS NULL OR EXISTS (
+            SELECT 1 FROM dbo.SalesInvoiceDtl d
+            WHERE d.TransactionNo = h.TransactionNo AND d.ItemCode = @product))
+      AND (@cat IS NULL OR @skipCat = 1 OR EXISTS (
+            SELECT 1 FROM dbo.SalesInvoiceDtl d
+            JOIN Item i ON i.ItemCode = d.ItemCode
+            WHERE d.TransactionNo = h.TransactionNo
+              AND COALESCE(NULLIF(LTRIM(RTRIM(i.ItemGRP)), ''), '-') = @cat))
+)
+SELECT
+    q.TransactionNo,
+    q.VoucherNo                       AS InvoiceNo,
+    q.VoucherDate                     AS InvDate,
+    q.CustOrSuppCode                  AS CustCode,
+    q.CustOrSuppName                  AS CustName,
+    COALESCE(q.TotalAmount, 0)        AS Amount,
+    (SELECT COUNT(*) FROM dbo.SalesInvoiceDtl d
+      WHERE d.TransactionNo = q.TransactionNo) AS LineCount,
+    (SELECT COALESCE(SUM(COALESCE(d.Amount, 0)), 0) FROM dbo.SalesInvoiceDtl d
+      WHERE d.TransactionNo = q.TransactionNo) AS LineAmount
+FROM Qualified q
+ORDER BY q.VoucherDate DESC, q.VoucherNo DESC;
+`;
+
+/** Verbatim copy of `db/erp-queries/sales/invoice-lines.sql`. */
+export const INVOICE_LINES_SQL = `-- erp-dashboards / sales-invoice-basis (23-09-26) — Sales: SALES-INVOICE lines.
+--
+-- READ-ONLY single statement through \`guardedQuery()\`; every filter is a named parameter (no value
+-- is concatenated into this text). Params identical to \`invoice-headers.sql\`.
+--
+-- THE UNIT LABEL COMES FROM THE LINE (\`d.MainUnits\`), NEVER FROM THE ITEM MASTER. This is a hard
+-- rule of this program, and a mistake already made and fixed once: an invoice line records the unit
+-- it was actually sold in, which may differ from \`InventoryItem.MainUnits\`. The item master is
+-- joined here ONLY for the category code, never for the unit and never for the quantity.
+--
+-- \`Amount\` IS NULL ON REAL LIVE LINES (the partial DO-2608-0007 invoice line). It is COALESCEd to 0
+-- for display and arithmetic, but the line itself is never filtered out — a priced-zero line is
+-- still a line that shipped goods, and dropping it would understate both the quantity and the
+-- line count.
+--
+-- \`OrderNo\` is the delivery order this invoice line came from (live: 100% of invoice lines carry
+-- one, prefix \`DO-2\`), which is how the invoice section and the delivery section relate.
+WITH CanonicalItem AS (
+    -- Highest-Roworder-wins tie-break: ItemCode is NOT unique in InventoryItem (composite PK).
+    SELECT ItemCode, ItemGRP,
+           ROW_NUMBER() OVER (PARTITION BY ItemCode ORDER BY Roworder DESC) AS RowRank
+    FROM dbo.InventoryItem
+),
+Item AS (
+    SELECT ItemCode, ItemGRP FROM CanonicalItem WHERE RowRank = 1
+),
+ItemGroup AS (
+    -- The ERP's own category master; collapsed by code so a duplicate can never fan a line out.
+    SELECT LTRIM(RTRIM(ICCode)) AS GroupCode, MAX(LTRIM(RTRIM(Description))) AS GroupName
+    FROM dbo.tbl_ItemGroup
+    WHERE NULLIF(LTRIM(RTRIM(ICCode)), '') IS NOT NULL
+    GROUP BY LTRIM(RTRIM(ICCode))
+),
+Qualified AS (
+    SELECT h.TransactionNo, h.VoucherNo, h.VoucherDate, h.CustOrSuppCode, h.CustOrSuppName
+    FROM dbo.SalesInvoiceHdr h
+    WHERE h.DocuType = 'SI'
+      AND h.VoucherDate >= @from
+      AND h.VoucherDate <= @to
+      AND (@invoiceNo IS NULL OR h.VoucherNo = @invoiceNo)
+      AND (@customer IS NULL OR h.CustOrSuppCode = @customer)
+      AND (@product IS NULL OR EXISTS (
+            SELECT 1 FROM dbo.SalesInvoiceDtl d
+            WHERE d.TransactionNo = h.TransactionNo AND d.ItemCode = @product))
+      AND (@cat IS NULL OR @skipCat = 1 OR EXISTS (
+            SELECT 1 FROM dbo.SalesInvoiceDtl d
+            JOIN Item i ON i.ItemCode = d.ItemCode
+            WHERE d.TransactionNo = h.TransactionNo
+              AND COALESCE(NULLIF(LTRIM(RTRIM(i.ItemGRP)), ''), '-') = @cat))
+)
+SELECT
+    q.VoucherNo                                            AS InvoiceNo,
+    q.VoucherDate                                          AS InvDate,
+    q.CustOrSuppCode                                       AS CustCode,
+    q.CustOrSuppName                                       AS CustName,
+    d.RowOrder,
+    d.ItemOrder,
+    d.ItemCode,
+    COALESCE(NULLIF(LTRIM(RTRIM(d.Description)), ''), d.ItemCode) AS ItemName,
+    -- THE LINE'S OWN UNIT. Never \`i.MainUnits\`.
+    COALESCE(NULLIF(LTRIM(RTRIM(d.MainUnits)), ''), '-')   AS Unit,
+    COALESCE(NULLIF(LTRIM(RTRIM(i.ItemGRP)), ''), '-')     AS CategoryKey,
+    g.GroupName                                            AS CategoryLabel,
+    COALESCE(d.MainQuantity, 0)                            AS Qty,
+    COALESCE(d.UnitPrice, 0)                               AS UnitPrice,
+    COALESCE(d.Amount, 0)                                  AS Amount,
+    d.OrderNo
+FROM Qualified q
+JOIN dbo.SalesInvoiceDtl d ON d.TransactionNo = q.TransactionNo
+LEFT JOIN Item i ON i.ItemCode = d.ItemCode
+LEFT JOIN ItemGroup g ON g.GroupCode = LTRIM(RTRIM(i.ItemGRP))
+WHERE (@product IS NULL OR d.ItemCode = @product)
+  AND (@cat IS NULL OR @skipCat = 1
+       OR COALESCE(NULLIF(LTRIM(RTRIM(i.ItemGRP)), ''), '-') = @cat)
+ORDER BY q.VoucherDate DESC, q.VoucherNo DESC, d.ItemOrder ASC;
+`;
+
+/** Verbatim copy of `db/erp-queries/sales/invoice-by-product.sql`. */
+export const INVOICE_BY_PRODUCT_SQL = `-- erp-dashboards / sales-invoice-basis (23-09-26) — Sales: invoice quantity/amount PER PRODUCT.
+--
+-- READ-ONLY single statement through \`guardedQuery()\`; all filters are named parameters.
+-- Params identical to \`invoice-headers.sql\` / \`invoice-lines.sql\`.
+--
+-- The canonical-item CTE below is the PROVEN pattern copied from \`do-by-product.sql\`, not
+-- re-derived: \`ItemCode\` is NOT unique in \`InventoryItem\` (~85 duplicated codes live), so a
+-- highest-\`Roworder\`-wins \`ROW_NUMBER()\` resolves exactly ONE row per code before joining. It is
+-- used ONLY for the CATEGORY code.
+--
+-- GROUPED BY (ItemCode, THE LINE'S OWN UNIT). Two reasons, both hard rules of this program:
+--   * the unit label must come from \`SalesInvoiceDtl.MainUnits\`, never the item master;
+--   * quantities must NEVER be summed across different units, so the unit is part of the group key
+--     rather than an aggregate picked with MAX(). If one product were ever sold in two units, this
+--     query returns two rows instead of one arithmetically meaningless total.
+--
+-- NULL \`Amount\` lines are counted and contribute 0 — never dropped.
+WITH CanonicalItem AS (
+    SELECT ItemCode, ItemGRP,
+           ROW_NUMBER() OVER (PARTITION BY ItemCode ORDER BY Roworder DESC) AS RowRank
+    FROM dbo.InventoryItem
+),
+Item AS (
+    SELECT ItemCode, ItemGRP FROM CanonicalItem WHERE RowRank = 1
+),
+Qualified AS (
+    SELECT h.TransactionNo
+    FROM dbo.SalesInvoiceHdr h
+    WHERE h.DocuType = 'SI'
+      AND h.VoucherDate >= @from
+      AND h.VoucherDate <= @to
+      AND (@invoiceNo IS NULL OR h.VoucherNo = @invoiceNo)
+      AND (@customer IS NULL OR h.CustOrSuppCode = @customer)
+      AND (@product IS NULL OR EXISTS (
+            SELECT 1 FROM dbo.SalesInvoiceDtl d
+            WHERE d.TransactionNo = h.TransactionNo AND d.ItemCode = @product))
+      AND (@cat IS NULL OR @skipCat = 1 OR EXISTS (
+            SELECT 1 FROM dbo.SalesInvoiceDtl d
+            JOIN Item i ON i.ItemCode = d.ItemCode
+            WHERE d.TransactionNo = h.TransactionNo
+              AND COALESCE(NULLIF(LTRIM(RTRIM(i.ItemGRP)), ''), '-') = @cat))
+)
+SELECT
+    d.ItemCode,
+    MAX(COALESCE(NULLIF(LTRIM(RTRIM(d.Description)), ''), d.ItemCode)) AS ItemName,
+    COALESCE(NULLIF(LTRIM(RTRIM(d.MainUnits)), ''), '-') AS Unit,
+    MAX(COALESCE(NULLIF(LTRIM(RTRIM(i.ItemGRP)), ''), '-')) AS CategoryKey,
+    COUNT(*) AS LineCount,
+    SUM(COALESCE(d.MainQuantity, 0)) AS Qty,
+    SUM(COALESCE(d.Amount, 0)) AS Amount
+FROM Qualified q
+JOIN dbo.SalesInvoiceDtl d ON d.TransactionNo = q.TransactionNo
+LEFT JOIN Item i ON i.ItemCode = d.ItemCode
+WHERE (@product IS NULL OR d.ItemCode = @product)
+  AND (@cat IS NULL OR @skipCat = 1
+       OR COALESCE(NULLIF(LTRIM(RTRIM(i.ItemGRP)), ''), '-') = @cat)
+GROUP BY d.ItemCode, COALESCE(NULLIF(LTRIM(RTRIM(d.MainUnits)), ''), '-')
+ORDER BY SUM(COALESCE(d.Amount, 0)) DESC, d.ItemCode ASC;
+`;
+
+/** Verbatim copy of `db/erp-queries/sales/invoice-by-customer.sql`. */
+export const INVOICE_BY_CUSTOMER_SQL = `-- erp-dashboards / sales-invoice-basis (23-09-26) — Sales: invoice totals PER CUSTOMER.
+--
+-- READ-ONLY single statement through \`guardedQuery()\`; all filters are named parameters.
+-- Params identical to \`invoice-headers.sql\`.
+--
+-- THE CUSTOMER COMES FROM THE HEADER (\`SalesInvoiceHdr.CustOrSuppCode\`), NOT FROM THE LINE.
+-- \`SalesInvoiceDtl\` does carry its own \`CustOrSuppCode\` column, but an invoice document has exactly
+-- ONE customer, recorded on the header — the per-line copy is a derived duplicate with no
+-- authority. Grouping by the line column would be reading a shadow of the real value.
+--
+-- The CODE is the group key and the identity; the NAME is display-only and may be missing, exactly
+-- as in \`do-by-customer.sql\`.
+--
+-- Grouped by (customer, THE LINE'S OWN UNIT) so quantities are never summed across units.
+WITH CanonicalItem AS (
+    SELECT ItemCode, ItemGRP,
+           ROW_NUMBER() OVER (PARTITION BY ItemCode ORDER BY Roworder DESC) AS RowRank
+    FROM dbo.InventoryItem
+),
+Item AS (
+    SELECT ItemCode, ItemGRP FROM CanonicalItem WHERE RowRank = 1
+),
+Qualified AS (
+    SELECT h.TransactionNo, h.CustOrSuppCode, h.CustOrSuppName
+    FROM dbo.SalesInvoiceHdr h
+    WHERE h.DocuType = 'SI'
+      AND h.VoucherDate >= @from
+      AND h.VoucherDate <= @to
+      AND (@invoiceNo IS NULL OR h.VoucherNo = @invoiceNo)
+      AND (@customer IS NULL OR h.CustOrSuppCode = @customer)
+      AND (@product IS NULL OR EXISTS (
+            SELECT 1 FROM dbo.SalesInvoiceDtl d
+            WHERE d.TransactionNo = h.TransactionNo AND d.ItemCode = @product))
+      AND (@cat IS NULL OR @skipCat = 1 OR EXISTS (
+            SELECT 1 FROM dbo.SalesInvoiceDtl d
+            JOIN Item i ON i.ItemCode = d.ItemCode
+            WHERE d.TransactionNo = h.TransactionNo
+              AND COALESCE(NULLIF(LTRIM(RTRIM(i.ItemGRP)), ''), '-') = @cat))
+)
+SELECT
+    q.CustOrSuppCode AS CustCode,
+    MAX(q.CustOrSuppName) AS CustName,
+    COALESCE(NULLIF(LTRIM(RTRIM(d.MainUnits)), ''), '-') AS Unit,
+    COUNT(*) AS LineCount,
+    COUNT(DISTINCT q.TransactionNo) AS InvoiceCount,
+    SUM(COALESCE(d.MainQuantity, 0)) AS Qty,
+    SUM(COALESCE(d.Amount, 0)) AS Amount
+FROM Qualified q
+JOIN dbo.SalesInvoiceDtl d ON d.TransactionNo = q.TransactionNo
+LEFT JOIN Item i ON i.ItemCode = d.ItemCode
+WHERE (@product IS NULL OR d.ItemCode = @product)
+  AND (@cat IS NULL OR @skipCat = 1
+       OR COALESCE(NULLIF(LTRIM(RTRIM(i.ItemGRP)), ''), '-') = @cat)
+GROUP BY q.CustOrSuppCode, COALESCE(NULLIF(LTRIM(RTRIM(d.MainUnits)), ''), '-')
+ORDER BY q.CustOrSuppCode ASC, Unit ASC;
+`;
+
+/** Verbatim copy of `db/erp-queries/sales/invoice-date-range.sql`. */
+export const INVOICE_DATE_RANGE_SQL = `-- ช่วงข้อมูล — Sales (invoice basis): what the ERP ACTUALLY holds, regardless of the page's filter.
+--
+-- READ-ONLY: a single SELECT statement, executed ONLY through \`guardedQuery()\`.
+--
+-- TAKES NO PARAMETERS ON PURPOSE, exactly like \`do-date-range.sql\`: this feeds the data-range
+-- notice, which answers "how much sales-invoice history does the ERP have?" — NOT "what did my
+-- current filter select?". Binding the page's @from/@to here would make the notice merely restate
+-- the filter the user just set.
+--
+-- LIVE COLUMN NAMES: the date is \`VoucherDate\` — there is no \`InvDate\`/\`InvoiceDate\` column on
+-- \`dbo.SalesInvoiceHdr\`. \`DocuType = 'SI'\` scopes it to the same pool every other invoice query
+-- reports, so the notice and the figures can never describe different document sets.
+--
+-- MIN/MAX over a date column ignore NULLs and return NULL for an empty table; the app renders that
+-- as "range not known" rather than inventing a date.
+SELECT
+    COUNT(*) AS DocCount,
+    MIN(h.VoucherDate) AS FirstDate,
+    MAX(h.VoucherDate) AS LastDate
+FROM dbo.SalesInvoiceHdr h
+WHERE h.DocuType = 'SI';
+`;
+
 export const SALES_SQL_SOURCES: ReadonlyArray<{ name: string; file: string; sql: string }> = [
   { name: "DO_HEADERS_SQL", file: "db/erp-queries/sales/do-headers.sql", sql: DO_HEADERS_SQL },
   { name: "DO_LINES_SQL", file: "db/erp-queries/sales/do-lines.sql", sql: DO_LINES_SQL },
@@ -373,4 +686,9 @@ export const SALES_SQL_SOURCES: ReadonlyArray<{ name: string; file: string; sql:
   { name: "DO_BY_CUSTOMER_SQL", file: "db/erp-queries/sales/do-by-customer.sql", sql: DO_BY_CUSTOMER_SQL },
   { name: "SALES_INVOICE_EXCLUDED_TOTAL_SQL", file: "db/erp-queries/sales/sales-invoice-excluded-total.sql", sql: SALES_INVOICE_EXCLUDED_TOTAL_SQL },
   { name: "DO_DATE_RANGE_SQL", file: "db/erp-queries/sales/do-date-range.sql", sql: DO_DATE_RANGE_SQL },
+  { name: "INVOICE_HEADERS_SQL", file: "db/erp-queries/sales/invoice-headers.sql", sql: INVOICE_HEADERS_SQL },
+  { name: "INVOICE_LINES_SQL", file: "db/erp-queries/sales/invoice-lines.sql", sql: INVOICE_LINES_SQL },
+  { name: "INVOICE_BY_PRODUCT_SQL", file: "db/erp-queries/sales/invoice-by-product.sql", sql: INVOICE_BY_PRODUCT_SQL },
+  { name: "INVOICE_BY_CUSTOMER_SQL", file: "db/erp-queries/sales/invoice-by-customer.sql", sql: INVOICE_BY_CUSTOMER_SQL },
+  { name: "INVOICE_DATE_RANGE_SQL", file: "db/erp-queries/sales/invoice-date-range.sql", sql: INVOICE_DATE_RANGE_SQL },
 ];

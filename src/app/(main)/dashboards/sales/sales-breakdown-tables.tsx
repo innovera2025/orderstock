@@ -116,8 +116,13 @@ const productColumns = (canSeeMoney: boolean): Array<BreakdownColumn<DoProductRo
  * The heading stays OUTSIDE `DashboardDataTable` (which is deliberately data-shape agnostic and
  * owns no title), and the wrapping element keeps `data-testid={testId}` so existing selectors that
  * scope into this table — including the drilldown gates — are unchanged.
+ *
+ * EXPORTED (sales-invoice-basis, 23-09-26) so the INVOICE section's breakdown tables reuse this
+ * exact component rather than forking it. It is already generic over the row type `T`, so the
+ * invoice row shapes needed no adapter — this is the real reusable seam, whereas
+ * `SalesBreakdownTables` below is a delivery-specific composition of two instances of it.
  */
-function BreakdownCard<T>({
+export function BreakdownCard<T>({
   title,
   subtitle,
   columns,

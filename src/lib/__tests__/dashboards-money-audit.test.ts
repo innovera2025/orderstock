@@ -104,7 +104,14 @@ describe("CSV serializer — Excel-safe Thai output", () => {
 
 describe("export target derivation — one rule shared by the button and the route", () => {
   it("maps each dashboard base path to its list export", () => {
-    expect(deriveExportTarget("/dashboards/sales")).toEqual({ dashboard: "sales", table: "list" });
+    // sales-invoice-basis (23-09-26): a bare `/dashboards/sales` is the SUMMARY view, whose primary
+    // section is the invoice one — so the default sales list export is the INVOICE list. The
+    // delivery list export is reached via `?view=delivery-documents` (asserted below). Purchase and
+    // Production are untouched by the additive `ExportTable` widening.
+    expect(deriveExportTarget("/dashboards/sales")).toEqual({
+      dashboard: "sales",
+      table: "invoice-list",
+    });
     expect(deriveExportTarget("/dashboards/purchase")).toEqual({
       dashboard: "purchase",
       table: "list",
@@ -115,11 +122,51 @@ describe("export target derivation — one rule shared by the button and the rou
     });
   });
 
-  it("switches Sales to the line export when a DO is drilled into via ?doNo=", () => {
+  it("switches Sales to the delivery line export when a DO is drilled into via ?doNo=", () => {
     expect(deriveExportTarget("/dashboards/sales", { doNo: "DO-2608-0001" })).toEqual({
       dashboard: "sales",
       table: "lines",
     });
+  });
+
+  // sales-invoice-basis (23-09-26) — the four real sales param shapes, INCLUDING the two view-only
+  // cases where neither drilldown param is present. Those are the ones that would silently resolve
+  // both sections to the same table if `deriveExportTarget` re-derived the precedence rules instead
+  // of importing `resolveSalesSection` from `sales-url.ts`.
+  it("resolves the invoice list from `view` ALONE, with no invoiceNo present", () => {
+    expect(deriveExportTarget("/dashboards/sales", { view: "invoice-documents" })).toEqual({
+      dashboard: "sales",
+      table: "invoice-list",
+    });
+  });
+
+  it("resolves the delivery list from `view` ALONE, with no doNo present", () => {
+    expect(deriveExportTarget("/dashboards/sales", { view: "delivery-documents" })).toEqual({
+      dashboard: "sales",
+      table: "list",
+    });
+  });
+
+  it("switches Sales to the invoice line export when an invoice is drilled into", () => {
+    expect(deriveExportTarget("/dashboards/sales", { invoiceNo: "SI-2569-0001" })).toEqual({
+      dashboard: "sales",
+      table: "invoice-lines",
+    });
+  });
+
+  it("round-trips all four sales shapes through parseExportTarget", () => {
+    for (const table of ["list", "lines", "invoice-list", "invoice-lines"] as const) {
+      const href = buildExportHref({ dashboard: "sales", table });
+      const parsed = parseExportTarget(new URL(href, "http://x").searchParams);
+      expect(parsed, table).toEqual({ dashboard: "sales", table });
+    }
+  });
+
+  it("rejects the invoice shapes on any dashboard other than sales", () => {
+    for (const dashboard of ["purchase", "production"]) {
+      const params = new URLSearchParams({ dashboard, table: "invoice-list" });
+      expect(parseExportTarget(params), dashboard).toBeNull();
+    }
   });
 
   it("reads the Purchase/Production drilldown key out of the PATH and decodes it", () => {
@@ -391,6 +438,13 @@ describe.skipIf(!erpConfigured)("AC9/AC14 — export money gate across all 3 das
   const MONEY_BEARING_EXPORTS = [
     { name: "sales list", query: `dashboard=sales&table=list&${RANGE}` },
     { name: "sales lines", query: `dashboard=sales&table=lines&doNo=DO-2608-0001&${RANGE}` },
+    // sales-invoice-basis (23-09-26) — the two new invoice shapes get the SAME role-diffed
+    // byte-comparison, so the money-omission rule is proven on all four sales export shapes.
+    { name: "sales invoice list", query: `dashboard=sales&table=invoice-list&${RANGE}` },
+    {
+      name: "sales invoice lines",
+      query: `dashboard=sales&table=invoice-lines&invoiceNo=SI-2569-0001&${RANGE}`,
+    },
     { name: "purchase list", query: `dashboard=purchase&table=list&${RANGE}` },
   ];
 
@@ -437,6 +491,34 @@ describe.skipIf(!erpConfigured)("AC9/AC14 — export money gate across all 3 das
     expect(staff.headers).not.toContain("ราคาต่อหน่วย");
     expect(staff.headers).not.toContain("จำนวนเงิน");
     expect(staff.headers.length).toBe(admin.headers.length - 2);
+  });
+
+  // sales-invoice-basis (23-09-26) — the dispatch itself, not just the money gate. Before the
+  // explicit cases + rejecting default existed, `loadExportDataset`'s catch-all served PRODUCTION
+  // rows for any unrecognised pair: the right filename over the wrong dashboard's data.
+  it("the invoice exports serve INVOICE rows, never production's", async () => {
+    const list = await exportAs("ADMIN", `dashboard=sales&table=invoice-list&${RANGE}`);
+    expect(list.response.status).toBe(200);
+    expect(list.headers).toContain("เลขที่ใบแจ้งหนี้");
+    // The production material-issue export's own header set must not appear here.
+    expect(list.headers).not.toContain("วันที่เบิก");
+    expect(list.body).not.toContain("ยังไม่มีข้อมูลผลิตจริง");
+    // Real invoice rows, not an empty shell that would make the assertions vacuous.
+    expect(list.body).toContain("SI-2569-0001");
+
+    const lines = await exportAs(
+      "ADMIN",
+      `dashboard=sales&table=invoice-lines&invoiceNo=SI-2569-0001&${RANGE}`,
+    );
+    expect(lines.response.status).toBe(200);
+    expect(lines.headers).toContain("เลขที่ใบส่งสินค้า");
+    expect(lines.body).not.toContain("วันที่เบิก");
+  });
+
+  it("an unrecognised dashboard:table pair is REJECTED, never served as production data", async () => {
+    const bogus = await exportAs("ADMIN", `dashboard=sales&table=nonsense&${RANGE}`);
+    expect(bogus.response.status).toBe(400);
+    expect(bogus.body).not.toContain("ยังไม่มีข้อมูลผลิตจริง");
   });
 
   it("production exports are byte-identical for both roles (no money exists to gate)", async () => {

@@ -3937,6 +3937,298 @@
         "nullable": true
       }
     ],
+    "dbo.SalesInvoiceDtl": [
+      {
+        "name": "RowOrder",
+        "type": "int",
+        "nullable": false
+      },
+      {
+        "name": "TransactionNo",
+        "type": "decimal(18,0)",
+        "nullable": false
+      },
+      {
+        "name": "ItemOrder",
+        "type": "int",
+        "nullable": true
+      },
+      {
+        "name": "ItemCode",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "ItemSubCode",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "Description",
+        "type": "nvarchar(100)",
+        "nullable": true
+      },
+      {
+        "name": "MainQuantity",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "MainUnits",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "ConvertRate",
+        "type": "decimal(18,4)",
+        "nullable": true
+      },
+      {
+        "name": "SecondQuantity",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "SecondUnits",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "SourceType",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "OrderNo",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "OrderTrNo",
+        "type": "decimal(18,0)",
+        "nullable": true
+      },
+      {
+        "name": "CustPONo",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "ItemType",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "Material",
+        "type": "nvarchar(80)",
+        "nullable": true
+      },
+      {
+        "name": "ItemRefCode",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "AccountCode",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "AccountName",
+        "type": "nvarchar(100)",
+        "nullable": true
+      },
+      {
+        "name": "CustOrSuppCode",
+        "type": "nvarchar(15)",
+        "nullable": true
+      },
+      {
+        "name": "OEMNo",
+        "type": "nvarchar(30)",
+        "nullable": true
+      },
+      {
+        "name": "OTNNo",
+        "type": "nvarchar(30)",
+        "nullable": true
+      },
+      {
+        "name": "Model",
+        "type": "nvarchar(30)",
+        "nullable": true
+      },
+      {
+        "name": "Year",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "Currency",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "UnitPrice",
+        "type": "decimal(18,4)",
+        "nullable": true
+      },
+      {
+        "name": "DiscountPercent",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "DiscountAmount",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "Amount",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "AmountBaht",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "QtyCnt",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "Carton",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "NW",
+        "type": "decimal(18,4)",
+        "nullable": true
+      },
+      {
+        "name": "GW",
+        "type": "decimal(18,4)",
+        "nullable": true
+      },
+      {
+        "name": "Cum",
+        "type": "decimal(18,4)",
+        "nullable": true
+      },
+      {
+        "name": "CumTTL",
+        "type": "decimal(18,4)",
+        "nullable": true
+      },
+      {
+        "name": "TotalNw",
+        "type": "decimal(18,4)",
+        "nullable": true
+      },
+      {
+        "name": "TotalGw",
+        "type": "decimal(18,4)",
+        "nullable": true
+      },
+      {
+        "name": "InventoryJnl",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "RevenueJnl",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "CostOfSaleJnl",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "ForItemCode",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "ReturnQty",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "IsPrintActual",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "IsPrintBank",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "IsPrintCustom",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "Notes",
+        "type": "nvarchar(max)",
+        "nullable": true
+      },
+      {
+        "name": "SecondUnitPrice",
+        "type": "decimal(18,4)",
+        "nullable": true
+      },
+      {
+        "name": "OurCode",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "FlowNo",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "FlowTrNo",
+        "type": "decimal(18,0)",
+        "nullable": true
+      },
+      {
+        "name": "JobNo",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "JobTrNo",
+        "type": "decimal(18,0)",
+        "nullable": true
+      },
+      {
+        "name": "MAI_REPORT",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "PackingNo",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "PackingTrNo",
+        "type": "decimal(18,0)",
+        "nullable": true
+      },
+      {
+        "name": "NoRatePrice",
+        "type": "tinyint",
+        "nullable": true
+      }
+    ],
     "dbo.tbl_BatchOrder": [
       {
         "name": "BatchNo",
@@ -4131,5 +4423,8 @@
         "nullable": true
       }
     ]
+  },
+  "partialCaptureNotes": {
+    "dbo.SalesInvoiceDtl": "COLUMN NAMES AND ORDER are a verified live `sys.columns` read (23-09-26, read-only, recorded verbatim in the sales-invoice-basis plan's Research Findings). TYPES AND NULLABILITY were NOT captured in that read and are INFERRED here from the same-named columns on sibling live tables already in this manifest (PurchaseOrderDtl, InventoryFlowDtl, tbl_Dodtl, SalesInvoiceHdr, InventoryItem), falling back to that family's conventions where no sibling exists. The column-NAME guarantee this manifest exists to provide is therefore intact; the TYPE column for this one table is best-effort, not live truth. Re-capture it with the README's sys.columns query on the next live probe and replace this entry."
   }
 }

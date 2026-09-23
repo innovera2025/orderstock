@@ -39,6 +39,7 @@ Every `dbo.<table>` referenced by `db/erp-queries/**/*.sql` or `src/lib/{sales,p
 | `dbo.tbl_DOhdr` | 51 | sales |
 | `dbo.tbl_Dodtl` | 25 | sales |
 | `dbo.SalesInvoiceHdr` | 151 | sales |
+| `dbo.SalesInvoiceDtl` | 58 | sales (invoice-basis lines — see `partialCaptureNotes`) |
 | `dbo.InventoryItem` | 102 | sales, production |
 | `dbo.PurchaseOrderHdr` | 122 | purchase |
 | `dbo.PurchaseOrderDtl` | 49 | purchase |
@@ -49,7 +50,7 @@ Every `dbo.<table>` referenced by `db/erp-queries/**/*.sql` or `src/lib/{sales,p
 | `dbo.tbl_BatchOrder` | 26 | production (fixture-seeded; no shipped query reads it yet) |
 | `dbo.tbl_ItemGroup` | 12 | sales (category labels: `ICCode` -> `Description`) |
 
-821 columns total across 12 tables.
+879 columns total across 13 tables.
 
 `dbo.tbl_BatchOrder` was captured on the same date, by the same `sys.columns` query, when the
 fixture rebuild found it seeded locally but absent from this manifest. No shipped dashboard query
@@ -58,6 +59,14 @@ reads it today; it is covered here so the fixture's copy cannot drift unnoticed 
 `dbo.tbl_ItemGroup` was captured on 23-09-26 the same way, when the Sales category pie was changed
 to read its labels from the ERP instead of an app-side hardcode (the hardcode only knew F/R/P, so
 the live code `W` reached the customer as the raw fallback "หมวด W").
+
+`dbo.SalesInvoiceDtl` was added on 23-09-26 by the `sales-invoice-basis` plan, when the Sales
+dashboard's primary money figure moved from the delivery-order basis to the invoice basis. It is
+the ONE PARTIAL entry in this file: its column NAMES and ORDER come from a verified live
+`sys.columns` read, but its TYPES and NULLABILITY were not captured in that read and are inferred
+from the same-named columns on sibling live tables. The top-level `partialCaptureNotes` key in the
+manifest records this. The column-name guarantee is intact; re-capture the types on the next live
+probe and drop the note.
 
 ## How to refresh it
 

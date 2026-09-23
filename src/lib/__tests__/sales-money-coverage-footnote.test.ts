@@ -2,9 +2,8 @@ import { describe, it, expect } from "vitest";
 
 import {
   coveragePercent,
-  formatMoney,
   formatPercent,
-  reconciliationNote,
+  deliveryCoverageNote,
 } from "../sales-basis-core";
 import { resolveErpDatabaseUrl } from "../erp/resolve-erp-database-url";
 import { fetchDoLines, fetchExcludedInvoiceTotal } from "../sales-queries";
@@ -17,8 +16,12 @@ import { SALES_FIXTURE_EXPECTED } from "./sales-fixture-expected";
 // top of Phase 1's base fixture, `ERP_DATABASE_URL` pointed at `erp_fixture`. LOCAL ONLY, never
 // `db_TCL`. (PVL fix P6 reclassified this file from Fully-Automated to Hybrid: it executes SQL.)
 //
-// The WORDING/PLACEMENT half of AC4 is the separate Agent-Probe gate — a visual scan confirming
-// the footnote names the excluded figure directly under the money tile.
+// UPDATED (sales-invoice-basis, 23-09-26): the footnote under the DELIVERY money tile no longer
+// describes the SalesInvoiceHdr pool as excluded — that pool is now the dashboard's PRIMARY figure.
+// The delivery tile's own standing caveat (most delivery lines carry no price) replaced it, and the
+// cross-reference to the delivery section lives on the invoice tile instead. The underlying
+// `fetchExcludedInvoiceTotal()` numbers below are UNCHANGED and still asserted — that query was
+// kept (as the unfiltered whole-pool variant) and still feeds the live-reconcile script.
 
 const erpConfigured = (() => {
   try {
@@ -39,18 +42,20 @@ if (!erpConfigured) {
 // ---------------------------------------------------------------------------------------------
 // Fully-Automated half of the footnote: the wording must NAME the amount.
 // ---------------------------------------------------------------------------------------------
-describe("reconciliationNote wording (pure)", () => {
-  it("names the excluded amount explicitly — never a vague 'some data is excluded'", () => {
-    const note = reconciliationNote(3, 858937.21);
-    expect(note).toContain("858,937.21");
-    expect(note).toContain("บาท");
-    expect(note).toContain("SalesInvoiceHdr");
-    expect(note).toContain("3 ใบ");
+describe("deliveryCoverageNote wording (pure)", () => {
+  it("names the priced/total line counts explicitly — never a vague 'some lines are unpriced'", () => {
+    const note = deliveryCoverageNote(13, 1623);
+    expect(note).toContain("13");
+    expect(note).toContain("1,623");
+    expect(note).toContain("รายการ");
     expect(note).not.toMatch(/ข้อมูลบางส่วน/);
   });
 
-  it("states WHY the amount is excluded, not just that it is", () => {
-    expect(reconciliationNote(3, 858937.21)).toContain("ยังไม่ใช่ฐานข้อมูลที่ใช้ในแดชบอร์ดนี้");
+  it("does NOT use excluded framing near the invoice pool — invoice money is now PRIMARY", () => {
+    const note = deliveryCoverageNote(13, 1623);
+    expect(note).not.toContain("SalesInvoiceHdr");
+    expect(note).not.toContain("ไม่ถูกนับรวม");
+    expect(note).not.toContain("ยังไม่ใช่ฐานข้อมูลที่ใช้ในแดชบอร์ดนี้");
   });
 });
 
@@ -86,7 +91,7 @@ describe.skipIf(!erpConfigured)("AC4 numeric half — coverage % and excluded to
     expect(Math.round(allTotal * 100) / 100).toBe(SALES_FIXTURE_EXPECTED.total);
   });
 
-  it("the excluded SalesInvoiceHdr pool returns a real, nonzero, correctly-labelled figure", async () => {
+  it("the whole-pool SalesInvoiceHdr total returns a real, nonzero, correctly-labelled figure", async () => {
     const excluded = await fetchExcludedInvoiceTotal();
     const row = excluded.value[0];
 
@@ -97,15 +102,8 @@ describe.skipIf(!erpConfigured)("AC4 numeric half — coverage % and excluded to
     );
   });
 
-  it("the excluded pool is LARGER than the dashboard's own total — the reason the footnote exists", async () => {
+  it("the invoice pool is LARGER than the delivery basis's total — why invoices became primary", async () => {
     const excluded = await fetchExcludedInvoiceTotal();
     expect(Number(excluded.value[0].ExcludedTotal)).toBeGreaterThan(SALES_FIXTURE_EXPECTED.total);
-  });
-
-  it("the rendered footnote for the fixture names the excluded ฿858,937.21 figure", async () => {
-    const excluded = await fetchExcludedInvoiceTotal();
-    const row = excluded.value[0];
-    const note = reconciliationNote(Number(row.InvoiceCount), Number(row.ExcludedTotal));
-    expect(note).toContain(formatMoney(SALES_FIXTURE_EXPECTED.excludedInvoiceTotal));
   });
 });

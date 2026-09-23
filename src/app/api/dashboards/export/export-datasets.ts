@@ -21,11 +21,27 @@ import { ceToBeDisplay, parseDateInputValue } from "@/lib/be-date";
 import type { CsvCell, CsvTable } from "@/lib/erp/csv-export";
 import type { ExportTarget } from "@/lib/erp/dashboard-export-target";
 
-import { fetchDoHeaders, fetchDoLines, isoDate as salesIsoDate } from "@/lib/sales-queries";
+import {
+  fetchDoHeaders,
+  fetchDoLines,
+  fetchInvoiceHeaders,
+  fetchInvoiceLines,
+  isoDate as salesIsoDate,
+} from "@/lib/sales-queries";
 import type { SalesFilters } from "@/lib/sales-queries";
 import { parseSalesUrl, sortRows as salesSortRows } from "@/app/(main)/dashboards/sales/sales-url";
 import { DO_LIST_CSV_COLUMNS } from "@/app/(main)/dashboards/sales/do-list-table";
 import { DO_LINES_CSV_COLUMNS } from "@/app/(main)/dashboards/sales/do-lines-table";
+import {
+  INVOICE_LIST_CSV_COLUMNS,
+  INVOICE_LIST_SORT,
+  INVOICE_LIST_SORT_DEFAULT,
+} from "@/app/(main)/dashboards/sales/invoice-list-table";
+import {
+  INVOICE_LINES_CSV_COLUMNS,
+  INVOICE_LINES_SORT,
+  INVOICE_LINES_SORT_DEFAULT,
+} from "@/app/(main)/dashboards/sales/invoice-lines-table";
 
 import {
   fetchPoLines,
@@ -139,6 +155,65 @@ async function salesLines(raw: RawSearchParams, canSeeMoney: boolean): Promise<E
   );
 
   const columns = DO_LINES_CSV_COLUMNS.filter((c) => canSeeMoney || c.money !== true);
+  return {
+    headers: columns.map((c) => c.csvLabel),
+    rows: sorted.map((row) => columns.map((c) => c.csvValue(row))),
+    stale: lines.stale,
+  };
+}
+
+// --- invoice basis (sales-invoice-basis, 23-09-26) ---------------------------------------------
+// Same shape as `salesList`/`salesLines` above: parse via `sales-url.ts`, fetch via the same
+// wrappers the page uses, sort with the SAME accessors the on-screen table uses (imported from the
+// table modules, not re-declared), and filter columns by `canSeeMoney`.
+
+function salesFilters(raw: RawSearchParams): SalesFilters {
+  const state = parseSalesUrl(raw);
+  return {
+    from: state.from,
+    to: state.to,
+    doNo: state.doNo,
+    invoiceNo: state.invoiceNo,
+    customer: state.customer,
+    product: state.product,
+    status: state.status,
+    cat: state.cat,
+  };
+}
+
+async function salesInvoiceList(
+  raw: RawSearchParams,
+  canSeeMoney: boolean,
+): Promise<ExportDataset> {
+  const state = parseSalesUrl(raw);
+  const headers = await fetchInvoiceHeaders(salesFilters(raw));
+
+  const sorted = salesSortRows(headers.value, state.sort, INVOICE_LIST_SORT, {
+    ...INVOICE_LIST_SORT_DEFAULT,
+  });
+
+  const columns = INVOICE_LIST_CSV_COLUMNS.filter((c) => canSeeMoney || c.money !== true);
+  return {
+    headers: columns.map((c) => c.csvLabel),
+    rows: sorted.map((row) =>
+      columns.map((c) => (c.key === "date" ? be(salesIsoDate(row.InvDate)) : c.csvValue(row))),
+    ),
+    stale: headers.stale,
+  };
+}
+
+async function salesInvoiceLines(
+  raw: RawSearchParams,
+  canSeeMoney: boolean,
+): Promise<ExportDataset> {
+  const state = parseSalesUrl(raw);
+  const lines = await fetchInvoiceLines(salesFilters(raw));
+
+  const sorted = salesSortRows(lines.value, state.sort, INVOICE_LINES_SORT, {
+    ...INVOICE_LINES_SORT_DEFAULT,
+  });
+
+  const columns = INVOICE_LINES_CSV_COLUMNS.filter((c) => canSeeMoney || c.money !== true);
   return {
     headers: columns.map((c) => c.csvLabel),
     rows: sorted.map((row) => columns.map((c) => c.csvValue(row))),
@@ -316,6 +391,15 @@ async function productionLines(moNumber: string): Promise<ExportDataset> {
 
 // ---------------------------------------------------------------------------------------------
 
+/** Thrown when `loadExportDataset` is handed a pair it has no dataset for. The route maps it to a
+ * 400 rather than letting it surface as a 500 — a bad request, not a server fault. */
+export class UnknownExportTargetError extends Error {
+  constructor(dashboard: string, table: string) {
+    super(`No export dataset for ${dashboard}:${table}`);
+    this.name = "UnknownExportTargetError";
+  }
+}
+
 /** Resolve one export target to its serializable table. */
 export function loadExportDataset(
   target: ExportTarget,
@@ -332,9 +416,20 @@ export function loadExportDataset(
       return purchaseList(raw, canSeeMoney);
     case "purchase:lines":
       return purchaseLines(raw, canSeeMoney, target.key ?? "");
+    case "sales:invoice-list":
+      return salesInvoiceList(raw, canSeeMoney);
+    case "sales:invoice-lines":
+      return salesInvoiceLines(raw, canSeeMoney);
     case "production:list":
       return productionList(raw);
-    default:
+    case "production:lines":
       return productionLines(target.key ?? "");
+    default:
+      // NO SILENT CATCH-ALL (sales-invoice-basis, 23-09-26). This used to fall through to
+      // `productionLines(...)`, which meant any unwired or mistyped `dashboard:table` pair served
+      // Production's rows under the REQUESTING dashboard's filename — a wrong-data-under-a-right-
+      // name bug that no type check catches. With four sales shapes in play that risk is real, so
+      // an unrecognised pair is now rejected outright.
+      throw new UnknownExportTargetError(target.dashboard, target.table);
   }
 }

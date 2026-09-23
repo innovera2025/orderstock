@@ -4,7 +4,12 @@ import { PilotBanner } from "@/components/pilot-banner";
 import { SalesFilterBar } from "./sales-filter-bar";
 import type { SalesUrlState } from "./sales-url";
 
-// erp-dashboards Phase 2 — the ERP-unreachable fallback view (EVL fix cycle 1, 22-09-26).
+// erp-dashboards Phase 2 — the WHOLE-PAGE ERP-unreachable fallback (EVL fix cycle 1, 22-09-26).
+//
+// SCOPE NARROWED (sales-invoice-basis, 23-09-26): this now renders ONLY when BOTH the invoice and
+// the delivery section fail cold with nothing cached. When just one section is down the page keeps
+// rendering normally and that section shows `sales-unavailable-fragment.tsx` instead — so this
+// component, and its `data-testid="sales-erp-unavailable"` contract, are unchanged.
 //
 // WHY THIS EXISTS: Phase 1's `getCached()` deliberately RE-THROWS when the live ERP read fails and
 // the cache holds no previous value (a cold process — first hit after a deploy/restart, or an ERP
@@ -32,7 +37,7 @@ export function SalesUnavailable({ state }: { state: SalesUrlState }) {
       <header className="flex flex-col gap-1">
         <h1 className="text-[var(--t-xl)] font-semibold text-[var(--text-strong)]">ยอดขาย</h1>
         <p className="th text-[var(--t-xs)] text-[var(--text-muted)]">
-          ข้อมูลจากใบส่งสินค้าในระบบ ERP (อ่านอย่างเดียว)
+          ยอดขายจากใบแจ้งหนี้ และการส่งมอบจากใบส่งสินค้า ในระบบ ERP (อ่านอย่างเดียว)
         </p>
       </header>
 

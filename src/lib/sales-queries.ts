@@ -23,6 +23,11 @@ import {
   DO_HEADERS_SQL,
   DO_LINES_SQL,
   SALES_INVOICE_EXCLUDED_TOTAL_SQL,
+  INVOICE_HEADERS_SQL,
+  INVOICE_LINES_SQL,
+  INVOICE_BY_PRODUCT_SQL,
+  INVOICE_BY_CUSTOMER_SQL,
+  INVOICE_DATE_RANGE_SQL,
 } from "./sales-sql";
 
 // ---------------------------------------------------------------------------------------------
@@ -34,6 +39,8 @@ export interface SalesFilters {
   from: string;
   to: string;
   doNo?: string | null;
+  /** sales-invoice-basis: the invoice-section drilldown. Applies to the `invoice*` queries only. */
+  invoiceNo?: string | null;
   customer?: string | null;
   product?: string | null;
   status?: string | null;
@@ -61,6 +68,28 @@ function toParams(filters: SalesFilters, options: SalesQueryOptions = {}): ErpQu
     status: blank(filters.status),
     cat: blank(filters.cat),
     skipStatus: options.skipStatus === true,
+    skipCat: options.skipCat === true,
+  };
+}
+
+/**
+ * The INVOICE queries' parameter set (sales-invoice-basis, 23-09-26).
+ *
+ * Deliberately NOT `toParams()`: the invoice section has no `doNo`, no `status` and no
+ * `skipStatus`. All four live invoices share identical status flags, so a status filter there
+ * would have exactly one possible value — the dashboard gives the invoice section no status
+ * filter and no status donut at all. Binding parameters a statement never references would be
+ * harmless but misleading; a separate, exact set keeps the SQL and its bindings in step.
+ */
+function toInvoiceParams(filters: SalesFilters, options: SalesQueryOptions = {}): ErpQueryParams {
+  const blank = (v: string | null | undefined) => (v == null || v === "" ? null : v);
+  return {
+    from: filters.from,
+    to: filters.to,
+    invoiceNo: blank(filters.invoiceNo),
+    customer: blank(filters.customer),
+    product: blank(filters.product),
+    cat: blank(filters.cat),
     skipCat: options.skipCat === true,
   };
 }
@@ -132,6 +161,62 @@ export interface ExcludedInvoiceRow {
   ExcludedTotal: number;
 }
 
+// --- invoice basis (sales-invoice-basis, 23-09-26) --------------------------------------------
+// `Unit` on every shape below is the LINE's own `MainUnits`, never the item master's.
+
+export interface InvoiceHeaderRow {
+  TransactionNo: number;
+  InvoiceNo: string;
+  InvDate: Date | null;
+  CustCode: string | null;
+  CustName: string | null;
+  /** The header's own `TotalAmount`. */
+  Amount: number;
+  LineCount: number;
+  /** NULL-safe sum of the invoice's line amounts; ties to `Amount` on every live invoice. */
+  LineAmount: number;
+}
+
+export interface InvoiceLineRow {
+  InvoiceNo: string;
+  InvDate: Date | null;
+  CustCode: string | null;
+  CustName: string | null;
+  RowOrder: number;
+  ItemOrder: number;
+  ItemCode: string;
+  ItemName: string;
+  Unit: string;
+  CategoryKey: string;
+  /** The ERP's own `tbl_ItemGroup.Description`; NULL when the code has no group row. */
+  CategoryLabel: string | null;
+  Qty: number;
+  UnitPrice: number;
+  Amount: number;
+  /** The delivery order this invoice line came from — the link back to the delivery section. */
+  OrderNo: string | null;
+}
+
+export interface InvoiceProductRow {
+  ItemCode: string;
+  ItemName: string;
+  Unit: string;
+  CategoryKey: string;
+  LineCount: number;
+  Qty: number;
+  Amount: number;
+}
+
+export interface InvoiceCustomerRow {
+  CustCode: string | null;
+  CustName: string | null;
+  Unit: string;
+  LineCount: number;
+  InvoiceCount: number;
+  Qty: number;
+  Amount: number;
+}
+
 // ---------------------------------------------------------------------------------------------
 // Runners
 // ---------------------------------------------------------------------------------------------
@@ -198,6 +283,70 @@ export function fetchDoByCustomer(
 export function fetchExcludedInvoiceTotal(): Promise<CachedResult<ExcludedInvoiceRow[]>> {
   return getCached<ExcludedInvoiceRow[]>("sales:excluded-invoice-total", ERP_CACHE_TTL_MS, () =>
     runSalesQuery<ExcludedInvoiceRow>(SALES_INVOICE_EXCLUDED_TOTAL_SQL, {}),
+  );
+}
+
+// ---------------------------------------------------------------------------------------------
+// Invoice basis (sales-invoice-basis, 23-09-26) — the dashboard's PRIMARY money figures.
+//
+// Same `cachedSalesQuery` runner, same `CachedResult<T>` shape, same degrade-on-ERP-down
+// behaviour as the `fetchDo*` wrappers above. There is deliberately NO second cache or degrade
+// path: an invoice read that fails must serve last-known-good exactly like a delivery read does.
+// Each wrapper uses a DISTINCT cache-key name so an invoice result can never be served from a
+// delivery query's cache entry.
+// ---------------------------------------------------------------------------------------------
+
+export function fetchInvoiceHeaders(
+  filters: SalesFilters,
+  options?: SalesQueryOptions,
+): Promise<CachedResult<InvoiceHeaderRow[]>> {
+  return cachedSalesQuery<InvoiceHeaderRow>(
+    "invoice-headers",
+    INVOICE_HEADERS_SQL,
+    toInvoiceParams(filters, options),
+  );
+}
+
+export function fetchInvoiceLines(
+  filters: SalesFilters,
+  options?: SalesQueryOptions,
+): Promise<CachedResult<InvoiceLineRow[]>> {
+  return cachedSalesQuery<InvoiceLineRow>(
+    "invoice-lines",
+    INVOICE_LINES_SQL,
+    toInvoiceParams(filters, options),
+  );
+}
+
+export function fetchInvoiceByProduct(
+  filters: SalesFilters,
+  options?: SalesQueryOptions,
+): Promise<CachedResult<InvoiceProductRow[]>> {
+  return cachedSalesQuery<InvoiceProductRow>(
+    "invoice-by-product",
+    INVOICE_BY_PRODUCT_SQL,
+    toInvoiceParams(filters, options),
+  );
+}
+
+export function fetchInvoiceByCustomer(
+  filters: SalesFilters,
+  options?: SalesQueryOptions,
+): Promise<CachedResult<InvoiceCustomerRow[]>> {
+  return cachedSalesQuery<InvoiceCustomerRow>(
+    "invoice-by-customer",
+    INVOICE_BY_CUSTOMER_SQL,
+    toInvoiceParams(filters, options),
+  );
+}
+
+/**
+ * The invoice-basis ช่วงข้อมูล read. UNFILTERED, exactly like `fetchDoDateRange()`: the notice
+ * reports what the ERP holds, not what the current filter selected.
+ */
+export function fetchInvoiceDateRange(): Promise<CachedResult<ErpDateRangeRow[]>> {
+  return getCached<ErpDateRangeRow[]>("sales:invoice-date-range", ERP_CACHE_TTL_MS, () =>
+    runSalesQuery<ErpDateRangeRow>(INVOICE_DATE_RANGE_SQL, {}),
   );
 }
 

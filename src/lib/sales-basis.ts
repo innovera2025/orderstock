@@ -25,10 +25,11 @@ export * from "@/lib/sales-basis-core";
 /**
  * Resolve the sales basis from its `AppSetting` row.
  *
- * The switch MECHANISM is what this phase ships: the value is read from settings, so a future
- * migration to a sales-order / invoice basis is a settings change rather than a redeploy. The
- * `"so"` / `"invoice"` query branches themselves are explicitly out of scope for this program, so
- * every value still narrows to `"do"` today (see `resolveSalesBasisFromValue`).
+ * The value is read from settings, so changing basis is a settings change rather than a redeploy.
+ * As of the `sales-invoice-basis` plan (23-09-26) `"invoice"` is a REAL branch — it is the basis
+ * the customer's ERP team names as the source of truth for sales, and the Sales dashboard's
+ * primary headline figure now comes from it. `"so"` remains unimplemented (the SalesOrder module
+ * is unused on this site) and narrows to `"do"`, as does any unrecognised value.
  *
  * A missing row, or any read failure, falls back to `"do"` — the dashboard must never fail to
  * render because a settings row is absent.

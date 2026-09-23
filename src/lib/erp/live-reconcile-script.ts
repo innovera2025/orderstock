@@ -235,9 +235,9 @@ async function main(): Promise<void> {
       },
       {
         area: "Sales",
-        figure: "EXCLUDED invoice pool (THB)",
+        figure: "Sales invoice pool, whole ERP (THB)",
         ours: toNumber(excludedRow.ExcludedTotal),
-        note: `${toNumber(excludedRow.InvoiceCount)} invoices this dashboard deliberately excludes`,
+        note: `${toNumber(excludedRow.InvoiceCount)} sales invoices, unfiltered — the dashboard's primary sales basis`,
       },
       {
         area: "Purchase",
@@ -270,7 +270,7 @@ async function main(): Promise<void> {
 
     console.log("");
     console.log("A difference is not automatically a defect — read it against each dashboard's own");
-    console.log("disclosure notes (excluded invoice pool, sp_PurchaseInvoiceMonth's own filter,");
+    console.log("disclosure notes (whole-pool invoice total, sp_PurchaseInvoiceMonth's own filter,");
     console.log("plan-only production) before drawing a conclusion.");
     console.log("");
     console.log("No data was written. This script cannot write: every statement passed the");

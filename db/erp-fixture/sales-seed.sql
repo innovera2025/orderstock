@@ -30,7 +30,8 @@
 --   1. header TotalAmount sum == detail Amount sum EXACTLY (10,111.00 both sides)  -> AC3
 --   2. >= 2 distinct MainUnits across lines (KG / BAG / LITRE / PCS / NULL)        -> never-sum-across-units
 --   3. mixed priced / unpriced lines (6 of 31 priced == 19.35%, never 0% or 100%)  -> AC4 coverage
---   4. >= 1 SalesInvoiceHdr row, DocuType='SI', nonzero (3 rows, 858,937.21 total) -> AC4 footnote
+--   4. >= 1 SalesInvoiceHdr row, DocuType='SI', nonzero (3 rows, 858,937.21 total) + their
+--      SalesInvoiceDtl lines -> the invoice-basis (primary) figures
 --   5. >= 2 distinct CustCode (4)                                                  -> customer breakdown
 --   6. tbl_Dodtl.SoNo is NULL on 100% of rows (matches live reality)               -> never join on SoNo
 --   7. 14 DO rows (> one page) so pagination is exercised                          -> AC12
@@ -51,6 +52,7 @@ GO
 
 IF OBJECT_ID('dbo.tbl_DOhdr') IS NULL OR OBJECT_ID('dbo.tbl_Dodtl') IS NULL
    OR OBJECT_ID('dbo.SalesInvoiceHdr') IS NULL
+   OR OBJECT_ID('dbo.SalesInvoiceDtl') IS NULL
     THROW 51000, 'Apply db/erp-fixture/00-schema.sql first — this seed creates no tables.', 1;
 GO
 
@@ -207,10 +209,12 @@ FROM Numbered n;
 GO
 
 -- -------------------------------------------------------------------------------------------
--- dbo.SalesInvoiceHdr — the EXCLUDED pool, read ONLY by the reconciliation-footnote query.
--- 3 'SI' rows totalling 858,937.21 — the SAME shape and total the live ERP carries, so the
--- footnote gate asserts the real figure rather than an invented one. These rows are NEVER added
--- to any dashboard figure.
+-- dbo.SalesInvoiceHdr — sales-invoice headers. 3 'SI' rows totalling 858,937.21 — the SAME shape
+-- and total the live ERP carries, so the gates assert a real figure rather than an invented one.
+--
+-- FRAMING UPDATED (sales-invoice-basis, 23-09-26): these rows used to be described here as "the
+-- EXCLUDED pool", read only by the reconciliation footnote. That is no longer true — this pool is
+-- the dashboard's PRIMARY sales figure, and its lines live in the SalesInvoiceDtl block below.
 --
 -- LIVE COLUMN NAMES (the old fixture invented all three): the invoice number is `VoucherNo`, its
 -- date is `VoucherDate`, and the customer code is `CustOrSuppCode`. `DocuType` is NOT NULL live.
@@ -230,8 +234,78 @@ FROM SeedInv s
 WHERE NOT EXISTS (SELECT 1 FROM dbo.SalesInvoiceHdr i WHERE i.TransactionNo = s.TransactionNo);
 GO
 
+-- -------------------------------------------------------------------------------------------
+-- dbo.SalesInvoiceDtl — the invoice LINES (sales-invoice-basis plan, Step S2b).
+--
+-- Synthetic values only. NOTHING here is copied from db_TCL; the customer's real invoice lines
+-- are never reproduced in a fixture. What IS mirrored is the SHAPE of the live data, because the
+-- dashboard's correctness depends on these three properties:
+--
+--   1. LINE SUM TIES TO THE HEADER for at least one invoice (live: all 4 tie exactly — the
+--      invoice basis has no header/line reconciliation gap, unlike the DO basis). Invoices 1 and 3
+--      tie here: 120000+300000+92340 = 512340.00 and 75000+50000 = 125000.00.
+--   2. ONE LINE CARRIES `Amount = NULL` while its header TotalAmount is non-zero (live: the
+--      DO-2608-0007 partial line). Invoice 2's FG-1006 line is that case. Every query must treat
+--      it as 0 in a SUM WITHOUT dropping the line from a COUNT.
+--   3. The UNIT LABEL LIVES ON THE LINE (`MainUnits`), never on the item master. FG-1006's master
+--      row has a NULL MainUnits on purpose, and its invoice line still carries N'KG' — a query
+--      that reaches for the item master instead of the line reads NULL here and is caught.
+--
+-- `CustOrSuppCode` is deliberately left NULL ON EVERY LINE. The column genuinely exists live, but
+-- the authoritative customer of an invoice is the HEADER's `CustOrSuppCode` — one document, one
+-- customer — and `invoice-by-customer.sql` groups by the header. Leaving the line copy NULL is a
+-- structural proof: a query that grouped by the line column would collapse every row into one
+-- NULL bucket and fail its gate immediately.
+--
+-- Spread across 3 distinct customers (via their headers), 3 category codes (F/R/P) and 4 units
+-- (KG / LITRE / BAG / PCS) so the per-product, per-category and per-customer breakdowns all have
+-- more than one row to aggregate.
+--
+-- ORDER-INDEPENDENCE (the bug `production-seed.sql`/`purchase-seed.sql` hit and fixed): `RowOrder`
+-- is derived from `MAX(RowOrder)` at insert time rather than hardcoded, and the guard is the
+-- (TransactionNo, ItemOrder) business key — so this block is safe to run before or after any other
+-- seed file, and twice.
+-- -------------------------------------------------------------------------------------------
+;WITH SeedLine AS (
+    SELECT * FROM (VALUES
+        -- TransactionNo, ItemOrder, ItemCode, Description, MainQty, MainUnits, UnitPrice, Amount, OrderNo
+        (1, 1, N'FG-1001', N'ตีนิ่ม A 1 กก.', 1000.00, N'KG',    120.0000, 120000.00, N'DO-2569-0001'),
+        (1, 2, N'FG-1002', N'ตีนิ่ม 1 กก.',   2000.00, N'KG',    150.0000, 300000.00, N'DO-2569-0001'),
+        (1, 3, N'RM-2001', N'น้ำปลา',           500.00, N'LITRE', 184.6800,  92340.00, N'DO-2569-0001'),
+        (2, 1, N'FG-1003', N'ตีดาว 1/2 กก.',    300.00, N'KG',    200.0000,  60000.00, N'DO-2569-0004'),
+        (2, 2, N'FG-1005', N'รอง 1 กก.',        100.00, N'BAG',   500.0000,  50000.00, N'DO-2569-0004'),
+        -- The NULL-Amount line. Its quantity is real; only the money is absent.
+        (2, 3, N'FG-1006', N'ตีลานนิ่ม 1 กก.',  250.00, N'KG',      0.0000,      NULL, N'DO-2569-0004'),
+        (3, 1, N'FG-1004', N'กรวด 1 กก.',       500.00, N'KG',    150.0000,  75000.00, N'DO-2569-0002'),
+        (3, 2, N'RM-2002', N'น้ำตาล',           250.00, N'KG',    200.0000,  50000.00, N'DO-2569-0002'),
+        (3, 3, N'PK-3001', N'ปี๊บเปล่า',          800.00, N'PCS',     0.0000,      0.00, N'DO-2569-0002')
+    ) AS v (TransactionNo, ItemOrder, ItemCode, Description, MainQuantity, MainUnits,
+            UnitPrice, Amount, OrderNo)
+),
+Missing AS (
+    SELECT l.* FROM SeedLine l
+    WHERE NOT EXISTS (
+        SELECT 1 FROM dbo.SalesInvoiceDtl d
+        WHERE d.TransactionNo = l.TransactionNo AND d.ItemOrder = l.ItemOrder)
+),
+Numbered AS (
+    SELECT m.*,
+           (SELECT ISNULL(MAX(d.RowOrder), 0) FROM dbo.SalesInvoiceDtl d)
+             + ROW_NUMBER() OVER (ORDER BY m.TransactionNo, m.ItemOrder) AS RowOrder
+    FROM Missing m
+)
+INSERT INTO dbo.SalesInvoiceDtl (RowOrder, TransactionNo, ItemOrder, ItemCode, Description,
+                                 MainQuantity, MainUnits, UnitPrice, Amount, OrderNo,
+                                 CustOrSuppCode)
+SELECT n.RowOrder, n.TransactionNo, n.ItemOrder, n.ItemCode, n.Description,
+       n.MainQuantity, n.MainUnits, n.UnitPrice, n.Amount, n.OrderNo,
+       NULL
+FROM Numbered n;
+GO
+
 SELECT
     (SELECT COUNT(*) FROM dbo.tbl_DOhdr)        AS DoHdrRows,
     (SELECT COUNT(*) FROM dbo.tbl_Dodtl)        AS DoDtlRows,
-    (SELECT COUNT(*) FROM dbo.SalesInvoiceHdr)  AS SalesInvoiceHdrRows;
+    (SELECT COUNT(*) FROM dbo.SalesInvoiceHdr)  AS SalesInvoiceHdrRows,
+    (SELECT COUNT(*) FROM dbo.SalesInvoiceDtl)  AS SalesInvoiceDtlRows;
 GO

@@ -58,6 +58,17 @@ describe("resolveSalesBasisFromValue — the sales-basis switch decision", () =>
     expect(resolveSalesBasisFromValue("nonsense")).toBe("do");
   });
 
+  // sales-invoice-basis (23-09-26) — `"invoice"` is now a REAL branch, not a recognised-but-
+  // unimplemented name. Before this plan every input, including "invoice", narrowed to "do".
+  it('returns "invoice" when the value is "invoice" (any case / padding)', () => {
+    expect(resolveSalesBasisFromValue("invoice")).toBe("invoice");
+    expect(resolveSalesBasisFromValue("  INVOICE  ")).toBe("invoice");
+  });
+
+  it('still falls back to "do" for "so" — the SalesOrder module is unused on this site', () => {
+    expect(resolveSalesBasisFromValue("so")).toBe("do");
+  });
+
   it("uses a Sales-scoped setting key that does not collide with app-settings.ts keys", () => {
     expect(SALES_BASIS_SETTING_KEY).toBe("salesBasis");
   });

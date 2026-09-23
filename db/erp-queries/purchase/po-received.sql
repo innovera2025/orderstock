@@ -26,6 +26,15 @@
 --      only PO→receipt path was a 3-hop chain via `PurchaseInvoiceNo`; reading the actual
 --      `sp_Popending` source corrected that. The direct column is the authoritative path.
 --
+-- DELIBERATE DIVERGENCE FROM `sp_Purchase` (documented 23-09-26, sales-invoice-basis plan Step P2 —
+-- comment only, no logic change). `sp_Purchase` computes its own received quantity (`Recqty`) as an
+-- UNFILTERED correlated subquery: `SELECT SUM(MainQuantity) FROM InventoryFlowDtl WHERE PoNo=...
+-- AND ItemCode=...` — no header filter of any kind. This query instead uses the STRICTER
+-- `sp_Popending`-derived filter above (`Approved = 1 AND IsClosed <> 1 AND VoucherNo LIKE 'IPC%'`).
+-- Both agree on today's single live receipt row (PO-L2608-0001 / item 1010001 = 400), so there is
+-- no observable discrepancy yet. The stricter filter is intentionally KEPT: a draft, closed, or
+-- non-purchase voucher must not count as goods received against a PO.
+--
 -- `@poNumber` IS OPTIONAL: the PO list aggregates receipts for every PO in one round trip; the
 -- detail page passes one PO number. One statement serves both.
 --

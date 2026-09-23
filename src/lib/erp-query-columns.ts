@@ -74,6 +74,52 @@ export const ERP_QUERY_COLUMNS: Record<string, Record<string, readonly string[]>
     "dbo.tbl_DOhdr": ["Dodate"],
   },
 
+  // ---- sales, INVOICE basis (sales-invoice-basis, 23-09-26) -----------------------------------
+  // The dashboard's PRIMARY money figures. Live column names: the invoice number is `VoucherNo`,
+  // its date `VoucherDate`, the customer `CustOrSuppCode`/`CustOrSuppName`. There is no
+  // `InvoiceNo`/`InvDate`/`CustCode` on this table — those aliases exist only in the SELECT list.
+  "db/erp-queries/sales/invoice-headers.sql": {
+    "dbo.SalesInvoiceHdr": [
+      "TransactionNo", "VoucherNo", "VoucherDate", "DocuType",
+      "CustOrSuppCode", "CustOrSuppName", "TotalAmount",
+    ],
+    "dbo.SalesInvoiceDtl": ["TransactionNo", "ItemCode", "Amount"],
+    "dbo.InventoryItem": ["ItemCode", "ItemGRP", "Roworder"],
+  },
+  "db/erp-queries/sales/invoice-lines.sql": {
+    "dbo.SalesInvoiceHdr": [
+      "TransactionNo", "VoucherNo", "VoucherDate", "DocuType",
+      "CustOrSuppCode", "CustOrSuppName",
+    ],
+    // `MainUnits` is read from the LINE, never from InventoryItem — the unit an item was actually
+    // sold in lives here.
+    "dbo.SalesInvoiceDtl": [
+      "TransactionNo", "RowOrder", "ItemOrder", "ItemCode", "Description",
+      "MainQuantity", "MainUnits", "UnitPrice", "Amount", "OrderNo",
+    ],
+    "dbo.InventoryItem": ["ItemCode", "ItemGRP", "Roworder"],
+    "dbo.tbl_ItemGroup": ["ICCode", "Description"],
+  },
+  "db/erp-queries/sales/invoice-by-product.sql": {
+    "dbo.SalesInvoiceHdr": ["TransactionNo", "VoucherNo", "VoucherDate", "DocuType", "CustOrSuppCode"],
+    "dbo.SalesInvoiceDtl": [
+      "TransactionNo", "ItemCode", "Description", "MainQuantity", "MainUnits", "Amount",
+    ],
+    "dbo.InventoryItem": ["ItemCode", "ItemGRP", "Roworder"],
+  },
+  "db/erp-queries/sales/invoice-by-customer.sql": {
+    "dbo.SalesInvoiceHdr": [
+      "TransactionNo", "VoucherNo", "VoucherDate", "DocuType",
+      "CustOrSuppCode", "CustOrSuppName",
+    ],
+    "dbo.SalesInvoiceDtl": ["TransactionNo", "ItemCode", "MainQuantity", "MainUnits", "Amount"],
+    "dbo.InventoryItem": ["ItemCode", "ItemGRP", "Roworder"],
+  },
+  // The ช่วงข้อมูล notice for the invoice basis, unfiltered — same shape as do-date-range.sql.
+  "db/erp-queries/sales/invoice-date-range.sql": {
+    "dbo.SalesInvoiceHdr": ["VoucherDate", "DocuType"],
+  },
+
   // ---- purchase -------------------------------------------------------------------------------
   "db/erp-queries/purchase/po-list.sql": {
     // Unlike tbl_DOhdr, PurchaseOrderHdr really does carry IsCancel — which is why the gate checks

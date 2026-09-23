@@ -11,10 +11,22 @@
 //   - the export route, to decide which dataset to serialize.
 // One function, so the button and the route can never disagree about what "the current view" is.
 //
-// Deliberately dependency-free (no React, no Next, no DB) so it is trivially unit-testable.
+// Deliberately free of React, Next and DB imports so it is trivially unit-testable. The ONE import
+// below (`resolveSalesSection`) is a pure string-in/string-out resolver whose own import chain is
+// likewise pure — see the note on the sales branch of `deriveExportTarget`.
+
+import { resolveSalesSection } from "@/app/(main)/dashboards/sales/sales-url";
 
 export type ExportDashboard = "sales" | "purchase" | "production";
-export type ExportTable = "list" | "lines";
+
+/**
+ * Which dataset a table represents.
+ *
+ * WIDENED ADDITIVELY (sales-invoice-basis, 23-09-26): `"list"`/`"lines"` keep their exact existing
+ * meaning — the DELIVERY tables on Sales, and the Purchase/Production tables — so no existing
+ * consumer changes. The two invoice shapes are new values, not renames.
+ */
+export type ExportTable = "list" | "lines" | "invoice-list" | "invoice-lines";
 
 export interface ExportTarget {
   dashboard: ExportDashboard;
@@ -49,7 +61,24 @@ export function deriveExportTarget(
   const rest = segments.slice(2);
 
   if (dashboard === "sales") {
-    // Sales keeps its drilldown in the query string (`?doNo=`), not the path.
+    // Sales keeps its drilldown in the query string (`?doNo=` / `?invoiceNo=`), not the path, and
+    // since sales-invoice-basis the page carries TWO sections whose list views share one URL.
+    //
+    // WHY IMPORT THE RESOLVER RATHER THAN RE-DERIVE IT: once neither drilldown param is present —
+    // the plain "show me the list" case — the ONLY signal telling the invoice list apart from the
+    // delivery list is `view` itself. Hand-copying `sales-url.ts`'s view/precedence rules here
+    // would create a second source of truth with nothing binding the two together; they would drift
+    // silently, and the first symptom would be a user downloading the wrong section's rows under
+    // the right filename. One resolver, imported — the same discipline `SALES_SQL_SOURCES` applies
+    // to SQL text. `resolveSalesSection` is pure (no React/Next/DB anywhere in its import chain),
+    // so this module stays as unit-testable as it was.
+    const section = resolveSalesSection(searchParams);
+    if (section === "invoice") {
+      return {
+        dashboard: "sales",
+        table: one(searchParams.invoiceNo) ? "invoice-lines" : "invoice-list",
+      };
+    }
     return { dashboard: "sales", table: one(searchParams.doNo) ? "lines" : "list" };
   }
   if (dashboard === "purchase" || dashboard === "production") {
@@ -98,8 +127,20 @@ export function parseExportTarget(params: URLSearchParams): ExportTarget | null 
   const dashboard = params.get("dashboard");
   const table = params.get("table");
   if (dashboard !== "sales" && dashboard !== "purchase" && dashboard !== "production") return null;
-  if (table !== "list" && table !== "lines") return null;
+  if (
+    table !== "list" &&
+    table !== "lines" &&
+    table !== "invoice-list" &&
+    table !== "invoice-lines"
+  ) {
+    return null;
+  }
+  // The two invoice shapes are SALES-ONLY — no other dashboard has an invoice table to export.
+  if ((table === "invoice-list" || table === "invoice-lines") && dashboard !== "sales") return null;
   const key = params.get("key");
+  // A `lines` export needs a drilldown key in the PATH — except on Sales, which carries its
+  // drilldown in the query string instead. That exemption already applied to `"lines"` and extends
+  // unchanged to `"invoice-lines"`: both sales line exports read `doNo`/`invoiceNo` from the query.
   if (table === "lines" && dashboard !== "sales" && (key == null || key === "")) return null;
   return { dashboard, table, ...(key ? { key } : {}) };
 }

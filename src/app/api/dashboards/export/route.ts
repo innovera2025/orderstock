@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAuth, AuthError } from "@/lib/auth-guard";
 import { CSV_ROW_CAP, csvFilename, csvHeaders, renderCsv } from "@/lib/erp/csv-export";
 import { exportSlug, parseExportTarget } from "@/lib/erp/dashboard-export-target";
-import { loadExportDataset } from "./export-datasets";
+import { UnknownExportTargetError, loadExportDataset } from "./export-datasets";
 
 // CSV export for every ERP dashboard table — /api/dashboards/export (erp-dashboards Phase 5).
 //
@@ -49,6 +49,14 @@ export async function GET(request: Request) {
   try {
     dataset = await loadExportDataset(target, url.searchParams, canSeeMoney);
   } catch (error) {
+    // An unwired `dashboard:table` pair is a BAD REQUEST, not a server fault — and never a reason
+    // to serve some other dashboard's rows under this dashboard's filename.
+    if (error instanceof UnknownExportTargetError) {
+      return NextResponse.json(
+        { error: "ไม่รู้จักตารางที่ขอส่งออก (dashboard/table ไม่ถูกต้อง)" },
+        { status: 400 },
+      );
+    }
     // Never echo the driver error to the client — it can carry host and login detail.
     console.error(
       "[dashboards/export] ERP read failed; no CSV produced.",

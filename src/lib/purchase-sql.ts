@@ -73,6 +73,13 @@ export const TOTAL_PO_COMMITTED_BASIS_SQL = `-- erp-dashboards Phase 3 — Purch
 -- in the status donut (a cancelled order is a real thing that happened) — that difference is
 -- deliberate and lives in the page layer, not here.
 --
+-- DELIBERATE DIVERGENCE FROM \`sp_Purchase\` (documented 23-09-26, sales-invoice-basis plan Step P1 —
+-- comment only, no logic change). The ERP's own \`sp_Purchase\` reads \`PurchaseOrderHdr\` ⋈
+-- \`PurchaseOrderDtl\` with NO \`IsCancel\` filter at all. This dashboard adds \`IsCancel = 0\` as
+-- DEFENSIVE INTENT. On today's live data the filter is a NO-OP — zero cancelled POs exist — so the
+-- two agree exactly (727,920 THB / 4 POs). The filter is intentionally KEPT, not removed to match
+-- the proc: the day a PO is cancelled, a committed-spend total that still counts it would be wrong.
+--
 -- Params:
 --   @from, @to      inclusive CE date range over PODate (required)
 --   @supplier       SupplierCode — NEVER a supplier NAME
@@ -102,6 +109,10 @@ export const SUPPLIER_BREAKDOWN_SQL = `-- erp-dashboards Phase 3 — Purchase: P
 --
 -- Cancelled POs are excluded here for the same reason as the committed-basis total: this chart is
 -- a money/commitment view, and a cancelled order commits nothing.
+--
+-- DELIBERATE DIVERGENCE FROM \`sp_Purchase\` (documented 23-09-26, sales-invoice-basis plan Step P1 —
+-- comment only, no logic change): \`sp_Purchase\` applies no \`IsCancel\` filter. The \`IsCancel = 0\`
+-- here is defensive intent, currently a no-op (zero cancelled POs live today), and is KEPT.
 --
 -- Params:
 --   @from, @to      inclusive CE date range over PODate (required)
@@ -237,6 +248,15 @@ export const PO_RECEIVED_SQL = `-- erp-dashboards Phase 3 — Purchase: received
 --   3. \`d.PoNo\` is a DIRECT column on \`InventoryFlowDtl\`. An earlier research round believed the
 --      only PO→receipt path was a 3-hop chain via \`PurchaseInvoiceNo\`; reading the actual
 --      \`sp_Popending\` source corrected that. The direct column is the authoritative path.
+--
+-- DELIBERATE DIVERGENCE FROM \`sp_Purchase\` (documented 23-09-26, sales-invoice-basis plan Step P2 —
+-- comment only, no logic change). \`sp_Purchase\` computes its own received quantity (\`Recqty\`) as an
+-- UNFILTERED correlated subquery: \`SELECT SUM(MainQuantity) FROM InventoryFlowDtl WHERE PoNo=...
+-- AND ItemCode=...\` — no header filter of any kind. This query instead uses the STRICTER
+-- \`sp_Popending\`-derived filter above (\`Approved = 1 AND IsClosed <> 1 AND VoucherNo LIKE 'IPC%'\`).
+-- Both agree on today's single live receipt row (PO-L2608-0001 / item 1010001 = 400), so there is
+-- no observable discrepancy yet. The stricter filter is intentionally KEPT: a draft, closed, or
+-- non-purchase voucher must not count as goods received against a PO.
 --
 -- \`@poNumber\` IS OPTIONAL: the PO list aggregates receipts for every PO in one round trip; the
 -- detail page passes one PO number. One statement serves both.

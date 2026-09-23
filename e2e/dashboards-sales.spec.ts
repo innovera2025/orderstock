@@ -30,6 +30,13 @@ const FIXTURE = {
   productCount: 14,
   /** Distinct CustCode across the seeded headers — one breakdown page. */
   customerCount: 4,
+  // --- invoice basis (sales-invoice-basis, 23-09-26) ---
+  invoiceCount: 3,
+  invoiceLineCount: 9,
+  /** Sum of the seeded SalesInvoiceHdr.TotalAmount — the dashboard's PRIMARY money figure. */
+  invoiceTotal: "858,937.21",
+  firstInvoice: "SI-2569-0001",
+  invoiceCustomerCount: 3,
 };
 
 async function openAs(page: Page, url: string) {
@@ -92,7 +99,7 @@ test.describe("AC3/AC4 — reconciliation, coverage and footnote", () => {
     await context.close();
   });
 
-  test("the money tile shows the priced-only label, the coverage %, and the excluded-total footnote", async ({
+  test("the delivery money tile shows the priced-only label, the coverage %, and its own coverage footnote", async ({
     browser,
   }) => {
     const context = await ctx(browser, "admin");
@@ -108,12 +115,17 @@ test.describe("AC3/AC4 — reconciliation, coverage and footnote", () => {
       String(FIXTURE.pricedLineCount),
     );
 
-    // The footnote must NAME the excluded amount, and sit inside the same tile as the figure so it
-    // can never be hidden separately from it.
+    // sales-invoice-basis (23-09-26): the footnote no longer calls the SalesInvoiceHdr pool
+    // EXCLUDED — that pool is the dashboard's primary figure now, shown in the invoice section
+    // above. What it states instead is the delivery basis's own standing caveat: most delivery
+    // lines carry no price. It must still NAME the counts and sit inside the same tile as the
+    // figure, so it can never be hidden separately from it.
     const footnote = page.getByTestId("kpi-money-footnote");
     await expect(footnote).toBeVisible();
-    await expect(footnote).toContainText(FIXTURE.excludedTotal);
-    await expect(footnote).toContainText("SalesInvoiceHdr");
+    await expect(footnote).toContainText(String(FIXTURE.pricedLineCount));
+    await expect(footnote).toContainText(String(FIXTURE.lineCount));
+    await expect(footnote).not.toContainText("SalesInvoiceHdr");
+    await expect(footnote).not.toContainText("ไม่ถูกนับรวม");
     await expect(money.getByTestId("kpi-money-footnote")).toHaveCount(1);
 
     await context.close();
@@ -745,6 +757,147 @@ test.describe("period charts — bars have real, proportional height", () => {
       // Bars still have height at every breakpoint.
       const bars = await marks(page, "sales-count-bars");
       expect(Math.max(...bars.map((b) => b.height))).toBeGreaterThan(PLOT_HEIGHT * 0.5);
+    }
+
+    await context.close();
+  });
+});
+
+// ---------------------------------------------------------------------------------------------
+// sales-invoice-basis (23-09-26) — the INVOICE section is the page's primary figure, and the
+// delivery section survives underneath it unchanged.
+// ---------------------------------------------------------------------------------------------
+test.describe("invoice basis — the primary section", () => {
+  test("both sections render together on the summary view, invoice first", async ({ browser }) => {
+    const context = await ctx(browser, "admin");
+    const page = await context.newPage();
+    await openAs(page, SALES);
+
+    const invoice = page.getByTestId("sales-invoice-section");
+    const delivery = page.getByTestId("sales-delivery-section");
+    await expect(invoice).toBeVisible();
+    await expect(delivery).toBeVisible();
+
+    // Primary means FIRST in document order, not merely present.
+    const order = await page.evaluate(() => {
+      const i = document.querySelector('[data-testid="sales-invoice-section"]')!;
+      const d = document.querySelector('[data-testid="sales-delivery-section"]')!;
+      return i.compareDocumentPosition(d) & Node.DOCUMENT_POSITION_FOLLOWING ? "invoice-first" : "delivery-first";
+    });
+    expect(order).toBe("invoice-first");
+
+    await expect(page.getByTestId("kpi-invoice-money-amount")).toContainText(FIXTURE.invoiceTotal);
+    await expect(page.getByTestId("kpi-invoice-count")).toContainText(`${FIXTURE.invoiceCount} ใบ`);
+    await expect(page.getByTestId("kpi-invoice-line-count")).toContainText(
+      `${FIXTURE.invoiceLineCount} รายการ`,
+    );
+
+    // The delivery section still shows its own, UNCHANGED figures.
+    await expect(page.getByTestId("kpi-do-count")).toContainText(`${FIXTURE.doCount} ใบ`);
+    await expect(page.getByTestId("kpi-money-amount")).toContainText(FIXTURE.total);
+
+    await context.close();
+  });
+
+  test("the invoice figure carries no excluded framing, and cross-references the delivery section", async ({
+    browser,
+  }) => {
+    const context = await ctx(browser, "admin");
+    const page = await context.newPage();
+    await openAs(page, SALES);
+
+    const note = page.getByTestId("kpi-invoice-money-footnote");
+    await expect(note).toBeVisible();
+    await expect(note).toContainText("การส่งมอบ");
+    for (const banned of ["ไม่ถูกนับรวม", "ยกเว้น", "ไม่รวมในยอดนี้"]) {
+      await expect(note).not.toContainText(banned);
+    }
+
+    await context.close();
+  });
+
+  test("the status donut renders EXACTLY ONCE, inside the delivery section", async ({ browser }) => {
+    for (const role of ["admin", "staff"] as const) {
+      const context = await ctx(browser, role);
+      const page = await context.newPage();
+      await openAs(page, SALES);
+
+      await expect(page.getByTestId("sales-status-donut")).toHaveCount(1);
+      await expect(
+        page.getByTestId("sales-delivery-section").getByTestId("sales-status-donut"),
+      ).toHaveCount(1);
+      await expect(
+        page.getByTestId("sales-invoice-section").getByTestId("sales-status-donut"),
+      ).toHaveCount(0);
+
+      await context.close();
+    }
+  });
+
+  test("invoice list → invoice drilldown via ?invoiceNo=, money-gated", async ({ browser }) => {
+    const context = await ctx(browser, "admin");
+    const page = await context.newPage();
+    await openAs(page, SALES);
+
+    await page.getByTestId("sales-view-invoice-documents").click();
+    await expect(page).toHaveURL(/view=invoice-documents/);
+    await expect(page.getByTestId("invoice-list-table")).toBeVisible();
+    // The delivery list must NOT be mounted at the same time — one `view`, one active list table.
+    await expect(page.getByTestId("do-list-table")).toHaveCount(0);
+
+    // The shared table renders a desktop table AND a mobile card list; take the visible one.
+    await page.getByTestId(`invoice-link-${FIXTURE.firstInvoice}`).first().click();
+    await expect(page).toHaveURL(new RegExp(`invoiceNo=${FIXTURE.firstInvoice}`));
+    const lines = page.getByTestId("invoice-lines-table");
+    await expect(lines).toBeVisible();
+    await expect(lines).toContainText(FIXTURE.firstInvoice);
+    await expect(page.getByTestId("invoice-lines-amount")).toBeVisible();
+
+    await context.close();
+  });
+
+  test("a stale ?view=documents link still lands on the DELIVERY list", async ({ browser }) => {
+    const context = await ctx(browser, "admin");
+    const page = await context.newPage();
+    await openAs(page, `/dashboards/sales?${RANGE}&view=documents`);
+
+    await expect(page.getByTestId("do-list-table")).toBeVisible();
+    await expect(page.getByTestId("invoice-list-table")).toHaveCount(0);
+
+    await context.close();
+  });
+
+  test("STAFF sees no money in the invoice section — markup, not CSS", async ({ browser }) => {
+    const context = await ctx(browser, "staff");
+    const page = await context.newPage();
+    await openAs(page, SALES);
+
+    await expect(page.getByTestId("kpi-invoice-money-locked")).toBeVisible();
+    await expect(page.getByTestId("kpi-invoice-money-amount")).toHaveCount(0);
+
+    // The rendered HTML itself must not carry the figure — a value rendered then CSS-hidden would
+    // still be here.
+    const html = await page.content();
+    expect(html).not.toContain(FIXTURE.invoiceTotal);
+    expect(html).not.toContain("512,340.00");
+
+    await context.close();
+  });
+
+  test("the invoice CSV export returns real invoice rows for ADMIN", async ({ browser }) => {
+    const context = await ctx(browser, "admin");
+    const page = await context.newPage();
+    await openAs(page, SALES);
+
+    for (const table of ["invoice-list", "invoice-lines"]) {
+      const response = await page.request.get(
+        `/api/dashboards/export?dashboard=sales&table=${table}&${RANGE}`,
+      );
+      expect(response.status(), table).toBe(200);
+      const body = new TextDecoder("utf-8", { ignoreBOM: true }).decode(await response.body());
+      expect(body, table).toContain("\r\n");
+      // Not production's material-issue file under a sales filename.
+      expect(body, table).not.toContain("วันที่เบิก");
     }
 
     await context.close();

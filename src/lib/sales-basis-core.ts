@@ -18,17 +18,22 @@ import { ceToBeParts, parseDateInputValue } from "./be-date";
 /**
  * The implemented sales bases.
  *
- * `"do"` = delivery orders (`tbl_DOhdr` / `tbl_Dodtl`) — the ONLY branch implemented in this
- * phase, and the only basis with real, arithmetically-reconciled volume in the live ERP today.
+ * `"invoice"` = sales invoices (`SalesInvoiceHdr` / `SalesInvoiceDtl`). IMPLEMENTED as of the
+ * `sales-invoice-basis` plan (23-09-26), and — per the customer's own ERP team ("PO : sp_Purchase
+ * — SO : sp_SalesInvoice — ที่นี่ไม่ทำ SO ไปดึงที่ Invoice") — the source of truth for what was
+ * actually sold. The Sales dashboard's PRIMARY headline figure now comes from this basis.
  *
- * EXTENSION POINT (deliberately NOT implemented here — SPEC "Out Of Scope": migrating the Sales
- * dashboard's underlying basis): a later, out-of-program change may add `"so"` (sales orders) or
- * `"invoice"` (`SalesInvoiceHdr`). The switch mechanism below already reads its value from an
- * `AppSetting` row, so that migration needs a settings change rather than a redeploy — but the
- * resolver intentionally still narrows every value to `"do"` until that branch actually exists.
- * Returning a basis the query layer cannot serve would be worse than ignoring the setting.
+ * `"do"` = delivery orders (`tbl_DOhdr` / `tbl_Dodtl`) — still fully implemented and still on the
+ * page, but as the SECONDARY "การส่งมอบ" section: deliveries carry the goods, invoices carry the
+ * money. Neither view was removed; they answer different questions.
+ *
+ * NOT IMPLEMENTED: `"so"` (sales orders). `SalesOrderHdr` holds exactly 1 row in the whole live
+ * database — this site does not use the module at all — so that branch would have nothing to serve.
+ *
+ * Both sections render together on the dashboard's summary view, so this setting does not gate
+ * what the user can see; it records which basis the ERP is considered to be keyed on.
  */
-export type SalesBasis = "do";
+export type SalesBasis = "do" | "invoice";
 
 /** The `AppSetting` key holding the sales basis. Sales-scoped; independent of `APP_SETTING_KEYS`. */
 export const SALES_BASIS_SETTING_KEY = "salesBasis";
@@ -43,9 +48,10 @@ export const SALES_BASIS_SETTING_KEY = "salesBasis";
  */
 export function resolveSalesBasisFromValue(raw: string | null | undefined): SalesBasis {
   const value = (raw ?? "").trim().toLowerCase();
-  // `"so"` / `"invoice"` are recognised names with no implemented query branch yet — they
-  // deliberately resolve to `"do"` until that branch lands.
+  if (value === "invoice") return "invoice";
   if (value === "do") return "do";
+  // `"so"` (sales orders) is a recognised name with no implemented query branch — the module is
+  // unused on this site — so it falls through to the default with every other unrecognised value.
   return "do";
 }
 
@@ -369,14 +375,24 @@ export function formatPercent(n: number): string {
 }
 
 /**
- * The reconciliation footnote. It must NAME the excluded amount — "some data is excluded" would
- * bury it, which the umbrella charter forbids.
+ * The DELIVERY section's money caveat.
+ *
+ * REPLACED `reconciliationNote()` (sales-invoice-basis, 23-09-26). The old footnote said the
+ * SalesInvoiceHdr pool was EXCLUDED from the dashboard — true when delivery orders were the only
+ * basis, and false the moment invoices became the primary figure. The invoice tile now carries its
+ * own cross-reference pointing down at the delivery section, so this text does NOT restate that
+ * link in the other direction.
+ *
+ * What it states instead is the delivery basis's OWN standing caveat, which has nothing to do with
+ * invoices and remains true regardless: most delivery lines carry no price at all, so the delivery
+ * money figure covers a small slice of what was actually shipped. It must NAME the counts — "some
+ * lines are unpriced" would bury it, which the umbrella charter forbids.
  */
-export function reconciliationNote(excludedCount: number, excludedTotal: number): string {
+export function deliveryCoverageNote(pricedLineCount: number, totalLineCount: number): string {
   return (
-    `มียอดใบแจ้งหนี้ขาย (SalesInvoiceHdr) อีก ${formatInt(excludedCount)} ใบ ` +
-    `รวม ${formatMoney(excludedTotal)} ที่ไม่ถูกนับรวมในยอดนี้ ` +
-    `เนื่องจากยังไม่ใช่ฐานข้อมูลที่ใช้ในแดชบอร์ดนี้`
+    `ยอดเงินนี้นับเฉพาะบรรทัดที่มีราคาในใบส่งสินค้า ` +
+    `(${formatInt(pricedLineCount)} จาก ${formatInt(totalLineCount)} รายการ) ` +
+    `บรรทัดที่ไม่มีราคาจึงไม่ถูกรวมเป็นตัวเงิน`
   );
 }
 
