@@ -61,3 +61,6 @@ playwright/.cache/
 
 # REAL customer/ERP data extracted for design purposes — must never enter git history
 *REAL-DATA-DO-NOT-COMMIT*
+
+# deploy.sh records the pre-deploy commit here so --rollback knows where to go back to
+.deploy-last-sha
