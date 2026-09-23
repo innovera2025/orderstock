@@ -1,0 +1,8 @@
+cycle	phase	gate	fails	concerns	loop_status	note
+0	PVL	BLOCKED	4	3	BASELINE	first-pass validate: URL contract, CSV export target, live-reconcile importer, erp-query-columns missing
+1	PVL	SUPPLEMENT	0	0	IN_PROGRESS	7 gaps addressed in plan text; awaiting re-validation from V1
+2	PVL	BLOCKED	4	4	IN_PROGRESS	cycle-2 re-validate: wrong paths for erp-query-columns + sales-url, missing fixture DDL step, ExportTable widening breaks purchase/production
+3	PVL	SUPPLEMENT	0	0	IN_PROGRESS	8 gaps applied (2 wrong paths, fixture DDL step, additive ExportTable, 4 concerns); paths independently re-verified
+4	PVL	BLOCKED	2	2	IN_PROGRESS	cycle-4 re-validate: dashboard-export-target.ts/export-datasets.ts CSV export wiring not updated for invoice shapes (400s on request); sales-unavailable.tsx cannot be reused per-section as-is (whole-page shell); 2 concerns on test-file naming + footnote checklist completeness
+5	PVL	SUPPLEMENT	0	0	IN_PROGRESS	4 gaps applied (export runtime wiring + rejecting default, scoped unavailable fragment, real test file, full copy checklist); symbols verified by the agent and by the orchestrator
+6	PVL	CONDITIONAL	0	1	HALTED_SUCCESS	cycle-6 re-validate: cycle-4/5 fixes confirmed against real files; 1 CONCERN accepted (deriveExportTarget section resolution for the view-only export case) as an execute-agent instruction
