@@ -260,6 +260,28 @@ GROUP BY d.PoNo, d.ItemCode
 `;
 
 /** Every embedded Purchase query, for the drift / read-only assertions in the unit suite. */
+/** Verbatim copy of `db/erp-queries/purchase/po-date-range.sql`. */
+export const PO_DATE_RANGE_SQL = `-- ช่วงข้อมูล — Purchase: what the ERP ACTUALLY holds, regardless of the page's date filter.
+--
+-- READ-ONLY: a single SELECT statement, executed ONLY through \`guardedQuery()\`. No parameters, on
+-- purpose — the notice describes the ERP's real data range, not the current filter selection.
+--
+-- WHICH DATE, AND WHY. This dashboard reads two bases: purchase orders (PurchaseOrderHdr.PODate)
+-- and purchase invoices (PurchaseInvoiceHdr.VoucherDate). The notice reports the PURCHASE-ORDER
+-- range and the purchase-order count, and says so out loud in the UI text ("ใบสั่งซื้อ N ใบ") —
+-- the PO is the document this page lists, the document the drilldown route opens, and the document
+-- whose number the user recognises. Reporting one unlabelled range spanning two different document
+-- types would be the dishonest option; naming the document type we report is the honest one.
+--
+-- COUNTS EVERY PO, cancelled ones included: a cancelled order is still a document the ERP holds.
+-- The money KPIs exclude cancelled orders — that is a KPI rule, not a data-range rule.
+SELECT
+    COUNT(*) AS DocCount,
+    MIN(h.PODate) AS FirstDate,
+    MAX(h.PODate) AS LastDate
+FROM dbo.PurchaseOrderHdr h;
+`;
+
 export const PURCHASE_SQL_SOURCES: ReadonlyArray<{ name: string; file: string; sql: string }> = [
   { name: "TOTAL_INVOICE_BASIS_SQL", file: "db/erp-queries/purchase/total-invoice-basis.sql", sql: TOTAL_INVOICE_BASIS_SQL },
   { name: "TOTAL_PO_COMMITTED_BASIS_SQL", file: "db/erp-queries/purchase/total-po-committed-basis.sql", sql: TOTAL_PO_COMMITTED_BASIS_SQL },
@@ -267,4 +289,5 @@ export const PURCHASE_SQL_SOURCES: ReadonlyArray<{ name: string; file: string; s
   { name: "PO_LIST_SQL", file: "db/erp-queries/purchase/po-list.sql", sql: PO_LIST_SQL },
   { name: "PO_LINES_SQL", file: "db/erp-queries/purchase/po-lines.sql", sql: PO_LINES_SQL },
   { name: "PO_RECEIVED_SQL", file: "db/erp-queries/purchase/po-received.sql", sql: PO_RECEIVED_SQL },
+  { name: "PO_DATE_RANGE_SQL", file: "db/erp-queries/purchase/po-date-range.sql", sql: PO_DATE_RANGE_SQL },
 ];

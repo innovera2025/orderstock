@@ -12,9 +12,11 @@ import {
   timeBins,
   inBin,
 } from "@/lib/sales-basis-core";
+import { toErpDataRange } from "@/lib/erp-date-range";
 import {
   fetchDoByCustomer,
   fetchDoByProduct,
+  fetchDoDateRange,
   fetchDoHeaders,
   fetchDoLines,
   fetchExcludedInvoiceTotal,
@@ -89,16 +91,19 @@ export default async function SalesDashboardPage({
   // generic 500 instead of a Thai message, so it is caught here and turned into the explicit
   // "ERP unavailable" view. Every other error path is unchanged; the stale-data path still renders
   // the full dashboard with `DegradeBanner`.
-  let headers, lines, statusHeaders, catLines, excluded;
+  let headers, lines, statusHeaders, catLines, excluded, dateRange;
   let products: Awaited<ReturnType<typeof fetchDoByProduct>> | null = null;
   let customers: Awaited<ReturnType<typeof fetchDoByCustomer>> | null = null;
   try {
-    [headers, lines, statusHeaders, catLines, excluded] = await Promise.all([
+    [headers, lines, statusHeaders, catLines, excluded, dateRange] = await Promise.all([
       fetchDoHeaders(filters),
       fetchDoLines(filters),
       fetchDoHeaders(filters, { skipStatus: true }),
       fetchDoLines(filters, { skipCat: true }),
       fetchExcludedInvoiceTotal(),
+      // UNFILTERED on purpose: the ช่วงข้อมูล notice reports what the ERP holds, not what the
+      // current filter selected.
+      fetchDoDateRange(),
     ]);
 
     if (state.view === "summary") {
@@ -122,6 +127,7 @@ export default async function SalesDashboardPage({
     statusHeaders.stale ||
     catLines.stale ||
     excluded.stale ||
+    dateRange.stale ||
     (products?.stale ?? false) ||
     (customers?.stale ?? false);
 
@@ -179,7 +185,7 @@ export default async function SalesDashboardPage({
         </p>
       </header>
 
-      <PilotBanner />
+      <PilotBanner range={toErpDataRange(dateRange.value, "ใบส่งสินค้า")} />
       <DegradeBanner state={erpDegradeState({ stale })} />
 
       <SalesFilterBar state={state} catLabels={catLabels} />

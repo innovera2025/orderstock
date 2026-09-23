@@ -69,6 +69,10 @@ export const ERP_QUERY_COLUMNS: Record<string, Record<string, readonly string[]>
   "db/erp-queries/sales/sales-invoice-excluded-total.sql": {
     "dbo.SalesInvoiceHdr": ["DocuType", "TotalAmount"],
   },
+  // The ช่วงข้อมูล notice: how much DO history the ERP really holds, unfiltered.
+  "db/erp-queries/sales/do-date-range.sql": {
+    "dbo.tbl_DOhdr": ["Dodate"],
+  },
 
   // ---- purchase -------------------------------------------------------------------------------
   "db/erp-queries/purchase/po-list.sql": {
@@ -102,6 +106,10 @@ export const ERP_QUERY_COLUMNS: Record<string, Record<string, readonly string[]>
   "db/erp-queries/purchase/total-po-committed-basis.sql": {
     "dbo.PurchaseOrderHdr": ["SupplierCode", "PODate", "TotalAmount", "IsCancel"],
   },
+  // The ช่วงข้อมูล notice: the PO date span the ERP really holds, unfiltered.
+  "db/erp-queries/purchase/po-date-range.sql": {
+    "dbo.PurchaseOrderHdr": ["PODate"],
+  },
 
   // ---- production -----------------------------------------------------------------------------
   "db/erp-queries/production/mo-list.sql": {
@@ -120,5 +128,9 @@ export const ERP_QUERY_COLUMNS: Record<string, Record<string, readonly string[]>
     ],
     "dbo.InventoryFlowHdr": ["TransactionNo", "InOutDate"],
     "dbo.InventoryItem": ["ItemCode", "Description", "MainUnits", "Roworder"],
+  },
+  // The ช่วงข้อมูล notice: the MO plan-date span the ERP really holds, unfiltered.
+  "db/erp-queries/production/mo-date-range.sql": {
+    "dbo.tbl_MoHdr": ["Modate"],
   },
 };

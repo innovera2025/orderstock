@@ -6,7 +6,9 @@ import { PilotBanner } from "@/components/pilot-banner";
 import { DegradeBanner } from "@/components/degrade-banner";
 import { erpDegradeState } from "@/lib/erp/degrade";
 import { beShort, formatInt, formatMoney, formatQtyWithUnit } from "@/lib/purchase-calc";
+import { toErpDataRange } from "@/lib/erp-date-range";
 import {
+  fetchPoDateRange,
   fetchPoLines,
   fetchPoList,
   fetchPoReceived,
@@ -60,13 +62,16 @@ export default async function PoDetailPage({
   const filters: PurchaseFilters = { ...WIDE_RANGE, poNumber };
   const listHref = purchaseHref(raw, { page: null, sort: null });
 
-  let headers, lines, received;
+  let headers, lines, received, dateRange;
   try {
     headers = await fetchPoList(filters);
     const header = headers.value[0];
-    [lines, received] = await Promise.all([
+    [lines, received, dateRange] = await Promise.all([
       fetchPoLines(WIDE_RANGE, header?.TransactionNo ?? null),
       fetchPoReceived(poNumber),
+      // The same unfiltered ช่วงข้อมูล read as the list page, so the notice reads identically on
+      // both routes.
+      fetchPoDateRange(),
     ]);
   } catch (error) {
     console.error(
@@ -77,7 +82,8 @@ export default async function PoDetailPage({
   }
 
   const view = buildPoViews(headers.value, lines.value, received.value, canSeeMoney)[0];
-  const stale = headers.stale || lines.stale || received.stale;
+  const stale = headers.stale || lines.stale || received.stale || dateRange.stale;
+  const dataRange = toErpDataRange(dateRange.value, "ใบสั่งซื้อ");
 
   const breadcrumb = (
     <nav className="flex flex-wrap items-center gap-2 text-[var(--t-xs)]" aria-label="เส้นทาง">
@@ -106,7 +112,7 @@ export default async function PoDetailPage({
   if (!view) {
     return (
       <main className="flex w-full flex-col gap-4 p-4 sm:p-6" data-testid="po-detail">
-        <PilotBanner />
+        <PilotBanner range={dataRange} />
         {breadcrumb}
         <Card className="p-6 text-center">
           <span className="th text-[var(--t-sm)] text-[var(--text-muted)]">
@@ -119,7 +125,7 @@ export default async function PoDetailPage({
 
   return (
     <main className="flex w-full flex-col gap-4 p-4 sm:p-6" data-testid="po-detail">
-      <PilotBanner />
+      <PilotBanner range={dataRange} />
       <DegradeBanner state={erpDegradeState({ stale })} />
       {breadcrumb}
 

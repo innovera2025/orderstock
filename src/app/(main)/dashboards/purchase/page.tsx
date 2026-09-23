@@ -8,8 +8,10 @@ import {
   inPurchaseBin,
   purchaseTimeBins,
 } from "@/lib/purchase-calc";
+import { toErpDataRange } from "@/lib/erp-date-range";
 import {
   fetchPoCommittedTotals,
+  fetchPoDateRange,
   fetchPoLines,
   fetchPoList,
   fetchPoReceived,
@@ -82,9 +84,9 @@ export default async function PurchaseDashboardPage({
   // been cached. That throw would render Next's generic 500, so it is caught here and turned into
   // the explicit Thai "ERP unavailable" view. The stale-data path still renders the full dashboard
   // behind `DegradeBanner`.
-  let invoices, poTotals, supplierRows, headers, lines, received, allSupplierInvoices;
+  let invoices, poTotals, supplierRows, headers, lines, received, allSupplierInvoices, dateRange;
   try {
-    [invoices, poTotals, supplierRows, headers, lines, received, allSupplierInvoices] =
+    [invoices, poTotals, supplierRows, headers, lines, received, allSupplierInvoices, dateRange] =
       await Promise.all([
         fetchPurchaseInvoices(filters),
         fetchPoCommittedTotals(filters),
@@ -93,6 +95,9 @@ export default async function PurchaseDashboardPage({
         fetchPoLines(filters),
         fetchPoReceived(),
         fetchPurchaseInvoices(filters, { skipSupplier: true }),
+        // UNFILTERED on purpose: the ช่วงข้อมูล notice reports what the ERP holds, not what the
+        // current filter selected.
+        fetchPoDateRange(),
       ]);
   } catch (error) {
     // Never log the connection string or any row content — just the failure itself.
@@ -110,7 +115,8 @@ export default async function PurchaseDashboardPage({
     headers.stale ||
     lines.stale ||
     received.stale ||
-    allSupplierInvoices.stale;
+    allSupplierInvoices.stale ||
+    dateRange.stale;
 
   // ---- KPI figures -------------------------------------------------------------------------
   const invoiceTotal = invoices.value.reduce((a, r) => a + toNumber(r.TotalAmount), 0);
@@ -178,7 +184,7 @@ export default async function PurchaseDashboardPage({
         </p>
       </header>
 
-      <PilotBanner />
+      <PilotBanner range={toErpDataRange(dateRange.value, "ใบสั่งซื้อ")} />
       <DegradeBanner state={erpDegradeState({ stale })} />
 
       <PurchaseFilterBar

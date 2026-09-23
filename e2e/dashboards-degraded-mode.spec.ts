@@ -1,6 +1,6 @@
 import { test, expect, type Browser, type Page } from "@playwright/test";
 
-// erp-dashboards Phase 5 — AC15 (graceful degrade) + AC16 (pilot banner) across ALL THREE
+// erp-dashboards Phase 5 — AC15 (graceful degrade) + AC16 (data-range banner) across ALL THREE
 // dashboards at once, plus the AC2 unauth-redirect re-confirmation for Purchase and Production.
 //
 // Precondition (Hybrid infrastructure, LOCAL ONLY): the `orderstock-sql` container is up, all
@@ -30,7 +30,10 @@ import { test, expect, type Browser, type Page } from "@playwright/test";
 const RANGE = "from=2026-08-01&to=2026-09-30";
 
 const DEGRADE_TEXT = "ข้อมูลอาจไม่ล่าสุด";
-const PILOT_TEXT = "ข้อมูลนำร่อง";
+// The banner's neutral chip label (23-09-26: it reports the real ERP data range now, rather than
+// repeating a fixed "pilot data" warning). Kept as the chip text so the AC16 "banner present at all
+// times" checks still have a stable, wording-independent anchor.
+const PILOT_TEXT = "ช่วงข้อมูล";
 
 /** The three dashboards, their root-level testid, and the URL that shows real fixture rows. */
 const DASHBOARDS = [
@@ -60,7 +63,7 @@ async function setErpDown(page: Page, down: boolean) {
 // AC16 — the pilot banner is present on all three dashboards under NORMAL conditions ("at all
 // times", per the SPEC — so it is asserted here as a set, not just per dashboard).
 // ---------------------------------------------------------------------------------------------
-test.describe("AC16 — pilot banner on all three dashboards", () => {
+test.describe("AC16 — data-range banner on all three dashboards", () => {
   for (const role of ["admin", "staff"] as const) {
     test(`every dashboard shows "${PILOT_TEXT}" for ${role}`, async ({ browser }) => {
       const context = await ctx(browser, role);
@@ -76,6 +79,58 @@ test.describe("AC16 — pilot banner on all three dashboards", () => {
       await context.close();
     });
   }
+
+  // USER DECISION GATE (23-09-26, option 3): the banner must state each dashboard's REAL data
+  // range, not a fixed warning. These strings are the `erp_fixture` seeds' actual first/last
+  // document dates and row counts, in Buddhist Era — a hardcoded or filter-derived range would
+  // fail here.
+  //
+  //   sales      tbl_DOhdr           14 rows, 2026-08-03 .. 2026-09-22 -> 3/8/69 .. 22/9/69
+  //   purchase   PurchaseOrderHdr     5 rows, 2026-08-14 .. 2026-09-11 -> 14/8/69 .. 11/9/69
+  //   production tbl_MoHdr           12 rows, 2026-08-20 .. 2026-09-08 -> 20/8/69 .. 8/9/69
+  //
+  // The counts include rows the dashboards themselves filter out (cancelled POs/MOs): the notice
+  // reports what the ERP HOLDS, which is exactly the point of the change.
+  const EXPECTED_RANGE_TEXT: Record<string, string> = {
+    sales: "ข้อมูลในระบบ ERP มีตั้งแต่ 3/8/69 ถึง 22/9/69 · ใบส่งสินค้า 14 ใบ",
+    purchase: "ข้อมูลในระบบ ERP มีตั้งแต่ 14/8/69 ถึง 11/9/69 · ใบสั่งซื้อ 5 ใบ",
+    production: "ข้อมูลในระบบ ERP มีตั้งแต่ 20/8/69 ถึง 8/9/69 · ใบสั่งผลิต 12 ใบ",
+  };
+
+  test("each banner states the fixture's REAL first/last document dates and count", async ({
+    browser,
+  }) => {
+    const context = await ctx(browser);
+    const page = await context.newPage();
+
+    for (const dashboard of DASHBOARDS) {
+      await page.goto(dashboard.url);
+      await expect(page.getByTestId(dashboard.testId)).toBeVisible();
+      await expect(
+        page.getByTestId("pilot-banner"),
+        `${dashboard.name}: the banner must report the ERP's real data range`,
+      ).toContainText(EXPECTED_RANGE_TEXT[dashboard.name]);
+    }
+
+    // And it must NOT change when the page's own date filter narrows: the notice describes the
+    // ERP, not the current selection.
+    await page.goto("/dashboards/sales?from=2026-09-01&to=2026-09-05");
+    await expect(page.getByTestId("sales-dashboard")).toBeVisible();
+    await expect(page.getByTestId("pilot-banner")).toContainText(EXPECTED_RANGE_TEXT.sales);
+
+    await context.close();
+  });
+
+  test("the retired fixed pilot sentence is gone from every dashboard", async ({ browser }) => {
+    const context = await ctx(browser);
+    const page = await context.newPage();
+    for (const dashboard of DASHBOARDS) {
+      await page.goto(dashboard.url);
+      await expect(page.getByTestId(dashboard.testId)).toBeVisible();
+      await expect(page.locator("body")).not.toContainText("ข้อมูลชุดนี้อยู่ระหว่างช่วงนำร่อง");
+    }
+    await context.close();
+  });
 
   test("the pilot banner is also present on both drilldown routes", async ({ browser }) => {
     const context = await ctx(browser);

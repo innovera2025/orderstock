@@ -208,8 +208,8 @@ describe("date-range params", () => {
 // ---------------------------------------------------------------------------------------------
 
 describe("embedded Purchase SQL matches db/erp-queries/purchase/*.sql", () => {
-  it("covers all 6 versioned query files", () => {
-    expect(PURCHASE_SQL_SOURCES).toHaveLength(6);
+  it("covers all 7 versioned query files", () => {
+    expect(PURCHASE_SQL_SOURCES).toHaveLength(7);
   });
 
   for (const source of PURCHASE_SQL_SOURCES) {

@@ -4,7 +4,12 @@ import { PilotBanner } from "@/components/pilot-banner";
 import { DegradeBanner } from "@/components/degrade-banner";
 import { erpDegradeState } from "@/lib/erp/degrade";
 import { plannedQtyByUnit } from "@/lib/production-status";
-import { getProductionMoList, type MoListRow } from "@/lib/production-data";
+import { toErpDataRange } from "@/lib/erp-date-range";
+import {
+  getProductionDateRange,
+  getProductionMoList,
+  type MoListRow,
+} from "@/lib/production-data";
 import { ProductionFilterBar } from "./production-filter-bar";
 import { ProductionKpiTiles } from "./production-kpi-tiles";
 import { ProductionPlanChart, type PlanChartItem } from "./production-plan-chart";
@@ -45,11 +50,14 @@ export default async function ProductionDashboardPage({
 
   // CROSS-FILTER: the donut runs with its OWN dimension excluded, so a selected status never
   // collapses its own chart to 100% and the user can always click a different slice.
-  let mos, statusMos;
+  let mos, statusMos, dateRange;
   try {
-    [mos, statusMos] = await Promise.all([
+    [mos, statusMos, dateRange] = await Promise.all([
       getProductionMoList(filters),
       getProductionMoList(filters, { skipStatus: true }),
+      // UNFILTERED on purpose: the ช่วงข้อมูล notice reports what the ERP holds, not what the
+      // current filter selected.
+      getProductionDateRange(),
     ]);
   } catch (error) {
     // Never log the connection string or any row content — just the failure itself.
@@ -61,7 +69,7 @@ export default async function ProductionDashboardPage({
   }
 
   const rows: MoListRow[] = mos.value;
-  const stale = mos.stale || statusMos.stale;
+  const stale = mos.stale || statusMos.stale || dateRange.stale;
 
   const plannedByUnit = plannedQtyByUnit(
     rows.map((r) => ({ unit: r.MainUnits, qty: Number(r.PlannedQty) })),
@@ -98,7 +106,7 @@ export default async function ProductionDashboardPage({
         </p>
       </header>
 
-      <PilotBanner />
+      <PilotBanner range={toErpDataRange(dateRange.value, "ใบสั่งผลิต")} />
       <DegradeBanner state={erpDegradeState({ stale })} />
 
       <ProductionFilterBar state={state} />

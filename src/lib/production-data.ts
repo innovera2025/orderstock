@@ -17,7 +17,8 @@
 import { guardedQuery, type ErpQueryParams } from "./erp/erp-adapter";
 import { getErpPool } from "./erp/pool";
 import { getCached, ERP_CACHE_TTL_MS, type CachedResult } from "./erp/cache";
-import { MATERIAL_ISSUES_SQL, MO_LIST_SQL } from "./production-sql";
+import type { ErpDateRangeRow } from "./erp-date-range";
+import { MATERIAL_ISSUES_SQL, MO_DATE_RANGE_SQL, MO_LIST_SQL } from "./production-sql";
 
 export interface ProductionFilters {
   /** CE `yyyy-mm-dd`, inclusive. */
@@ -111,6 +112,18 @@ export function getMaterialIssuesForMo(
   const params: ErpQueryParams = { moNumBer };
   return getCached<MaterialIssueRow[]>(cacheKey("material-issues", params), ERP_CACHE_TTL_MS, () =>
     runProductionQuery<MaterialIssueRow>(MATERIAL_ISSUES_SQL, params),
+  );
+}
+
+/**
+ * The ช่วงข้อมูล read: the FULL manufacturing-order plan-date span and MO count the ERP holds.
+ *
+ * Deliberately UNFILTERED — the notice states what data exists, so the page's own date and status
+ * filters must not narrow it.
+ */
+export function getProductionDateRange(): Promise<CachedResult<ErpDateRangeRow[]>> {
+  return getCached<ErpDateRangeRow[]>(cacheKey("mo-date-range", {}), ERP_CACHE_TTL_MS, () =>
+    runProductionQuery<ErpDateRangeRow>(MO_DATE_RANGE_SQL, {}),
   );
 }
 

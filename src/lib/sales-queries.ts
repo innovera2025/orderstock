@@ -15,9 +15,11 @@
 import { guardedQuery, type ErpQueryParams } from "./erp/erp-adapter";
 import { getErpPool } from "./erp/pool";
 import { getCached, ERP_CACHE_TTL_MS, type CachedResult } from "./erp/cache";
+import type { ErpDateRangeRow } from "./erp-date-range";
 import {
   DO_BY_CUSTOMER_SQL,
   DO_BY_PRODUCT_SQL,
+  DO_DATE_RANGE_SQL,
   DO_HEADERS_SQL,
   DO_LINES_SQL,
   SALES_INVOICE_EXCLUDED_TOTAL_SQL,
@@ -196,6 +198,18 @@ export function fetchDoByCustomer(
 export function fetchExcludedInvoiceTotal(): Promise<CachedResult<ExcludedInvoiceRow[]>> {
   return getCached<ExcludedInvoiceRow[]>("sales:excluded-invoice-total", ERP_CACHE_TTL_MS, () =>
     runSalesQuery<ExcludedInvoiceRow>(SALES_INVOICE_EXCLUDED_TOTAL_SQL, {}),
+  );
+}
+
+/**
+ * The ช่วงข้อมูล read: the FULL delivery-order date span and document count the ERP holds.
+ *
+ * Deliberately UNFILTERED, exactly like `fetchExcludedInvoiceTotal()` above: the notice tells the
+ * user what data exists, so the page's own date filter must not narrow it.
+ */
+export function fetchDoDateRange(): Promise<CachedResult<ErpDateRangeRow[]>> {
+  return getCached<ErpDateRangeRow[]>("sales:do-date-range", ERP_CACHE_TTL_MS, () =>
+    runSalesQuery<ErpDateRangeRow>(DO_DATE_RANGE_SQL, {}),
   );
 }
 

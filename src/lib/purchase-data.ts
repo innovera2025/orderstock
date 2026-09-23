@@ -18,7 +18,9 @@
 import { guardedQuery, type ErpQueryParams } from "./erp/erp-adapter";
 import { getErpPool } from "./erp/pool";
 import { getCached, ERP_CACHE_TTL_MS, type CachedResult } from "./erp/cache";
+import type { ErpDateRangeRow } from "./erp-date-range";
 import {
+  PO_DATE_RANGE_SQL,
   PO_LINES_SQL,
   PO_LIST_SQL,
   PO_RECEIVED_SQL,
@@ -241,6 +243,17 @@ export function fetchPoReceived(
   return cachedPurchaseQuery<PoReceivedRow>("po-received", PO_RECEIVED_SQL, {
     poNumber: blank(poNumber),
   });
+}
+
+/**
+ * The ช่วงข้อมูล read: the FULL purchase-order date span and PO count the ERP holds.
+ *
+ * Deliberately UNFILTERED — the notice states what data exists, so the page's own date and
+ * supplier filters must not narrow it. Purchase orders, not purchase invoices: see the WHICH DATE
+ * note in `db/erp-queries/purchase/po-date-range.sql`, and the UI text names the document type.
+ */
+export function fetchPoDateRange(): Promise<CachedResult<ErpDateRangeRow[]>> {
+  return cachedPurchaseQuery<ErpDateRangeRow>("po-date-range", PO_DATE_RANGE_SQL, {});
 }
 
 /** Normalise a SQL Server DATE column to a CE `yyyy-mm-dd` string (UTC-safe, no TZ drift). */

@@ -18,7 +18,13 @@ import {
   moStatusLabel,
   moStatusTone,
 } from "@/lib/production-status";
-import { getMaterialIssuesForMo, getProductionMoList, isoDate } from "@/lib/production-data";
+import { toErpDataRange } from "@/lib/erp-date-range";
+import {
+  getMaterialIssuesForMo,
+  getProductionDateRange,
+  getProductionMoList,
+  isoDate,
+} from "@/lib/production-data";
 import { ProductionUnavailable } from "../production-unavailable";
 import {
   PRODUCTION_BASE_PATH,
@@ -63,11 +69,14 @@ export default async function MoDetailPage({
   const state = parseProductionUrl(raw);
   const listHref = productionHref(raw);
 
-  let issues, mos;
+  let issues, mos, dateRange;
   try {
-    [issues, mos] = await Promise.all([
+    [issues, mos, dateRange] = await Promise.all([
       getMaterialIssuesForMo(moNumber),
       getProductionMoList({ dateFrom: state.from, dateTo: state.to }),
+      // The same unfiltered ช่วงข้อมูล read as the list page, so the notice reads identically on
+      // both routes.
+      getProductionDateRange(),
     ]);
   } catch (error) {
     console.error(
@@ -78,7 +87,7 @@ export default async function MoDetailPage({
   }
 
   const mo = mos.value.find((m) => m.MoNumBer.trim() === moNumber.trim());
-  const stale = issues.stale || mos.stale;
+  const stale = issues.stale || mos.stale || dateRange.stale;
 
   const rows: DataTableRow[] = issues.value.map((line) => {
     const iso = isoDate(line.TransactionDate);
@@ -109,7 +118,7 @@ export default async function MoDetailPage({
         </span>
       </nav>
 
-      <PilotBanner />
+      <PilotBanner range={toErpDataRange(dateRange.value, "ใบสั่งผลิต")} />
       <DegradeBanner state={erpDegradeState({ stale })} />
 
       <Card className="flex flex-col gap-3 p-4">
