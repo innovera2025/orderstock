@@ -32,8 +32,19 @@ export const DO_HEADERS_SQL = `-- erp-dashboards Phase 2 — Sales: filtered del
 --   @skipStatus       1 = ignore @status (the status donut must keep showing every status)
 --   @skipCat          1 = ignore @cat (the category pie must keep showing every category)
 --
--- STATUS is derived from the REAL flags (IsCancel/IsClosed/IsApproved/IsCheck) and labelled
+-- STATUS is derived from the REAL flags (IsClosed/IsApproved/IsCheck) and labelled
 -- "สถานะการส่งมอบ" in the UI — never "SO status": the SalesOrder module is unused in this ERP.
+--
+-- THERE IS NO 'cancelled' STATUS, on purpose (schema-conformance fix 23-09-26). An earlier draft
+-- branched on \`h.IsCancel\`, but that column DOES NOT EXIST on the live \`dbo.tbl_DOhdr\` — the whole
+-- query failed at runtime, which is why every dashboard page rendered the ERP-unavailable message.
+-- The real flag set is IsApproved / IsClosed / IsComplete / IsCheck / IsAcc / Revised (each Is* with
+-- a paired *By/*Date). NONE of them carries "cancelled" meaning: \`Revised\` means revised, and it is
+-- 0 on all 83 live headers, so it was NOT repurposed as a stand-in. The branch is therefore DROPPED
+-- rather than re-pointed at an invented substitute, and the UI's ยกเลิก legend entry is removed with it.
+-- Live evidence (metadata + aggregate only, 23-09-26): 83 headers; IsApproved=1 on 73, IsCheck=1 on 2,
+-- IsClosed/IsComplete/IsAcc/Revised = 1 on 0; no column is NULL. If the customer later confirms a
+-- cancellation convention, re-add the branch against the column they name — not by guessing.
 WITH CanonicalItem AS (
     -- InventoryItem's real PK is composite (Roworder, ItemCode); ItemCode alone is NOT unique
     -- (~85 duplicated codes live). Highest-Roworder-wins is the agreed tie-break (registry
@@ -48,7 +59,6 @@ Item AS (
 Hdr AS (
     SELECT h.TransactionNo, h.DoNo, h.Dodate, h.CustCode, h.CustName,
            CASE
-               WHEN h.IsCancel = 1 THEN 'cancelled'
                WHEN h.IsClosed = 1 THEN 'closed'
                WHEN h.IsApproved = 1 AND h.IsCheck = 1 THEN 'checked'
                WHEN h.IsApproved = 1 THEN 'approved'
@@ -97,6 +107,14 @@ export const DO_LINES_SQL = `-- erp-dashboards Phase 2 — Sales: filtered DO li
 --
 -- Params: identical to do-headers.sql.
 --
+-- CATEGORY LABELS COME FROM THE ERP ITSELF (defect fix, 23-09-26): \`CategoryKey\` is still the raw
+-- \`InventoryItem.ItemGRP\` CODE — the stable identity that every filter and URL uses — but the
+-- human-readable \`CategoryLabel\` is now LEFT JOINed from \`dbo.tbl_ItemGroup\` (ICCode -> Description,
+-- 23 rows live) instead of being hardcoded in the app. The app only ever knew F/R/P, so the live
+-- code \`W\` rendered as the raw fallback "หมวด W" on the category pie, and \`P\` was not even a real
+-- code (the live "งานระหว่างผลิต"-ish group is \`W\` = สินค้าระหว่างผลิต). The label stays NULLable: a
+-- code with no matching group row falls back to "หมวด {code}" in the app, never to nothing.
+--
 -- MainUnits comes from InventoryItem (the line table carries no unit of its own). Quantities are
 -- returned PER LINE with their unit attached and are NEVER pre-summed here — cross-unit summing
 -- is forbidden (umbrella charter hard safety constraint); aggregation happens per-unit in
@@ -110,10 +128,18 @@ WITH CanonicalItem AS (
 Item AS (
     SELECT ItemCode, Description, MainUnits, ItemGRP FROM CanonicalItem WHERE RowRank = 1
 ),
+ItemGroup AS (
+    -- The ERP's own category master. ICCode is unique across the 23 live rows today, but this
+    -- collapses by code anyway so a future duplicate can never fan a line out into two rows and
+    -- inflate the pie's line counts.
+    SELECT LTRIM(RTRIM(ICCode)) AS GroupCode, MAX(LTRIM(RTRIM(Description))) AS GroupName
+    FROM dbo.tbl_ItemGroup
+    WHERE NULLIF(LTRIM(RTRIM(ICCode)), '') IS NOT NULL
+    GROUP BY LTRIM(RTRIM(ICCode))
+),
 Hdr AS (
     SELECT h.TransactionNo, h.DoNo, h.Dodate, h.CustCode, h.CustName,
            CASE
-               WHEN h.IsCancel = 1 THEN 'cancelled'
                WHEN h.IsClosed = 1 THEN 'closed'
                WHEN h.IsApproved = 1 AND h.IsCheck = 1 THEN 'checked'
                WHEN h.IsApproved = 1 THEN 'approved'
@@ -149,12 +175,14 @@ SELECT
     COALESCE(i.Description, d.ItemCode) AS ItemName,
     COALESCE(NULLIF(LTRIM(RTRIM(i.MainUnits)), ''), '-') AS Unit,
     COALESCE(NULLIF(LTRIM(RTRIM(i.ItemGRP)), ''), '-') AS CategoryKey,
+    g.GroupName AS CategoryLabel,
     COALESCE(d.Qty, 0) AS Qty,
     COALESCE(d.Saleprice, 0) AS Saleprice,
     COALESCE(d.Amount, 0) AS Amount
 FROM Qualified q
 JOIN dbo.tbl_Dodtl d ON d.TransactionNo = q.TransactionNo
 LEFT JOIN Item i ON i.ItemCode = d.ItemCode
+LEFT JOIN ItemGroup g ON g.GroupCode = LTRIM(RTRIM(i.ItemGRP))
 WHERE (@product IS NULL OR d.ItemCode = @product)
   AND (@cat IS NULL OR @skipCat = 1
        OR COALESCE(NULLIF(LTRIM(RTRIM(i.ItemGRP)), ''), '-') = @cat)
@@ -187,7 +215,6 @@ Item AS (
 Hdr AS (
     SELECT h.TransactionNo, h.DoNo, h.Dodate, h.CustCode, h.CustName,
            CASE
-               WHEN h.IsCancel = 1 THEN 'cancelled'
                WHEN h.IsClosed = 1 THEN 'closed'
                WHEN h.IsApproved = 1 AND h.IsCheck = 1 THEN 'checked'
                WHEN h.IsApproved = 1 THEN 'approved'
@@ -254,7 +281,6 @@ Item AS (
 Hdr AS (
     SELECT h.TransactionNo, h.DoNo, h.Dodate, h.CustCode, h.CustName,
            CASE
-               WHEN h.IsCancel = 1 THEN 'cancelled'
                WHEN h.IsClosed = 1 THEN 'closed'
                WHEN h.IsApproved = 1 AND h.IsCheck = 1 THEN 'checked'
                WHEN h.IsApproved = 1 THEN 'approved'

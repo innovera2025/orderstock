@@ -15,8 +15,19 @@
 --   @skipStatus       1 = ignore @status (the status donut must keep showing every status)
 --   @skipCat          1 = ignore @cat (the category pie must keep showing every category)
 --
--- STATUS is derived from the REAL flags (IsCancel/IsClosed/IsApproved/IsCheck) and labelled
+-- STATUS is derived from the REAL flags (IsClosed/IsApproved/IsCheck) and labelled
 -- "สถานะการส่งมอบ" in the UI — never "SO status": the SalesOrder module is unused in this ERP.
+--
+-- THERE IS NO 'cancelled' STATUS, on purpose (schema-conformance fix 23-09-26). An earlier draft
+-- branched on `h.IsCancel`, but that column DOES NOT EXIST on the live `dbo.tbl_DOhdr` — the whole
+-- query failed at runtime, which is why every dashboard page rendered the ERP-unavailable message.
+-- The real flag set is IsApproved / IsClosed / IsComplete / IsCheck / IsAcc / Revised (each Is* with
+-- a paired *By/*Date). NONE of them carries "cancelled" meaning: `Revised` means revised, and it is
+-- 0 on all 83 live headers, so it was NOT repurposed as a stand-in. The branch is therefore DROPPED
+-- rather than re-pointed at an invented substitute, and the UI's ยกเลิก legend entry is removed with it.
+-- Live evidence (metadata + aggregate only, 23-09-26): 83 headers; IsApproved=1 on 73, IsCheck=1 on 2,
+-- IsClosed/IsComplete/IsAcc/Revised = 1 on 0; no column is NULL. If the customer later confirms a
+-- cancellation convention, re-add the branch against the column they name — not by guessing.
 WITH CanonicalItem AS (
     -- InventoryItem's real PK is composite (Roworder, ItemCode); ItemCode alone is NOT unique
     -- (~85 duplicated codes live). Highest-Roworder-wins is the agreed tie-break (registry
@@ -31,7 +42,6 @@ Item AS (
 Hdr AS (
     SELECT h.TransactionNo, h.DoNo, h.Dodate, h.CustCode, h.CustName,
            CASE
-               WHEN h.IsCancel = 1 THEN 'cancelled'
                WHEN h.IsClosed = 1 THEN 'closed'
                WHEN h.IsApproved = 1 AND h.IsCheck = 1 THEN 'checked'
                WHEN h.IsApproved = 1 THEN 'approved'

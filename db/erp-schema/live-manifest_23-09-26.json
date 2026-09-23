@@ -1,0 +1,4135 @@
+{
+  "capturedAt": "2026-09-23",
+  "source": "db_TCL (live, read-only)",
+  "tables": {
+    "dbo.InventoryFlowDtl": [
+      {
+        "name": "RowOrder",
+        "type": "int",
+        "nullable": false
+      },
+      {
+        "name": "TransactionNo",
+        "type": "int",
+        "nullable": false
+      },
+      {
+        "name": "Number",
+        "type": "decimal(18,0)",
+        "nullable": false
+      },
+      {
+        "name": "TransactionType",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "IsAssetForm",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "IsStock",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "IsClosed",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "Approved",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "InOutDate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "InOut",
+        "type": "smallint",
+        "nullable": true
+      },
+      {
+        "name": "ReasonIndex",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "ReasonName",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "CompanyCode",
+        "type": "nvarchar(15)",
+        "nullable": true
+      },
+      {
+        "name": "Warehouse",
+        "type": "nvarchar(30)",
+        "nullable": true
+      },
+      {
+        "name": "WarehouseIn",
+        "type": "nvarchar(30)",
+        "nullable": true
+      },
+      {
+        "name": "WhName",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "Department",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "VoucherNo",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "ItemCode",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "Description",
+        "type": "nvarchar(100)",
+        "nullable": true
+      },
+      {
+        "name": "Location",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "SONo",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "SOTrNo",
+        "type": "decimal(18,0)",
+        "nullable": true
+      },
+      {
+        "name": "PONo",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "POTrNo",
+        "type": "decimal(18,0)",
+        "nullable": true
+      },
+      {
+        "name": "POSlno",
+        "type": "decimal(18,0)",
+        "nullable": true
+      },
+      {
+        "name": "ForItemCode",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "InputitemCode",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "LotNo",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "OperNum",
+        "type": "numeric(10,0)",
+        "nullable": true
+      },
+      {
+        "name": "MONo",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "MOTrNo",
+        "type": "decimal(18,0)",
+        "nullable": true
+      },
+      {
+        "name": "MOQTY",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "NGQTY",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "ProcessCode",
+        "type": "nvarchar(25)",
+        "nullable": true
+      },
+      {
+        "name": "MainQuantity",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "MainUnits",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "ConvertRate",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "SecondQuantity",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "SecondUnits",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "UnitPrice",
+        "type": "decimal(18,4)",
+        "nullable": true
+      },
+      {
+        "name": "SecondUnitPrice",
+        "type": "decimal(18,4)",
+        "nullable": true
+      },
+      {
+        "name": "TotalPrice",
+        "type": "decimal(18,4)",
+        "nullable": true
+      },
+      {
+        "name": "UnitPriceBaht",
+        "type": "decimal(18,4)",
+        "nullable": true
+      },
+      {
+        "name": "SecondUnitPriceBaht",
+        "type": "decimal(18,4)",
+        "nullable": true
+      },
+      {
+        "name": "DiscountPercen",
+        "type": "decimal(18,4)",
+        "nullable": true
+      },
+      {
+        "name": "DiscountAmount",
+        "type": "decimal(18,4)",
+        "nullable": true
+      },
+      {
+        "name": "SecondDiscountAmount",
+        "type": "decimal(18,4)",
+        "nullable": true
+      },
+      {
+        "name": "TotalPriceBaht",
+        "type": "decimal(18,4)",
+        "nullable": true
+      },
+      {
+        "name": "SecondTotalPrice",
+        "type": "decimal(18,4)",
+        "nullable": true
+      },
+      {
+        "name": "SecondTotalPriceBaht",
+        "type": "decimal(18,4)",
+        "nullable": true
+      },
+      {
+        "name": "DocType",
+        "type": "nvarchar(2)",
+        "nullable": true
+      },
+      {
+        "name": "RefVoucherNo",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "RefTrno",
+        "type": "decimal(18,0)",
+        "nullable": true
+      },
+      {
+        "name": "IMno",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "IMTrno",
+        "type": "decimal(18,0)",
+        "nullable": true
+      },
+      {
+        "name": "Reason",
+        "type": "nvarchar(100)",
+        "nullable": true
+      },
+      {
+        "name": "Section",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "BomQty",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "PickQTY",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "BalQTY",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "IssueQTY",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "IssueAccuQTY",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "IssueBy",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "RecQTY",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "RecAccuQTY",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "RecBy",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "RemarkDTL",
+        "type": "nvarchar(150)",
+        "nullable": true
+      },
+      {
+        "name": "UserReq",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "JobNo",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "SNno",
+        "type": "nvarchar(150)",
+        "nullable": true
+      }
+    ],
+    "dbo.InventoryFlowHdr": [
+      {
+        "name": "Roworder",
+        "type": "int",
+        "nullable": false
+      },
+      {
+        "name": "TransactionNo",
+        "type": "int",
+        "nullable": false
+      },
+      {
+        "name": "IsStock",
+        "type": "tinyint",
+        "nullable": false
+      },
+      {
+        "name": "TransactionType",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "Approved",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "ApprovedBy",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "ApprovedDate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "IsAssetForm",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "AssetOrItem",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "IsClosed",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "IsClosedBy",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "IsClosedDate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "IsAutoUse",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "IncludeVat",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "InOutDate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "InOut",
+        "type": "smallint",
+        "nullable": true
+      },
+      {
+        "name": "ReasonIndex",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "ReasonName",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "CompanyCode",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "DeptCode",
+        "type": "nvarchar(10)",
+        "nullable": true
+      },
+      {
+        "name": "Department",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "Warehouse",
+        "type": "nvarchar(30)",
+        "nullable": true
+      },
+      {
+        "name": "WhName",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "VoucherNo",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "SalesInvoiceTrNo",
+        "type": "decimal(18,0)",
+        "nullable": true
+      },
+      {
+        "name": "SalesInvoiceNo",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "SalesInvoiceDate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "Currency",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "ExchangeRate",
+        "type": "decimal(18,4)",
+        "nullable": true
+      },
+      {
+        "name": "PurchaseType",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "PurINVNo",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "PurINVDate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "SalesReturnTrNo",
+        "type": "decimal(18,0)",
+        "nullable": true
+      },
+      {
+        "name": "SalesReturnNo",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "SalesReturnDate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "CustOrSupCode",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "CustOrSupName",
+        "type": "nvarchar(180)",
+        "nullable": true
+      },
+      {
+        "name": "CustOrSupAddress",
+        "type": "text",
+        "nullable": true
+      },
+      {
+        "name": "PurchaseInvoiceTrNo",
+        "type": "decimal(18,0)",
+        "nullable": true
+      },
+      {
+        "name": "PurchaseInvoiceNo",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "PurchaseInvoiceDate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "ImportNo",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "ImportDate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "PurchaseReturnTrNo",
+        "type": "decimal(18,0)",
+        "nullable": true
+      },
+      {
+        "name": "PurchaseReturnNo",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "PurchaseReturnDate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "VoucherNoRef",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "VoucherTrNoRef",
+        "type": "decimal(18,0)",
+        "nullable": true
+      },
+      {
+        "name": "NetValue",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "DiscountPercent",
+        "type": "real",
+        "nullable": true
+      },
+      {
+        "name": "DiscountAmount",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "GoodsValue",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "VatType",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "VATPercent",
+        "type": "real",
+        "nullable": true
+      },
+      {
+        "name": "VATAmount",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "TotalAmount",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "Remark",
+        "type": "text",
+        "nullable": true
+      },
+      {
+        "name": "Status",
+        "type": "nvarchar(10)",
+        "nullable": true
+      },
+      {
+        "name": "RequestBy",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "IsCheck",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "IsCheckBy",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "IsCheckDate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "IsApproved",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "IsApprovedBy",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "IsApprovedDate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "IpcCostType",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "IpcCostCAL",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "IpcCALVALUE",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "ModelNo",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "ModelName",
+        "type": "nvarchar(150)",
+        "nullable": true
+      },
+      {
+        "name": "LotNo",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "LotDate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "LotQty",
+        "type": "numeric(18,0)",
+        "nullable": true
+      },
+      {
+        "name": "EntryBy",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "EntryDate",
+        "type": "datetime",
+        "nullable": true
+      }
+    ],
+    "dbo.InventoryItem": [
+      {
+        "name": "Roworder",
+        "type": "int",
+        "nullable": false
+      },
+      {
+        "name": "ItemCode",
+        "type": "nvarchar(50)",
+        "nullable": false
+      },
+      {
+        "name": "ItemGRP",
+        "type": "nvarchar(10)",
+        "nullable": true
+      },
+      {
+        "name": "Runno",
+        "type": "int",
+        "nullable": true
+      },
+      {
+        "name": "Dept",
+        "type": "nvarchar(10)",
+        "nullable": true
+      },
+      {
+        "name": "AssetOrItem",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "ItemName",
+        "type": "nvarchar(200)",
+        "nullable": true
+      },
+      {
+        "name": "Description",
+        "type": "nvarchar(200)",
+        "nullable": true
+      },
+      {
+        "name": "ItemNameEng",
+        "type": "nvarchar(200)",
+        "nullable": true
+      },
+      {
+        "name": "CustRefCode",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "PartCode_OLD",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "PartName_OLD",
+        "type": "nvarchar(200)",
+        "nullable": true
+      },
+      {
+        "name": "IsActive",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "IsStock",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "IsRevised",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "ItemType",
+        "type": "nvarchar(10)",
+        "nullable": true
+      },
+      {
+        "name": "ItemTypename",
+        "type": "nvarchar(80)",
+        "nullable": true
+      },
+      {
+        "name": "ItemUsedAs",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "IsSource",
+        "type": "nvarchar(3)",
+        "nullable": true
+      },
+      {
+        "name": "IsWIP",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "ItemStatus",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "ForItemCode",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "ForItemName",
+        "type": "nvarchar(150)",
+        "nullable": true
+      },
+      {
+        "name": "BalStock",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "PendingQTY",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "Shelf",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "ItemProcess",
+        "type": "nvarchar(35)",
+        "nullable": true
+      },
+      {
+        "name": "CATEGORY",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "BASEMODEL",
+        "type": "nvarchar(80)",
+        "nullable": true
+      },
+      {
+        "name": "ItemPROJECT",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "MATERIAL",
+        "type": "nvarchar(80)",
+        "nullable": true
+      },
+      {
+        "name": "THICKNESS",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "WEIGHT",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "Lenght",
+        "type": "numeric(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "TYPE",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "SECTIONTYPE",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "MainUnits",
+        "type": "nvarchar(10)",
+        "nullable": true
+      },
+      {
+        "name": "PackUnits",
+        "type": "nvarchar(10)",
+        "nullable": true
+      },
+      {
+        "name": "PartMoldNo",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "PartMoldName",
+        "type": "nvarchar(150)",
+        "nullable": true
+      },
+      {
+        "name": "ColorPattern",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "QCJUDGMENT",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "QTYPR",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "QTYPO",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "MinStock",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "MaxStock",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "MOQ",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "PackPerCarton",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "LastPurDate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "LastPurPrice",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "LastPurDis",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "Popen",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "LastSaledate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "LastSalePrice",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "LastSaleDis",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "SoPen",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "ConvertRate",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "EngRemark",
+        "type": "nvarchar(200)",
+        "nullable": true
+      },
+      {
+        "name": "ProDuctORG",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "PurchaseDebitAccount",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "SalesCreditAccount",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "CostofSaleAccount",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "PeriodBeginAccount",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "PeriodEndAccount",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "Depreciationaccount",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "M3",
+        "type": "decimal(18,4)",
+        "nullable": true
+      },
+      {
+        "name": "NW",
+        "type": "decimal(18,4)",
+        "nullable": true
+      },
+      {
+        "name": "GW",
+        "type": "decimal(18,4)",
+        "nullable": true
+      },
+      {
+        "name": "LotNumber",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "Grade",
+        "type": "nvarchar(5)",
+        "nullable": true
+      },
+      {
+        "name": "PurchaseDate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "PurchaseValue",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "DefaultPrice",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "InspecLevel",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "AcceptLevel",
+        "type": "numeric(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "RatioAQL",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "ToleanceRange",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "ToleanceRatio",
+        "type": "numeric(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "InspecDept",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "PartTYPE",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "Stdtime",
+        "type": "nvarchar(10)",
+        "nullable": true
+      },
+      {
+        "name": "Leadtime",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "ItemVat",
+        "type": "nvarchar(15)",
+        "nullable": true
+      },
+      {
+        "name": "CostType",
+        "type": "nvarchar(15)",
+        "nullable": true
+      },
+      {
+        "name": "IsService",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "PictureName",
+        "type": "nvarchar(150)",
+        "nullable": true
+      },
+      {
+        "name": "DrawingName",
+        "type": "nvarchar(150)",
+        "nullable": true
+      },
+      {
+        "name": "Saleprice1",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "Saleprice2",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "Saleprice3",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "Saleprice4",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "Saleprice5",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "ispursale",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "StdRM",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "StdLB",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "StdOH",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "StdCOST",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "BarCodePack",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "BarCodeUnits",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "EntryBy",
+        "type": "nvarchar(30)",
+        "nullable": true
+      },
+      {
+        "name": "EntryDate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "TransNum",
+        "type": "int",
+        "nullable": true
+      }
+    ],
+    "dbo.tbl_MoHdr": [
+      {
+        "name": "RowOrder",
+        "type": "int",
+        "nullable": false
+      },
+      {
+        "name": "TransactionNo",
+        "type": "int",
+        "nullable": false
+      },
+      {
+        "name": "MoNumBer",
+        "type": "nvarchar(20)",
+        "nullable": false
+      },
+      {
+        "name": "Modate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "Approved",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "IsClosed",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "IsCancel",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "Motype",
+        "type": "nvarchar(10)",
+        "nullable": true
+      },
+      {
+        "name": "MoProcessCode",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "MoProcess",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "ProcessCode",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "ProcessName",
+        "type": "nvarchar(150)",
+        "nullable": true
+      },
+      {
+        "name": "MoDuedate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "FgCode",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "ModelFg",
+        "type": "nvarchar(150)",
+        "nullable": true
+      },
+      {
+        "name": "SoNo",
+        "type": "nvarchar(25)",
+        "nullable": true
+      },
+      {
+        "name": "LotNo",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "Lotdate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "LotQty",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "OutPutItem",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "OutputItemDesc",
+        "type": "nvarchar(200)",
+        "nullable": true
+      },
+      {
+        "name": "Regqty",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "Prodqty",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "ItemUnit",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "CustName",
+        "type": "nvarchar(150)",
+        "nullable": true
+      },
+      {
+        "name": "Remark",
+        "type": "text",
+        "nullable": true
+      },
+      {
+        "name": "RMcost",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "LBcost",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "DepreCost",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "DOHcost",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "OHcost",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "UnitPrice",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "MOwork",
+        "type": "nvarchar(10)",
+        "nullable": true
+      },
+      {
+        "name": "AutoGen",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "EntryBy",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "Entrydate",
+        "type": "datetime",
+        "nullable": true
+      }
+    ],
+    "dbo.PurchaseOrderDtl": [
+      {
+        "name": "RowOrder",
+        "type": "int",
+        "nullable": false
+      },
+      {
+        "name": "TransactionNo",
+        "type": "decimal(18,0)",
+        "nullable": false
+      },
+      {
+        "name": "Number",
+        "type": "smallint",
+        "nullable": false
+      },
+      {
+        "name": "ItemCode",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "ItemSubCode",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "Description",
+        "type": "nvarchar(100)",
+        "nullable": true
+      },
+      {
+        "name": "OEMNo",
+        "type": "nvarchar(30)",
+        "nullable": true
+      },
+      {
+        "name": "Model",
+        "type": "nvarchar(30)",
+        "nullable": true
+      },
+      {
+        "name": "OrderType",
+        "type": "nvarchar(15)",
+        "nullable": true
+      },
+      {
+        "name": "PrSLno",
+        "type": "int",
+        "nullable": true
+      },
+      {
+        "name": "PRNo",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "PRTrNo",
+        "type": "decimal(18,0)",
+        "nullable": true
+      },
+      {
+        "name": "ProcessCode",
+        "type": "nvarchar(35)",
+        "nullable": true
+      },
+      {
+        "name": "DueDate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "MainQuantity",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "MainUnits",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "ConvertRate",
+        "type": "decimal(18,4)",
+        "nullable": true
+      },
+      {
+        "name": "SecondQuantity",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "SecondUnits",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "MainUnitPrice",
+        "type": "decimal(18,4)",
+        "nullable": true
+      },
+      {
+        "name": "SecondUnitPrice",
+        "type": "decimal(18,4)",
+        "nullable": true
+      },
+      {
+        "name": "DiscountPercent",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "DiscountAmount",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "TotalPrice",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "ActualQty",
+        "type": "real",
+        "nullable": true
+      },
+      {
+        "name": "Notes",
+        "type": "text",
+        "nullable": true
+      },
+      {
+        "name": "Notes2",
+        "type": "text",
+        "nullable": true
+      },
+      {
+        "name": "DiNo",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "DiTrNo",
+        "type": "numeric(18,0)",
+        "nullable": true
+      },
+      {
+        "name": "QtyReceive",
+        "type": "real",
+        "nullable": true
+      },
+      {
+        "name": "InvoiceQty",
+        "type": "real",
+        "nullable": true
+      },
+      {
+        "name": "ItemYear",
+        "type": "nvarchar(10)",
+        "nullable": true
+      },
+      {
+        "name": "UnitPriceWithVAT",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "SecondPriceWithVAT",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "AmountWithVAT",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "ExpectedDamage",
+        "type": "real",
+        "nullable": true
+      },
+      {
+        "name": "OldPurchasePrice",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "FactoryNo",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "popno",
+        "type": "nvarchar(15)",
+        "nullable": true
+      },
+      {
+        "name": "MinPrice",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "ReasonBuy",
+        "type": "text",
+        "nullable": true
+      },
+      {
+        "name": "LastPrice",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "MONo",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "Cycletime",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "Cavity",
+        "type": "int",
+        "nullable": true
+      },
+      {
+        "name": "FlagRed",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "FlagSale",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "LstPurPrice",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "RemarkDTL",
+        "type": "nvarchar(200)",
+        "nullable": true
+      }
+    ],
+    "dbo.PurchaseOrderHdr": [
+      {
+        "name": "RowOrder",
+        "type": "int",
+        "nullable": false
+      },
+      {
+        "name": "TransactionNo",
+        "type": "decimal(18,0)",
+        "nullable": false
+      },
+      {
+        "name": "TransactionType",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "IsClosed",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "CloseNote",
+        "type": "nvarchar(100)",
+        "nullable": true
+      },
+      {
+        "name": "IsAutoUse",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "FlowNo",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "FlowTrNo",
+        "type": "decimal(18,0)",
+        "nullable": true
+      },
+      {
+        "name": "IsReviewed",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "IsThisPeriod",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "PurchaseType",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "IsPurchase",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "Revised",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "AssetFor",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "CompanyCode",
+        "type": "nvarchar(10)",
+        "nullable": true
+      },
+      {
+        "name": "Department",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "PONumber",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "PODate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "QuotationNo",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "SupplierCode",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "SupplierName",
+        "type": "nvarchar(100)",
+        "nullable": true
+      },
+      {
+        "name": "SupplierAddress",
+        "type": "text",
+        "nullable": true
+      },
+      {
+        "name": "DeliveryAddress",
+        "type": "text",
+        "nullable": true
+      },
+      {
+        "name": "SelectAddr",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "ContaxName",
+        "type": "nvarchar(200)",
+        "nullable": true
+      },
+      {
+        "name": "PaymentTerm",
+        "type": "nvarchar(30)",
+        "nullable": true
+      },
+      {
+        "name": "PriceTerm",
+        "type": "nvarchar(30)",
+        "nullable": true
+      },
+      {
+        "name": "PaymentInDays",
+        "type": "nvarchar(10)",
+        "nullable": true
+      },
+      {
+        "name": "Currency",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "ExchangeRate",
+        "type": "decimal(18,4)",
+        "nullable": true
+      },
+      {
+        "name": "VatType",
+        "type": "int",
+        "nullable": true
+      },
+      {
+        "name": "Total",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "DiscountPercent",
+        "type": "real",
+        "nullable": true
+      },
+      {
+        "name": "DiscountAmount",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "SubTotal",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "VatBeforValue",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "VATPercent",
+        "type": "real",
+        "nullable": true
+      },
+      {
+        "name": "VATAmount",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "TotalAmount",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "DueDateHdr",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "PriceFrom",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "Invoiceof",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "AdditionCharge",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "AdditionChargeAmount",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "IsIncludeVAT",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "IsPO",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "IsInternal",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "StartedDate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "StartedNote",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "CompletedDate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "CompletedNote",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "FirstAmendmentDate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "SecondAmendmentDate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "WOFor",
+        "type": "nvarchar(10)",
+        "nullable": true
+      },
+      {
+        "name": "MONo",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "MOTrNo",
+        "type": "decimal(18,0)",
+        "nullable": true
+      },
+      {
+        "name": "EONo",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "EOTrNo",
+        "type": "decimal(18,0)",
+        "nullable": true
+      },
+      {
+        "name": "ProjectNo",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "ProjectTrNo",
+        "type": "decimal(18,0)",
+        "nullable": true
+      },
+      {
+        "name": "ProblemNo",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "ProblemTrNo",
+        "type": "decimal(18,0)",
+        "nullable": true
+      },
+      {
+        "name": "RFD",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "RFDTrNo",
+        "type": "decimal(18,0)",
+        "nullable": true
+      },
+      {
+        "name": "PreJobNo",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "PreJobTrNo",
+        "type": "decimal(18,0)",
+        "nullable": true
+      },
+      {
+        "name": "ProcessCode",
+        "type": "nvarchar(40)",
+        "nullable": true
+      },
+      {
+        "name": "IsMIS",
+        "type": "nvarchar(10)",
+        "nullable": true
+      },
+      {
+        "name": "Processing",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "MoldInfo",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "QCInfo",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "QCTestScheme",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "ProjectName",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "DeliveryDate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "Manager",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "objective",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "gaindescription",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "budget",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "MaterialBudget",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "MachineBudget",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "ToolsBudget",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "LaborBudget",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "StartedDate_Act",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "CompletedDate_Act",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "AccountClosed",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "Apv",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "IsExpense",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "ExpenseValue",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "Remarks",
+        "type": "text",
+        "nullable": true
+      },
+      {
+        "name": "EntryExpenseName",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "EntryExpenseDate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "IsApproved",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "Appr_By",
+        "type": "nvarchar(30)",
+        "nullable": true
+      },
+      {
+        "name": "Appr_Date",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "IsCheck",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "Check_by",
+        "type": "nvarchar(30)",
+        "nullable": true
+      },
+      {
+        "name": "Check_Date",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "IsComplete",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "Complete_By",
+        "type": "nvarchar(30)",
+        "nullable": true
+      },
+      {
+        "name": "Complete_Date",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "IsCancel",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "Cancel_By",
+        "type": "nvarchar(30)",
+        "nullable": true
+      },
+      {
+        "name": "Cancel_Date",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "IsRecPo",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "Recpo_By",
+        "type": "nvarchar(30)",
+        "nullable": true
+      },
+      {
+        "name": "Recpo_Date",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "Status",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "MonthClosed",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "Poautoclosed",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "Poautodate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "Revision",
+        "type": "nvarchar(5)",
+        "nullable": true
+      },
+      {
+        "name": "IsContract",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "AttachFile",
+        "type": "nvarchar(250)",
+        "nullable": true
+      },
+      {
+        "name": "AttachFile1",
+        "type": "nvarchar(250)",
+        "nullable": true
+      },
+      {
+        "name": "AttachFile2",
+        "type": "nvarchar(250)",
+        "nullable": true
+      },
+      {
+        "name": "AttachFile3",
+        "type": "nvarchar(250)",
+        "nullable": true
+      },
+      {
+        "name": "TypeOfPR",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "TotalFOB",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "FreightCharge",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "InsuranceCharge",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "EntryBy",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "EntryDate",
+        "type": "datetime",
+        "nullable": true
+      }
+    ],
+    "dbo.PurchaseInvoiceHdr": [
+      {
+        "name": "Roworder",
+        "type": "int",
+        "nullable": false
+      },
+      {
+        "name": "TransactionNo",
+        "type": "decimal(18,0)",
+        "nullable": false
+      },
+      {
+        "name": "InvoiceType",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "PurchaseType",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "ItemType",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "TransactionType",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "CompanyCode",
+        "type": "nvarchar(10)",
+        "nullable": true
+      },
+      {
+        "name": "DeptCode",
+        "type": "nvarchar(10)",
+        "nullable": true
+      },
+      {
+        "name": "Department",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "VoucherNo",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "VoucherDate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "PvNo",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "PvDate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "DocuType",
+        "type": "nvarchar(10)",
+        "nullable": true
+      },
+      {
+        "name": "CustOrSuppCode",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "CustOrSuppName",
+        "type": "nvarchar(100)",
+        "nullable": true
+      },
+      {
+        "name": "Address",
+        "type": "text",
+        "nullable": true
+      },
+      {
+        "name": "DueDate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "AccountCode",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "Currency",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "ExchangeRate",
+        "type": "decimal(18,4)",
+        "nullable": true
+      },
+      {
+        "name": "VatType",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "IsFreeVAT",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "IsClosed",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "IsPaid",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "IsUndueVAT",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "IsIncludeVAT",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "ActualInvoiceNo",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "ActualInvoiceDate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "IsAutoStock",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "Warehouse",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "FlowNo",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "FlowTrNo",
+        "type": "decimal(18,0)",
+        "nullable": true
+      },
+      {
+        "name": "TermsofPayment",
+        "type": "numeric(18,0)",
+        "nullable": true
+      },
+      {
+        "name": "AccountsDescription",
+        "type": "nvarchar(100)",
+        "nullable": true
+      },
+      {
+        "name": "DeliveryAddress",
+        "type": "nvarchar(200)",
+        "nullable": true
+      },
+      {
+        "name": "TotalAmount",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "ChargeOrDiscountAccount",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "DiscountPercent",
+        "type": "real",
+        "nullable": true
+      },
+      {
+        "name": "DiscountAmount",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "DiscountDescription",
+        "type": "nvarchar(100)",
+        "nullable": true
+      },
+      {
+        "name": "DiscountJnl",
+        "type": "decimal(18,0)",
+        "nullable": true
+      },
+      {
+        "name": "DepositAmount",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "ValueForVAT",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "ValueForUndueVAT",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "VATPercent",
+        "type": "real",
+        "nullable": true
+      },
+      {
+        "name": "VATAmount",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "UndueVATAmount",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "VATJnl",
+        "type": "decimal(18,0)",
+        "nullable": true
+      },
+      {
+        "name": "AmountDue",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "AmountDueBht",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "TotalDuty",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "TotalCIFBht",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "TotalMainQty",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "TotalSecondQty",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "ARAPJnl",
+        "type": "decimal(18,0)",
+        "nullable": true
+      },
+      {
+        "name": "ReceiptPaymentAmt",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "ReceiptPaymentAmtBht",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "ReceiptPaymentAmtBefore",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "ReceiptPaymentAmtBhtBefore",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "NoticeDone",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "NoticeDate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "NoticeNumber",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "ChequeDate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "AdditionalCharge",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "AdditionalChargeAmount",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "RefAccount",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "PriceTerms",
+        "type": "nvarchar(3)",
+        "nullable": true
+      },
+      {
+        "name": "PriceTermsFrom",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "ImportDuty",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "InsuranceCharge",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "FreightCharge",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "InsuranceChargeAccount",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "FreightChargeAccount",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "VatPaymentAccount",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "DutyAccount",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "ShippingForInvoice",
+        "type": "decimal(18,0)",
+        "nullable": true
+      },
+      {
+        "name": "ShippingCode",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "Remarks",
+        "type": "nvarchar(200)",
+        "nullable": true
+      },
+      {
+        "name": "TotalCQ",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "TotalTF",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "TotalPAY",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "OthExp",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "BankFree",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "Interest",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "TotalDR",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "CashValue",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "OthRec",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "DisReceive",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "Gpexchange",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "TaxAccount",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "TaxPercen",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "WithHoldValue",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "CqValue",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "TransFerValue",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "TotalCR",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "AttachFile",
+        "type": "nvarchar(100)",
+        "nullable": true
+      },
+      {
+        "name": "BranchCode",
+        "type": "nvarchar(10)",
+        "nullable": true
+      },
+      {
+        "name": "BranchName",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "EntryBy",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "EntryDate",
+        "type": "datetime",
+        "nullable": true
+      }
+    ],
+    "dbo.tbl_DOhdr": [
+      {
+        "name": "RowOrder",
+        "type": "int",
+        "nullable": false
+      },
+      {
+        "name": "TransactionNo",
+        "type": "int",
+        "nullable": false
+      },
+      {
+        "name": "DoNo",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "Dodate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "IsApproved",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "IsApprovedBy",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "IsApprovedDate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "IsClosed",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "IsClosedBy",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "IsClosedDate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "IsComplete",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "IsCompleteBy",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "IsCompleteDate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "IsCheck",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "IsCheckBy",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "IsCheckDate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "IsAcc",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "IsAccBy",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "IsAccDate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "Revised",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "DoType",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "DeliveryDate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "CustomerPo",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "CarNumber",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "CustCode",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "CustName",
+        "type": "nvarchar(100)",
+        "nullable": true
+      },
+      {
+        "name": "BillingAddress",
+        "type": "nvarchar(200)",
+        "nullable": true
+      },
+      {
+        "name": "ShippingAddress",
+        "type": "nvarchar(200)",
+        "nullable": true
+      },
+      {
+        "name": "DlvCode",
+        "type": "nchar(10)",
+        "nullable": true
+      },
+      {
+        "name": "RemarkS",
+        "type": "nvarchar(100)",
+        "nullable": true
+      },
+      {
+        "name": "AttachPict",
+        "type": "nvarchar(250)",
+        "nullable": true
+      },
+      {
+        "name": "ApprBy",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "GenOSL",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "OsLno",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "DocuNw",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "SalesInvoiceNo",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "SalesInvoiceTrNo",
+        "type": "int",
+        "nullable": true
+      },
+      {
+        "name": "SalesInvoiceDate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "VatType",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "EntryBy",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "EntryDate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "TotalAmount",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "Discount",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "DiscountAmount",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "TotalDiscountAmount",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "AdvancePay",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "VAT",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "VATAmount",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "TotalActualAmount",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "Paymentinday",
+        "type": "nvarchar(10)",
+        "nullable": true
+      },
+      {
+        "name": "DueDate",
+        "type": "datetime",
+        "nullable": true
+      }
+    ],
+    "dbo.tbl_Dodtl": [
+      {
+        "name": "RowOrder",
+        "type": "int",
+        "nullable": false
+      },
+      {
+        "name": "TransactionNo",
+        "type": "int",
+        "nullable": false
+      },
+      {
+        "name": "Slno",
+        "type": "numeric(18,0)",
+        "nullable": false
+      },
+      {
+        "name": "Itemcode",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "Description",
+        "type": "nvarchar(180)",
+        "nullable": true
+      },
+      {
+        "name": "ItemModel",
+        "type": "nvarchar(180)",
+        "nullable": true
+      },
+      {
+        "name": "PartNoCust",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "PartNameCust",
+        "type": "nvarchar(150)",
+        "nullable": true
+      },
+      {
+        "name": "DescCust",
+        "type": "nvarchar(150)",
+        "nullable": true
+      },
+      {
+        "name": "SoNo",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "SOTrNo",
+        "type": "numeric(18,0)",
+        "nullable": true
+      },
+      {
+        "name": "SOline",
+        "type": "numeric(18,0)",
+        "nullable": true
+      },
+      {
+        "name": "SOstock",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "PoCust",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "DeliveryDueDate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "Qty",
+        "type": "numeric(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "Nw",
+        "type": "real",
+        "nullable": true
+      },
+      {
+        "name": "TotalNw",
+        "type": "real",
+        "nullable": true
+      },
+      {
+        "name": "Saleprice",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "Units",
+        "type": "nvarchar(10)",
+        "nullable": true
+      },
+      {
+        "name": "IncludeVat",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "Warehouse",
+        "type": "nvarchar(30)",
+        "nullable": true
+      },
+      {
+        "name": "DiscountPercent",
+        "type": "numeric(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "DiscountAmount",
+        "type": "numeric(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "Amount",
+        "type": "numeric(18,2)",
+        "nullable": true
+      }
+    ],
+    "dbo.SalesInvoiceHdr": [
+      {
+        "name": "RowOrder",
+        "type": "int",
+        "nullable": false
+      },
+      {
+        "name": "TransactionNo",
+        "type": "decimal(18,0)",
+        "nullable": false
+      },
+      {
+        "name": "InvoiceType",
+        "type": "nvarchar(10)",
+        "nullable": true
+      },
+      {
+        "name": "SaleType",
+        "type": "nvarchar(10)",
+        "nullable": true
+      },
+      {
+        "name": "ItemType",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "TransactionTypeI",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "TransactionTypeT",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "CompanyCode",
+        "type": "nvarchar(10)",
+        "nullable": true
+      },
+      {
+        "name": "DeptCode",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "Department",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "VoucherNo",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "VoucherDate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "DocuType",
+        "type": "nvarchar(10)",
+        "nullable": false
+      },
+      {
+        "name": "CustomDate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "CustOrSuppCode",
+        "type": "nvarchar(15)",
+        "nullable": true
+      },
+      {
+        "name": "CustOrSuppName",
+        "type": "nvarchar(100)",
+        "nullable": true
+      },
+      {
+        "name": "Address",
+        "type": "text",
+        "nullable": true
+      },
+      {
+        "name": "DeliveryAddress",
+        "type": "text",
+        "nullable": true
+      },
+      {
+        "name": "DueDate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "Paymentinday",
+        "type": "nvarchar(10)",
+        "nullable": true
+      },
+      {
+        "name": "CreditLimit",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "AccountCode",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "IsVAT",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "IsClosed",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "IsPaid",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "Agent",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "AgentCommission",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "AgentComAmount",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "SalePerson",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "SaleName",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "SaleCommission",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "SaleComAmount",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "IsAutoStock",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "Warehouse",
+        "type": "nvarchar(30)",
+        "nullable": true
+      },
+      {
+        "name": "FlowNo",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "FlowTrNo",
+        "type": "decimal(18,0)",
+        "nullable": true
+      },
+      {
+        "name": "DocumentType",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "TransportDocNo",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "TransportDocDate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "PackingListNo",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "PackingListTrNo",
+        "type": "decimal(18,0)",
+        "nullable": true
+      },
+      {
+        "name": "Currency",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "ExchangeRate",
+        "type": "decimal(18,4)",
+        "nullable": true
+      },
+      {
+        "name": "TermsofPayment",
+        "type": "nvarchar(200)",
+        "nullable": true
+      },
+      {
+        "name": "AccountsDescription",
+        "type": "nvarchar(100)",
+        "nullable": true
+      },
+      {
+        "name": "Invoiceof",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "Shipper",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "ShipperName",
+        "type": "nvarchar(100)",
+        "nullable": true
+      },
+      {
+        "name": "ShipperAddress",
+        "type": "text",
+        "nullable": true
+      },
+      {
+        "name": "Consignee",
+        "type": "nvarchar(200)",
+        "nullable": true
+      },
+      {
+        "name": "BookingNo",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "ContainerNo",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "FeederPlaceofReceipt",
+        "type": "nvarchar(30)",
+        "nullable": true
+      },
+      {
+        "name": "VesselFlight",
+        "type": "nvarchar(30)",
+        "nullable": true
+      },
+      {
+        "name": "VesselFlightVoyNo",
+        "type": "nvarchar(30)",
+        "nullable": true
+      },
+      {
+        "name": "VesselFlightPortofLoading",
+        "type": "nvarchar(30)",
+        "nullable": true
+      },
+      {
+        "name": "Sailingonorabout",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "InvoiceFrom",
+        "type": "nvarchar(30)",
+        "nullable": true
+      },
+      {
+        "name": "InvoiceTo",
+        "type": "nvarchar(30)",
+        "nullable": true
+      },
+      {
+        "name": "TermsandCondition",
+        "type": "nvarchar(150)",
+        "nullable": true
+      },
+      {
+        "name": "TotalPackage",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "CaseMarks",
+        "type": "text",
+        "nullable": true
+      },
+      {
+        "name": "PriceTerms",
+        "type": "nvarchar(10)",
+        "nullable": true
+      },
+      {
+        "name": "PriceTermsFrom",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "InsuranceCharge",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "FreightCharge",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "DocCharge",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "ClaimText",
+        "type": "nvarchar(30)",
+        "nullable": true
+      },
+      {
+        "name": "ClaimValue",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "SampleText",
+        "type": "nvarchar(30)",
+        "nullable": true
+      },
+      {
+        "name": "SampleValue",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "TotalCountry",
+        "type": "nvarchar(30)",
+        "nullable": true
+      },
+      {
+        "name": "ChargeAccount",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "TotalAmount",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "AdditionalCharge",
+        "type": "nvarchar(30)",
+        "nullable": true
+      },
+      {
+        "name": "AdditionalChargeAmount",
+        "type": "money",
+        "nullable": true
+      },
+      {
+        "name": "ChargeOrDiscountAccount",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "DiscountPercent",
+        "type": "real",
+        "nullable": true
+      },
+      {
+        "name": "DiscountAmount",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "DiscountDescription",
+        "type": "nvarchar(100)",
+        "nullable": true
+      },
+      {
+        "name": "DiscountJnl",
+        "type": "decimal(18,0)",
+        "nullable": true
+      },
+      {
+        "name": "SubTotalAmnt",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "DepositAmount",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "VATForValue",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "VATPercent",
+        "type": "real",
+        "nullable": true
+      },
+      {
+        "name": "VATAmount",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "VATJnl",
+        "type": "decimal(18,0)",
+        "nullable": true
+      },
+      {
+        "name": "AmountDue",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "AmountDueBht",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "TotalMainQty",
+        "type": "real",
+        "nullable": true
+      },
+      {
+        "name": "TotalSecondQty",
+        "type": "real",
+        "nullable": true
+      },
+      {
+        "name": "ARAPJnl",
+        "type": "decimal(18,0)",
+        "nullable": true
+      },
+      {
+        "name": "ReceiptPaymentAmt",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "ReceiptPaymentAmtBht",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "ReceiptPaymentAmtBefore",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "ReceiptPaymentAmtBhtBefore",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "ReferenceNo",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "Remarks",
+        "type": "text",
+        "nullable": true
+      },
+      {
+        "name": "CountryofOrigin",
+        "type": "nvarchar(30)",
+        "nullable": true
+      },
+      {
+        "name": "SalesZone",
+        "type": "nvarchar(30)",
+        "nullable": true
+      },
+      {
+        "name": "TotalCartons",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "TotalPerMainUnit",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "TotalNW",
+        "type": "decimal(18,4)",
+        "nullable": true
+      },
+      {
+        "name": "TotalGW",
+        "type": "decimal(18,4)",
+        "nullable": true
+      },
+      {
+        "name": "TotalCUM",
+        "type": "decimal(18,4)",
+        "nullable": true
+      },
+      {
+        "name": "NoticeDone",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "NoticeDate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "NoticeNumber",
+        "type": "nvarchar(30)",
+        "nullable": true
+      },
+      {
+        "name": "ChequeDate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "IsActual",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "IsBank",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "IsCustom",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "TotalCQ",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "TotalTF",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "TotalREC",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "OthExp",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "Interest",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "BankFree",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "TotalDR",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "CashValue",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "OthRec",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "TaxAccount",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "TaxPercen",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "WithHoldValue",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "CqValue",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "TransFerValue",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "TotalCR",
+        "type": "decimal(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "IsUndueVAT",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "AttachFile",
+        "type": "nvarchar(100)",
+        "nullable": true
+      },
+      {
+        "name": "SoNo",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "CustPoNo",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "CustPoDate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "CheckRate",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "Rate",
+        "type": "real",
+        "nullable": true
+      },
+      {
+        "name": "Specification",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "ShippedBy",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "ShippedFrom",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "ShippedTo",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "ShipTo",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "PerMss",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "PerMssTo",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "FOBtext",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "IsApproved",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "IsApprovedBy",
+        "type": "nvarchar(30)",
+        "nullable": true
+      },
+      {
+        "name": "IsApprovedDate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "BranchCode",
+        "type": "nvarchar(10)",
+        "nullable": true
+      },
+      {
+        "name": "BranchName",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "PoNo",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "IVStatus",
+        "type": "nvarchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "EntryBy",
+        "type": "nvarchar(30)",
+        "nullable": true
+      },
+      {
+        "name": "EntryDate",
+        "type": "datetime",
+        "nullable": true
+      }
+    ],
+    "dbo.tbl_BatchOrder": [
+      {
+        "name": "BatchNo",
+        "type": "nvarchar(20)",
+        "nullable": false
+      },
+      {
+        "name": "SoNo",
+        "type": "nchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "FgCode",
+        "type": "nchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "LotNo",
+        "type": "nchar(80)",
+        "nullable": true
+      },
+      {
+        "name": "ItemCode",
+        "type": "nchar(50)",
+        "nullable": true
+      },
+      {
+        "name": "Desp",
+        "type": "nchar(100)",
+        "nullable": true
+      },
+      {
+        "name": "PlanQty",
+        "type": "numeric(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "Prodqty",
+        "type": "numeric(18,4)",
+        "nullable": true
+      },
+      {
+        "name": "Unit",
+        "type": "nchar(10)",
+        "nullable": true
+      },
+      {
+        "name": "OnhandMRP",
+        "type": "numeric(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "Reserve",
+        "type": "numeric(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "OnhandSHELF",
+        "type": "numeric(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "SoPen",
+        "type": "numeric(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "Jobpen",
+        "type": "numeric(18,2)",
+        "nullable": true
+      },
+      {
+        "name": "ShouldProd",
+        "type": "numeric(18,4)",
+        "nullable": true
+      },
+      {
+        "name": "Wantdate",
+        "type": "datetime",
+        "nullable": true
+      },
+      {
+        "name": "CustName",
+        "type": "nchar(100)",
+        "nullable": true
+      },
+      {
+        "name": "Monum",
+        "type": "nchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "MoTrNo",
+        "type": "numeric(7,0)",
+        "nullable": true
+      },
+      {
+        "name": "OrmNo",
+        "type": "nchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "IMONo",
+        "type": "nchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "Remark",
+        "type": "nchar(100)",
+        "nullable": true
+      },
+      {
+        "name": "IsMPS",
+        "type": "tinyint",
+        "nullable": true
+      },
+      {
+        "name": "PlanType",
+        "type": "nchar(2)",
+        "nullable": true
+      },
+      {
+        "name": "Leadtime",
+        "type": "real",
+        "nullable": true
+      },
+      {
+        "name": "ReleaseDate",
+        "type": "datetime",
+        "nullable": true
+      }
+    ],
+    "dbo.tbl_ItemGroup": [
+      {
+        "name": "RowOrder",
+        "type": "int",
+        "nullable": false
+      },
+      {
+        "name": "ICCode",
+        "type": "nvarchar(10)",
+        "nullable": true
+      },
+      {
+        "name": "Description",
+        "type": "nvarchar(80)",
+        "nullable": true
+      },
+      {
+        "name": "AssetOrItem",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "AccCode",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "AccName",
+        "type": "nvarchar(100)",
+        "nullable": true
+      },
+      {
+        "name": "AccDePre",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "DePreName",
+        "type": "nvarchar(100)",
+        "nullable": true
+      },
+      {
+        "name": "AccAcumDepre",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "AccAcumDepreName",
+        "type": "nvarchar(100)",
+        "nullable": true
+      },
+      {
+        "name": "EntryBy",
+        "type": "nvarchar(20)",
+        "nullable": true
+      },
+      {
+        "name": "EntryDate",
+        "type": "datetime",
+        "nullable": true
+      }
+    ]
+  }
+}

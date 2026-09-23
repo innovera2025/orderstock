@@ -1,205 +1,54 @@
 -- ============================================================================================
--- ERP-SHAPED FIXTURE — PURCHASE DOMAIN — LOCAL SANDBOX ONLY
--- erp-dashboards Phase 3 (Purchase dashboard). Phase 3's EXCLUSIVELY-owned per-domain fixture file
--- (registry: "Per-Domain Fixture Seed Split"). Phase 3 NEVER edits Phase 1's base
--- `00-schema.sql` / `01-seed.sql`, and never another domain phase's seed file.
+-- ERP-SHAPED FIXTURE — PURCHASE DOMAIN ROWS — LOCAL SANDBOX ONLY
+-- Rows for dbo.PurchaseOrderHdr / dbo.PurchaseOrderDtl / dbo.PurchaseInvoiceHdr and the
+-- purchase-side rows of the SHARED dbo.InventoryFlowHdr / dbo.InventoryFlowDtl ledger.
 --
 -- *** NEVER RUN THIS AGAINST db_TCL OR ANY CUSTOMER SERVER. ***
--- This script CREATEs tables and WRITES rows. It is a disposable local dev/test fixture for the
--- `erp_fixture` database inside the local `orderstock-sql` Docker container only. Because it
--- writes, it is by design NOT executed through the application's read-only guard
--- (`guardedQuery`) — it is a human/CI setup step run directly with sqlcmd, never through app code.
+-- This script WRITES rows. It is a disposable local dev/test fixture for the `erp_fixture`
+-- database inside the local `orderstock-sql` Docker container only. Because it writes, it is by
+-- design NOT executed through the application's read-only guard (`guardedQuery`) — it is a
+-- human/CI setup step run directly with sqlcmd, never through app code.
 --
--- Apply (after Phase 1's 00-schema.sql + 01-seed.sql, sandbox container running):
+-- NO DDL LIVES HERE ANY MORE (schema-conformance rebuild, 23-09-26). Every ERP table is created
+-- ONCE, live-shaped, by `db/erp-fixture/00-schema.sql`, generated from
+-- `db/erp-schema/live-manifest_23-09-26.json`.
+--
+-- THE BUG THIS DELETION KILLS: this file and `production-seed.sql` BOTH used to CREATE the shared
+-- `dbo.InventoryFlowHdr`/`dbo.InventoryFlowDtl` tables, each with its own narrower shape, then
+-- patch the other domain's columns back on with `IF COL_LENGTH(...) IS NULL ALTER TABLE ... ADD`.
+-- Whichever seed ran first decided the schema, and the patch-up columns (`DocuNo`,
+-- `WarehouseCode`) did not exist in production at all. One generated, live-shaped DDL file
+-- removes both the ordering hazard and the invented columns; the ALTER top-ups are gone.
+--
+-- SHARED-TABLE ROW CONVENTION (still this file's business): purchase rows occupy the reserved
+-- TransactionNo 7700-block so they can never collide with the Production domain's 9000-block on
+-- the shared ledger tables.
+--
+-- Apply (AFTER 00-schema.sql + 01-seed.sql, sandbox container running):
 --   docker cp db/erp-fixture/purchase-seed.sql orderstock-sql:/tmp/ && \
 --   docker exec orderstock-sql sh -c '/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa \
---     -P "$MSSQL_SA_PASSWORD" -C -i /tmp/purchase-seed.sql'
+--     -P "$MSSQL_SA_PASSWORD" -C -b -i /tmp/purchase-seed.sql'
 --
--- Idempotent: DDL is `IF NOT EXISTS`-guarded, missing columns are added individually, and rows are
--- inserted only when their key is absent — so re-running neither duplicates nor overwrites.
---
--- SHARED-TABLE NOTE: `InventoryFlowHdr`/`InventoryFlowDtl` are used by BOTH the Purchase dashboard
--- (goods receipts, `PoNo`) and the Production dashboard (material issues, `MONo`). Whichever domain
--- seed runs first creates the tables; the per-column `IF COL_LENGTH(...) IS NULL` blocks below then
--- top up anything the other seed's shape was missing. Neither seed drops or redefines the other's
--- table, so the two can be applied in either order.
---
--- FIXTURE DATA REQUIREMENTS this file deliberately satisfies:
---   1. 4 non-cancelled POs / 2 suppliers, PO-committed total EXACTLY 727,920            -> AC5
---   2. 4 counted purchase invoices, invoice-basis total EXACTLY 461,140                 -> AC5
---   3. 2 further invoices that the sp_PurchaseInvoiceMonth filter must EXCLUDE          -> AC5
---   4. IsClosed NULL on open POs (the live shape) + one IsClosed=1 PO                   -> AC6
---   5. one cancelled PO (in the status donut, out of the money totals)                  -> AC6
---   6. an over-received PO line (outstanding goes NEGATIVE, never clamped)              -> AC6
---   7. an InventoryFlowHdr receipt with IsClosed NULL (silently dropped by sp_Popending) -> AC6
---   8. receipts excluded for Approved=0 and for a non-IPC voucher series                -> AC6
---   9. >= 2 distinct MainUnits across PO lines (กก. / ถุง / กล่อง / ปี๊บ)                  -> never-sum-across-units
---  10. rows span 2 calendar months (2026-08, 2026-09)                                   -> period toggle
+-- Idempotent AND order-independent: rows are inserted only when their primary key is absent, so
+-- re-running neither duplicates nor overwrites, and this file may be applied before or after any
+-- other domain seed.
 -- ============================================================================================
 
 USE erp_fixture;
 GO
 
+IF OBJECT_ID('dbo.PurchaseOrderHdr') IS NULL OR OBJECT_ID('dbo.PurchaseOrderDtl') IS NULL
+   OR OBJECT_ID('dbo.PurchaseInvoiceHdr') IS NULL OR OBJECT_ID('dbo.InventoryFlowHdr') IS NULL
+   OR OBJECT_ID('dbo.InventoryFlowDtl') IS NULL
+    THROW 51000, 'Apply db/erp-fixture/00-schema.sql first — this seed creates no tables.', 1;
+GO
+
 -- -------------------------------------------------------------------------------------------
--- dbo.PurchaseOrderHdr — PO headers. Column shapes mirror the live db_TCL table documented in
--- erp-data-dictionary_REF_18-09-26.md (122 columns live; only the ones this dashboard reads are
--- reproduced). IsClosed is NULLABLE and NULL on every open PO — that is the live reality and the
--- whole reason `derivePoStatus()` applies ISNULL semantics.
--- -------------------------------------------------------------------------------------------
-IF NOT EXISTS (
-    SELECT 1 FROM sys.tables t JOIN sys.schemas s ON s.schema_id = t.schema_id
-    WHERE s.name = 'dbo' AND t.name = 'PurchaseOrderHdr'
-)
-BEGIN
-    CREATE TABLE dbo.PurchaseOrderHdr (
-        TransactionNo INT            NOT NULL,
-        PONumber      NVARCHAR(50)   NOT NULL,
-        PODate        DATE           NULL,
-        SupplierCode  NVARCHAR(50)   NULL,
-        PurchaseType  NVARCHAR(50)   NULL,
-        Status        NVARCHAR(50)   NULL,
-        SubTotal      DECIMAL(18, 2) NULL,
-        VATPercent    DECIMAL(9, 4)  NULL,
-        VATAmount     DECIMAL(18, 2) NULL,
-        TotalAmount   DECIMAL(18, 2) NULL,
-        IsApproved    BIT            NULL,
-        IsCheck       BIT            NULL,
-        IsComplete    BIT            NULL,
-        IsCancel      BIT            NULL,
-        IsClosed      BIT            NULL,
-        IsRecPo       BIT            NULL,
-        CONSTRAINT PK_PurchaseOrderHdr PRIMARY KEY (TransactionNo)
-    );
-END
-GO
-
--- dbo.PurchaseOrderDtl — PO line items. QtyReceive/InvoiceQty exist and stay NULL on every row,
--- exactly as in production: the ERP's workflow never writes them, which is why received quantity is
--- derived from InventoryFlow (sp_Popending) instead of read from here.
-IF NOT EXISTS (
-    SELECT 1 FROM sys.tables t JOIN sys.schemas s ON s.schema_id = t.schema_id
-    WHERE s.name = 'dbo' AND t.name = 'PurchaseOrderDtl'
-)
-BEGIN
-    CREATE TABLE dbo.PurchaseOrderDtl (
-        TransactionNo INT            NOT NULL,
-        Number        INT            NOT NULL,
-        ItemCode      NVARCHAR(50)   NOT NULL,
-        MainUnits     NVARCHAR(50)   NULL,
-        MainQuantity  DECIMAL(18, 4) NULL,
-        MainUnitPrice DECIMAL(18, 4) NULL,
-        TotalPrice    DECIMAL(18, 2) NULL,
-        QtyReceive    DECIMAL(18, 4) NULL,
-        InvoiceQty    DECIMAL(18, 4) NULL,
-        CONSTRAINT PK_PurchaseOrderDtl PRIMARY KEY (TransactionNo, Number)
-    );
-END
-GO
-
--- dbo.PurchaseInvoiceHdr — purchase invoices. `CustOrSuppCode` (not `SupplierCode`) is the real
--- live column name on this table. DocuType/PurchaseType/VoucherNo together drive KRS's own
--- sp_PurchaseInvoiceMonth filter, so all three must be real columns here.
-IF NOT EXISTS (
-    SELECT 1 FROM sys.tables t JOIN sys.schemas s ON s.schema_id = t.schema_id
-    WHERE s.name = 'dbo' AND t.name = 'PurchaseInvoiceHdr'
-)
-BEGIN
-    CREATE TABLE dbo.PurchaseInvoiceHdr (
-        TransactionNo  INT            NOT NULL,
-        VoucherNo      NVARCHAR(50)   NOT NULL,
-        VoucherDate    DATE           NULL,
-        DocuType       NVARCHAR(10)   NULL,
-        InvoiceType    NVARCHAR(50)   NULL,
-        PurchaseType   NVARCHAR(50)   NULL,
-        CustOrSuppCode NVARCHAR(50)   NULL,
-        IsIncludeVAT   BIT            NULL,
-        IsClosed       BIT            NULL,
-        IsPaid         BIT            NULL,
-        VATAmount      DECIMAL(18, 2) NULL,
-        TotalAmount    DECIMAL(18, 2) NULL,
-        CONSTRAINT PK_PurchaseInvoiceHdr PRIMARY KEY (TransactionNo)
-    );
-END
-GO
-
--- dbo.InventoryFlowHdr / dbo.InventoryFlowDtl — stock-movement ledger, SHARED with the Production
--- domain (see the SHARED-TABLE NOTE at the top of this file).
---
--- IMPORTANT, and the reason this section is all additive: the Production seed creates these two
--- tables with a NARROWER, differently-named shape (`DocuNo`/`TransactionDate`/`Qty`) than the live
--- db_TCL columns this dashboard must use (`VoucherNo`/`InOutDate`/`MainQuantity` — the exact names
--- `sp_Popending` itself references, which is why they are not negotiable here). So: create the
--- tables only if absent, then ADD any column this domain needs that is missing. Nothing is ever
--- dropped, renamed or redefined, so either seed may be applied first and both domains end up with
--- the columns they need on one shared table.
-IF NOT EXISTS (
-    SELECT 1 FROM sys.tables t JOIN sys.schemas s ON s.schema_id = t.schema_id
-    WHERE s.name = 'dbo' AND t.name = 'InventoryFlowHdr'
-)
-BEGIN
-    CREATE TABLE dbo.InventoryFlowHdr (
-        TransactionNo INT          NOT NULL,
-        CONSTRAINT PK_InventoryFlowHdr PRIMARY KEY (TransactionNo)
-    );
-END
-GO
-
--- `Approved` and `IsApproved` are BOTH real, distinct columns on the live table; sp_Popending uses
--- `Approved`. Both exist here so the difference is exercisable rather than theoretical.
-IF COL_LENGTH('dbo.InventoryFlowHdr', 'VoucherNo')         IS NULL ALTER TABLE dbo.InventoryFlowHdr ADD VoucherNo NVARCHAR(50) NULL;
-GO
-IF COL_LENGTH('dbo.InventoryFlowHdr', 'InOut')             IS NULL ALTER TABLE dbo.InventoryFlowHdr ADD InOut INT NULL;
-GO
-IF COL_LENGTH('dbo.InventoryFlowHdr', 'InOutDate')         IS NULL ALTER TABLE dbo.InventoryFlowHdr ADD InOutDate DATE NULL;
-GO
-IF COL_LENGTH('dbo.InventoryFlowHdr', 'Approved')          IS NULL ALTER TABLE dbo.InventoryFlowHdr ADD Approved BIT NULL;
-GO
-IF COL_LENGTH('dbo.InventoryFlowHdr', 'IsApproved')        IS NULL ALTER TABLE dbo.InventoryFlowHdr ADD IsApproved BIT NULL;
-GO
-IF COL_LENGTH('dbo.InventoryFlowHdr', 'IsClosed')          IS NULL ALTER TABLE dbo.InventoryFlowHdr ADD IsClosed BIT NULL;
-GO
-IF COL_LENGTH('dbo.InventoryFlowHdr', 'PurchaseInvoiceNo') IS NULL ALTER TABLE dbo.InventoryFlowHdr ADD PurchaseInvoiceNo NVARCHAR(50) NULL;
-GO
-IF COL_LENGTH('dbo.InventoryFlowHdr', 'ReasonIndex')       IS NULL ALTER TABLE dbo.InventoryFlowHdr ADD ReasonIndex INT NULL;
-GO
-IF COL_LENGTH('dbo.InventoryFlowHdr', 'ReasonName')        IS NULL ALTER TABLE dbo.InventoryFlowHdr ADD ReasonName NVARCHAR(200) NULL;
-GO
-
--- `PoNo` is a DIRECT column on the detail table: reading the real sp_Popending source corrected the
--- earlier belief that PO→receipt was only reachable via a 3-hop PurchaseInvoiceNo chain. `MONo` is
--- the Production domain's equivalent direct link.
-IF NOT EXISTS (
-    SELECT 1 FROM sys.tables t JOIN sys.schemas s ON s.schema_id = t.schema_id
-    WHERE s.name = 'dbo' AND t.name = 'InventoryFlowDtl'
-)
-BEGIN
-    CREATE TABLE dbo.InventoryFlowDtl (
-        TransactionNo INT          NOT NULL,
-        Roworder      INT          NOT NULL,
-        ItemCode      NVARCHAR(50) NOT NULL,
-        CONSTRAINT PK_InventoryFlowDtl PRIMARY KEY (TransactionNo, Roworder)
-    );
-END
-GO
-
-IF COL_LENGTH('dbo.InventoryFlowDtl', 'VoucherNo')    IS NULL ALTER TABLE dbo.InventoryFlowDtl ADD VoucherNo NVARCHAR(50) NULL;
-GO
-IF COL_LENGTH('dbo.InventoryFlowDtl', 'MainUnits')    IS NULL ALTER TABLE dbo.InventoryFlowDtl ADD MainUnits NVARCHAR(50) NULL;
-GO
-IF COL_LENGTH('dbo.InventoryFlowDtl', 'MainQuantity') IS NULL ALTER TABLE dbo.InventoryFlowDtl ADD MainQuantity DECIMAL(18, 4) NULL;
-GO
-IF COL_LENGTH('dbo.InventoryFlowDtl', 'PoNo')         IS NULL ALTER TABLE dbo.InventoryFlowDtl ADD PoNo NVARCHAR(50) NULL;
-GO
-IF COL_LENGTH('dbo.InventoryFlowDtl', 'MONo')         IS NULL ALTER TABLE dbo.InventoryFlowDtl ADD MONo NVARCHAR(50) NULL;
-GO
-
--- ===========================================================================================
--- ROWS
--- ===========================================================================================
-
 -- PO headers. 5 rows: 4 non-cancelled (money basis 727,920 = ช-001 635,000 + ว-001 92,920) and 1
 -- cancelled (in the status donut, out of every money figure and out of the PO count).
 -- IsClosed is NULL on the open ones — the live shape — and 1 on exactly one PO.
+-- Unlike tbl_DOhdr, PurchaseOrderHdr DOES carry a real live `IsCancel` column.
+-- -------------------------------------------------------------------------------------------
 ;WITH SeedPo AS (
     SELECT * FROM (VALUES
         --  TrNo, PONumber,          PODate,       Supplier, Total,   Appr, Chk, Cmpl, Cncl, Closed, RecPo
@@ -212,11 +61,11 @@ GO
             IsApproved, IsCheck, IsComplete, IsCancel, IsClosed, IsRecPo)
 )
 INSERT INTO dbo.PurchaseOrderHdr (
-    TransactionNo, PONumber, PODate, SupplierCode, PurchaseType, Status,
+    RowOrder, TransactionNo, PONumber, PODate, SupplierCode, PurchaseType, Status,
     SubTotal, VATPercent, VATAmount, TotalAmount,
     IsApproved, IsCheck, IsComplete, IsCancel, IsClosed, IsRecPo
 )
-SELECT s.TransactionNo, s.PONumber, s.PODate, s.SupplierCode, N'Local', N'Pending',
+SELECT s.TransactionNo, s.TransactionNo, s.PONumber, s.PODate, s.SupplierCode, N'Local', N'Pending',
        s.TotalAmount, 0, 0, s.TotalAmount,
        s.IsApproved, s.IsCheck, s.IsComplete, s.IsCancel, s.IsClosed, s.IsRecPo
 FROM SeedPo s
@@ -226,6 +75,7 @@ GO
 -- PO lines. 10 rows across the 5 POs; each PO's TotalPrice sum equals its header TotalAmount
 -- exactly. 4 distinct MainUnits (กก. / ถุง / กล่อง / ปี๊บ) so no screen can sum across them.
 -- QtyReceive/InvoiceQty stay NULL everywhere, matching production.
+-- `Number` is the live within-PO line number; `RowOrder` is the live table-wide sequence.
 ;WITH SeedPoLine AS (
     SELECT * FROM (VALUES
         (1, 1, N'ITM-010', N'กก.',   400.0, 1110.00, 444000.00),
@@ -239,17 +89,20 @@ GO
         (5, 1, N'ITM-013', N'กล่อง',   2.0, 5000.00,  10000.00),
         (5, 2, N'ITM-011', N'ถุง',     5.0, 1000.00,   5000.00)
     ) AS v (TransactionNo, Number, ItemCode, MainUnits, MainQuantity, MainUnitPrice, TotalPrice)
+),
+Numbered AS (
+    SELECT s.*, ROW_NUMBER() OVER (ORDER BY s.TransactionNo, s.Number) AS RowOrder FROM SeedPoLine s
 )
 INSERT INTO dbo.PurchaseOrderDtl (
-    TransactionNo, Number, ItemCode, MainUnits, MainQuantity, MainUnitPrice, TotalPrice,
+    RowOrder, TransactionNo, Number, ItemCode, MainUnits, MainQuantity, MainUnitPrice, TotalPrice,
     QtyReceive, InvoiceQty
 )
-SELECT s.TransactionNo, s.Number, s.ItemCode, s.MainUnits, s.MainQuantity, s.MainUnitPrice,
-       s.TotalPrice, NULL, NULL
-FROM SeedPoLine s
+SELECT n.RowOrder, n.TransactionNo, n.Number, n.ItemCode, n.MainUnits, n.MainQuantity,
+       n.MainUnitPrice, n.TotalPrice, NULL, NULL
+FROM Numbered n
 WHERE NOT EXISTS (
     SELECT 1 FROM dbo.PurchaseOrderDtl d
-    WHERE d.TransactionNo = s.TransactionNo AND d.Number = s.Number
+    WHERE d.TransactionNo = n.TransactionNo AND d.Number = n.Number
 );
 GO
 
@@ -271,27 +124,32 @@ GO
             IsClosed, TotalAmount)
 )
 INSERT INTO dbo.PurchaseInvoiceHdr (
-    TransactionNo, VoucherNo, VoucherDate, DocuType, InvoiceType, PurchaseType,
+    Roworder, TransactionNo, VoucherNo, VoucherDate, DocuType, InvoiceType, PurchaseType,
     CustOrSuppCode, IsIncludeVAT, IsClosed, IsPaid, VATAmount, TotalAmount
 )
-SELECT s.TransactionNo, s.VoucherNo, s.VoucherDate, s.DocuType, N'Purchase', s.PurchaseType,
-       s.CustOrSuppCode, 0, s.IsClosed, 0, 0, s.TotalAmount
+SELECT s.TransactionNo, s.TransactionNo, s.VoucherNo, s.VoucherDate, s.DocuType, N'Purchase',
+       s.PurchaseType, s.CustOrSuppCode, 0, s.IsClosed, 0, 0, s.TotalAmount
 FROM SeedInv s
 WHERE NOT EXISTS (SELECT 1 FROM dbo.PurchaseInvoiceHdr i WHERE i.TransactionNo = s.TransactionNo);
 GO
 
--- Goods-receipt headers. TransactionNo values live in a reserved 7700-block so they can never
--- collide with the Production domain's own rows on this shared table (which occupy 9000+).
--- Four of the six rows below exist to prove sp_Popending's filter is
--- reproduced LITERALLY rather than "improved":
+-- Goods-receipt headers on the SHARED ledger. TransactionNo values live in the reserved
+-- 7700-block so they can never collide with the Production domain's own rows (9000+).
+--
+-- `Approved` and `IsApproved` are BOTH real, distinct live columns; sp_Popending reads `Approved`,
+-- and rows below exercise the difference rather than assuming it away.
+--
+-- Four of the six rows exist to prove sp_Popending's filter is reproduced LITERALLY rather than
+-- "improved":
 --   TrNo 3 — IsClosed IS NULL. `IsClosed <> 1` evaluates to UNKNOWN, so this receipt is SILENTLY
 --            DROPPED from received_qty. That is what the customer's own report does today; the
 --            unit suite asserts the SQL stays un-ISNULL-wrapped so nobody "fixes" it.
---   TrNo 4 — Approved = 0, so excluded (and note IsApproved = 1 on the same row: the two columns
---            are genuinely different, and sp_Popending reads `Approved`).
+--   TrNo 4 — Approved = 0, so excluded (and note IsApproved = 1 on the same row).
 --   TrNo 5 — voucher series 'IAD%', not 'IPC%', so excluded: an inventory adjustment is not a
 --            purchase receipt even when it names a PO.
 -- TrNo 1/2/6 are the receipts that legitimately count.
+--
+-- `IsStock` is NOT NULL live and is set to 1 (a stock-bearing movement) on every row.
 ;WITH SeedFlowHdr AS (
     SELECT * FROM (VALUES
         (7701, N'IPC-2608-0001', '2026-08-16',    1,    1,    0),
@@ -303,10 +161,10 @@ GO
     ) AS v (TransactionNo, VoucherNo, InOutDate, Approved, IsApproved, IsClosed)
 )
 INSERT INTO dbo.InventoryFlowHdr (
-    TransactionNo, VoucherNo, InOut, InOutDate, PurchaseInvoiceNo,
+    Roworder, TransactionNo, IsStock, VoucherNo, InOut, InOutDate, PurchaseInvoiceNo,
     Approved, IsApproved, IsClosed, ReasonIndex, ReasonName
 )
-SELECT s.TransactionNo, s.VoucherNo, 1, s.InOutDate, NULL,
+SELECT s.TransactionNo, s.TransactionNo, 1, s.VoucherNo, 1, s.InOutDate, NULL,
        s.Approved, s.IsApproved, s.IsClosed, 1, N'รับเข้าจากการซื้อ'
 FROM SeedFlowHdr s
 WHERE NOT EXISTS (
@@ -314,7 +172,8 @@ WHERE NOT EXISTS (
 );
 GO
 
--- Goods-receipt lines, keyed to the PO by the DIRECT `PoNo` column (sp_Popending's own join).
+-- Goods-receipt lines, keyed to the PO by the DIRECT live `PONo` column (sp_Popending's own join).
+-- `Number` is NOT NULL live and mirrors the line's RowOrder here.
 -- Resulting received/outstanding picture once the header filter is applied:
 --   PO-L2608-0001 / ITM-010 : ordered 400, received 400  -> outstanding 0     (fully received)
 --   PO-L2608-0002 / ITM-010 : ordered  50, received  60  -> outstanding -10   (OVER-RECEIVED)
@@ -330,16 +189,23 @@ GO
         (7704, N'IPC-2609-0004', 1, N'ITM-011', N'ถุง',    10.0, N'PO-L2608-0003'),
         (7705, N'IAD-2609-0001', 1, N'ITM-008', N'ปี๊บ',     3.0, N'PO-L2608-0003'),
         (7706, N'IPC-2609-0005', 1, N'ITM-013', N'กล่อง',   2.0, N'PO-L2608-0003')
-    ) AS v (TransactionNo, VoucherNo, Roworder, ItemCode, MainUnits, MainQuantity, PoNo)
+    ) AS v (TransactionNo, VoucherNo, RowOrder, ItemCode, MainUnits, MainQuantity, PONo)
 )
 INSERT INTO dbo.InventoryFlowDtl (
-    TransactionNo, VoucherNo, Roworder, ItemCode, MainUnits, MainQuantity, PoNo, MONo
+    RowOrder, TransactionNo, Number, VoucherNo, ItemCode, MainUnits, MainQuantity, PONo, MONo
 )
-SELECT s.TransactionNo, s.VoucherNo, s.Roworder, s.ItemCode, s.MainUnits, s.MainQuantity,
-       s.PoNo, NULL
+SELECT s.RowOrder, s.TransactionNo, s.RowOrder, s.VoucherNo, s.ItemCode, s.MainUnits,
+       s.MainQuantity, s.PONo, NULL
 FROM SeedFlowDtl s
 WHERE NOT EXISTS (
     SELECT 1 FROM dbo.InventoryFlowDtl d
-    WHERE d.TransactionNo = s.TransactionNo AND d.Roworder = s.Roworder
+    WHERE d.TransactionNo = s.TransactionNo AND d.RowOrder = s.RowOrder
 );
+GO
+
+SELECT
+    (SELECT COUNT(*) FROM dbo.PurchaseOrderHdr)                       AS PoHdrRows,
+    (SELECT COUNT(*) FROM dbo.PurchaseOrderDtl)                       AS PoDtlRows,
+    (SELECT COUNT(*) FROM dbo.PurchaseInvoiceHdr)                     AS PurInvHdrRows,
+    (SELECT COUNT(*) FROM dbo.InventoryFlowDtl WHERE PONo IS NOT NULL) AS PurchaseFlowDtlRows;
 GO

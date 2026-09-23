@@ -1,25 +1,40 @@
 -- ============================================================================================
--- ERP-SHAPED FIXTURE — PRODUCTION DOMAIN — LOCAL SANDBOX ONLY
--- erp-dashboards Phase 4 (Production dashboard). Phase 4's EXCLUSIVELY-owned per-domain fixture
--- file (registry: "Per-Domain Fixture Seed Split"). Phase 4 NEVER edits Phase 1's base
--- `00-schema.sql` / `01-seed.sql`, and never another domain phase's seed file.
+-- ERP-SHAPED FIXTURE — PRODUCTION DOMAIN ROWS — LOCAL SANDBOX ONLY
+-- Rows for dbo.tbl_MoHdr / dbo.tbl_BatchOrder and the production-side rows of the SHARED
+-- dbo.InventoryFlowHdr / dbo.InventoryFlowDtl ledger.
 --
 -- *** NEVER RUN THIS AGAINST db_TCL OR ANY CUSTOMER SERVER. ***
--- This script CREATEs tables and WRITES rows. It is a disposable local dev/test fixture for the
--- `erp_fixture` database inside the local `orderstock-sql` Docker container only. Because it
--- writes, it is by design NOT executed through the application's read-only guard
--- (`guardedQuery`) — it is a human/CI setup step run directly with sqlcmd, never through app code.
+-- This script WRITES rows. It is a disposable local dev/test fixture for the `erp_fixture`
+-- database inside the local `orderstock-sql` Docker container only. Because it writes, it is by
+-- design NOT executed through the application's read-only guard (`guardedQuery`) — it is a
+-- human/CI setup step run directly with sqlcmd, never through app code.
 --
--- Apply (after Phase 1's 00-schema.sql + 01-seed.sql, sandbox container running):
+-- NO DDL LIVES HERE ANY MORE (schema-conformance rebuild, 23-09-26). Every ERP table is created
+-- ONCE, live-shaped, by `db/erp-fixture/00-schema.sql`, generated from
+-- `db/erp-schema/live-manifest_23-09-26.json`.
+--
+-- WHAT THAT FIXED HERE: this file used to create the SHARED `dbo.InventoryFlowHdr` with
+-- `DocuNo`/`WarehouseCode` columns that DO NOT EXIST on the live db_TCL table (and, earlier
+-- still, `TransactionDate`/`Qty` — which `material-issues.sql` actually read, so the drilldown
+-- compiled locally and failed in production). Those columns are gone. The production receipt
+-- rows below now carry the REAL live `VoucherNo`/`InOutDate` columns, the same ones the purchase
+-- domain reads, on one single shared table shape.
+--
+-- SHARED-TABLE ROW CONVENTION (still this file's business): production rows occupy the reserved
+-- TransactionNo 9000-block so they can never collide with the Purchase domain's 7700-block. Their
+-- VoucherNo series is 'IF%', never 'IPC%', so they can never leak into the purchase
+-- goods-receipt query either.
+--
+-- This file reuses Phase 1's existing InventoryItem codes rather than inserting new ones.
+--
+-- Apply (AFTER 00-schema.sql + 01-seed.sql, sandbox container running):
 --   docker cp db/erp-fixture/production-seed.sql orderstock-sql:/tmp/ && \
 --   docker exec orderstock-sql sh -c '/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa \
---     -P "$MSSQL_SA_PASSWORD" -C -i /tmp/production-seed.sql'
+--     -P "$MSSQL_SA_PASSWORD" -C -b -i /tmp/production-seed.sql'
 --
--- Idempotent: DDL is `IF NOT EXISTS`-guarded and rows are inserted only when their key is absent.
---
--- WHY THIS FILE CARRIES DDL: Phase 1's base fixture contains ONLY `dbo.InventoryItem`. None of the
--- Production tables exist there, so Phase 4 owns both their DDL and their rows. This file reuses
--- Phase 1's existing InventoryItem codes rather than inserting new ones.
+-- Idempotent AND order-independent: rows are inserted only when their primary key is absent, so
+-- re-running neither duplicates nor overwrites, and this file may be applied before or after any
+-- other domain seed.
 --
 -- FIXTURE DATA REQUIREMENTS this file deliberately satisfies (plan § Dependencies / Risks):
 --   1. MO-2609-0001 has LotQty = NULL and only Prodqty (17)   -> documented NULL-LotQty fallback
@@ -38,117 +53,14 @@
 USE erp_fixture;
 GO
 
--- dbo.tbl_MoHdr — manufacturing-order headers. Column shapes mirror the live db_TCL table
--- (erp-domain-discovery_REF_18-09-26.md:452). Regqty exists but is 0/unused in live data.
-IF NOT EXISTS (
-    SELECT 1 FROM sys.tables t JOIN sys.schemas s ON s.schema_id = t.schema_id
-    WHERE s.name = 'dbo' AND t.name = 'tbl_MoHdr'
-)
-BEGIN
-    CREATE TABLE dbo.tbl_MoHdr (
-        TransactionNo INT            NOT NULL,
-        MoNumBer      NVARCHAR(50)   NOT NULL,
-        Modate        DATE           NULL,
-        MoDuedate     DATE           NULL,
-        FgCode        NVARCHAR(50)   NULL,
-        LotQty        DECIMAL(18, 2) NULL,
-        Regqty        DECIMAL(18, 2) NULL,
-        Prodqty       DECIMAL(18, 2) NULL,
-        Approved      BIT            NULL,
-        IsClosed      BIT            NULL,
-        IsCancel      BIT            NULL,
-        SoNo          NVARCHAR(50)   NULL,
-        CONSTRAINT PK_tbl_MoHdr PRIMARY KEY (TransactionNo)
-    );
-END
-GO
-
--- dbo.tbl_BatchOrder — the parallel batch view of the same plan. PlanQty == Prodqty on every live
--- row (the proven "copy of the plan, not a measurement" finding). Seeded for completeness /
--- future reference; the Production dashboard deliberately does NOT read it.
-IF NOT EXISTS (
-    SELECT 1 FROM sys.tables t JOIN sys.schemas s ON s.schema_id = t.schema_id
-    WHERE s.name = 'dbo' AND t.name = 'tbl_BatchOrder'
-)
-BEGIN
-    CREATE TABLE dbo.tbl_BatchOrder (
-        BatchNo  NVARCHAR(50)   NOT NULL,
-        Monum    NVARCHAR(50)   NULL,
-        ItemCode NVARCHAR(50)   NULL,
-        PlanQty  DECIMAL(18, 2) NULL,
-        Prodqty  DECIMAL(18, 2) NULL,
-        CONSTRAINT PK_tbl_BatchOrder PRIMARY KEY (BatchNo)
-    );
-END
-GO
-
--- dbo.InventoryFlowHdr / dbo.InventoryFlowDtl — the stock-movement ledger. The MO linkage lives on
--- the DETAIL row (`MONo`, nvarchar, no FK) together with its `ReasonName`.
---
--- SHARED TABLE, TWO LIVE COLUMN FAMILIES (Phase 5, residual (a) fix). These two tables are also
--- seeded by `purchase-seed.sql`. Both column families are REAL on the live db_TCL table and both
--- are used by shipped queries — `sp_Popending`'s `VoucherNo`/`InOutDate`/`MainQuantity`/`Approved`
--- (see `db/erp-queries/purchase/po-received.sql`) and this domain's `DocuNo`/`TransactionDate`/
--- `Qty`/`MONo` (see `db/erp-queries/production/material-issues.sql`). So the fixture converges on
--- the live table's full column UNION rather than picking one spelling and breaking the other.
---
--- ORDER-INDEPENDENCE: `purchase-seed.sql` already tops its own columns up with
--- `IF COL_LENGTH(...) IS NULL ALTER TABLE ... ADD`; this file previously did not, so
--- purchase-then-production failed with "Invalid column name 'DocuNo'". The symmetric guards below
--- fix that: whichever seed runs first creates the table, the other adds what it is missing, and
--- both orders end at the same union. Nothing is ever dropped, renamed, or redefined.
-IF NOT EXISTS (
-    SELECT 1 FROM sys.tables t JOIN sys.schemas s ON s.schema_id = t.schema_id
-    WHERE s.name = 'dbo' AND t.name = 'InventoryFlowHdr'
-)
-BEGIN
-    CREATE TABLE dbo.InventoryFlowHdr (
-        TransactionNo   INT            NOT NULL,
-        DocuNo          NVARCHAR(50)   NULL,
-        TransactionDate DATE           NULL,
-        WarehouseCode   NVARCHAR(50)   NULL,
-        CONSTRAINT PK_InventoryFlowHdr PRIMARY KEY (TransactionNo)
-    );
-END
-GO
-
--- Top-up guards: needed when `purchase-seed.sql` created the table first with only its own columns.
-IF COL_LENGTH('dbo.InventoryFlowHdr', 'DocuNo')          IS NULL ALTER TABLE dbo.InventoryFlowHdr ADD DocuNo NVARCHAR(50) NULL;
-GO
-IF COL_LENGTH('dbo.InventoryFlowHdr', 'TransactionDate') IS NULL ALTER TABLE dbo.InventoryFlowHdr ADD TransactionDate DATE NULL;
-GO
-IF COL_LENGTH('dbo.InventoryFlowHdr', 'WarehouseCode')   IS NULL ALTER TABLE dbo.InventoryFlowHdr ADD WarehouseCode NVARCHAR(50) NULL;
-GO
-
-IF NOT EXISTS (
-    SELECT 1 FROM sys.tables t JOIN sys.schemas s ON s.schema_id = t.schema_id
-    WHERE s.name = 'dbo' AND t.name = 'InventoryFlowDtl'
-)
-BEGIN
-    CREATE TABLE dbo.InventoryFlowDtl (
-        TransactionNo INT            NOT NULL,
-        Roworder      INT            NOT NULL,
-        ItemCode      NVARCHAR(50)   NOT NULL,
-        Qty           DECIMAL(18, 2) NULL,
-        MONo          NVARCHAR(50)   NULL,
-        SONo          NVARCHAR(50)   NULL,
-        ReasonName    NVARCHAR(200)  NULL,
-        CONSTRAINT PK_InventoryFlowDtl PRIMARY KEY (TransactionNo, Roworder)
-    );
-END
-GO
-
--- Same top-up guards for the detail table's own column family.
-IF COL_LENGTH('dbo.InventoryFlowDtl', 'Qty')        IS NULL ALTER TABLE dbo.InventoryFlowDtl ADD Qty DECIMAL(18, 2) NULL;
-GO
-IF COL_LENGTH('dbo.InventoryFlowDtl', 'MONo')       IS NULL ALTER TABLE dbo.InventoryFlowDtl ADD MONo NVARCHAR(50) NULL;
-GO
-IF COL_LENGTH('dbo.InventoryFlowDtl', 'SONo')       IS NULL ALTER TABLE dbo.InventoryFlowDtl ADD SONo NVARCHAR(50) NULL;
-GO
-IF COL_LENGTH('dbo.InventoryFlowDtl', 'ReasonName') IS NULL ALTER TABLE dbo.InventoryFlowDtl ADD ReasonName NVARCHAR(200) NULL;
+IF OBJECT_ID('dbo.tbl_MoHdr') IS NULL OR OBJECT_ID('dbo.tbl_BatchOrder') IS NULL
+   OR OBJECT_ID('dbo.InventoryFlowHdr') IS NULL OR OBJECT_ID('dbo.InventoryFlowDtl') IS NULL
+    THROW 51000, 'Apply db/erp-fixture/00-schema.sql first — this seed creates no tables.', 1;
 GO
 
 -- -------------------------------------------------------------------------------------------
+-- dbo.tbl_MoHdr — manufacturing-order headers. Regqty exists live but is 0/unused in live data.
+-- Unlike tbl_DOhdr, tbl_MoHdr DOES carry a real live `IsCancel` column.
 -- Rows: 12 MOs (11 live + 1 cancelled). Planned quantities per unit:
 --   KG 4,761.00 · BAG 180.00 · (no unit) 80.00   — never summed together.
 -- -------------------------------------------------------------------------------------------
@@ -172,13 +84,17 @@ GO
     ) AS v (TransactionNo, MoNumBer, Modate, FgCode, LotQty, Prodqty, Approved, IsClosed, IsCancel)
 )
 INSERT INTO dbo.tbl_MoHdr
-    (TransactionNo, MoNumBer, Modate, MoDuedate, FgCode, LotQty, Regqty, Prodqty, Approved, IsClosed, IsCancel, SoNo)
-SELECT s.TransactionNo, s.MoNumBer, s.Modate, s.Modate, s.FgCode, s.LotQty, 0, s.Prodqty,
-       s.Approved, s.IsClosed, s.IsCancel, NULL
+    (RowOrder, TransactionNo, MoNumBer, Modate, MoDuedate, FgCode, LotQty, Regqty, Prodqty,
+     Approved, IsClosed, IsCancel, SoNo)
+SELECT s.TransactionNo, s.TransactionNo, s.MoNumBer, s.Modate, s.Modate, s.FgCode, s.LotQty, 0,
+       s.Prodqty, s.Approved, s.IsClosed, s.IsCancel, NULL
 FROM SeedMo AS s
 WHERE NOT EXISTS (SELECT 1 FROM dbo.tbl_MoHdr AS t WHERE t.TransactionNo = s.TransactionNo);
 GO
 
+-- dbo.tbl_BatchOrder — the parallel batch view of the same plan. PlanQty == Prodqty on every live
+-- row. No shipped dashboard query reads this table today; it is seeded so the shape stays
+-- exercised and a future batch view has real rows to read.
 ;WITH SeedBatch AS (
     SELECT * FROM (VALUES
         (N'B-0001', N'MO-2609-0001', N'FG-1004', CAST(17   AS DECIMAL(18,2)), CAST(17   AS DECIMAL(18,2))),
@@ -192,15 +108,18 @@ FROM SeedBatch AS s
 WHERE NOT EXISTS (SELECT 1 FROM dbo.tbl_BatchOrder AS t WHERE t.BatchNo = s.BatchNo);
 GO
 
+-- Material-issue headers on the SHARED ledger, in the reserved 9000-block. `IsStock` is NOT NULL
+-- live. The 'IF%' voucher series keeps these rows out of the purchase goods-receipt query, which
+-- filters `VoucherNo LIKE 'IPC%'`; `Approved` is left NULL, which also fails its `Approved = 1`.
 ;WITH SeedFlowHdr AS (
     SELECT * FROM (VALUES
-        (9001, N'IF-2609-0001', '2026-09-08', N'WHRM'),
-        (9002, N'IF-2608-0007', '2026-08-21', N'WHRM'),
-        (9003, N'IF-2609-0009', '2026-09-09', N'WHFG')
-    ) AS v (TransactionNo, DocuNo, TransactionDate, WarehouseCode)
+        (9001, N'IF-2609-0001', '2026-09-08'),
+        (9002, N'IF-2608-0007', '2026-08-21'),
+        (9003, N'IF-2609-0009', '2026-09-09')
+    ) AS v (TransactionNo, VoucherNo, InOutDate)
 )
-INSERT INTO dbo.InventoryFlowHdr (TransactionNo, DocuNo, TransactionDate, WarehouseCode)
-SELECT s.TransactionNo, s.DocuNo, s.TransactionDate, s.WarehouseCode
+INSERT INTO dbo.InventoryFlowHdr (Roworder, TransactionNo, IsStock, VoucherNo, InOut, InOutDate)
+SELECT s.TransactionNo, s.TransactionNo, 1, s.VoucherNo, -1, s.InOutDate
 FROM SeedFlowHdr AS s
 WHERE NOT EXISTS (SELECT 1 FROM dbo.InventoryFlowHdr AS t WHERE t.TransactionNo = s.TransactionNo);
 GO
@@ -208,37 +127,42 @@ GO
 -- 7 raw-material-issue lines for MO-2609-0001 (matching the real-data row count), 2 more for
 -- MO-2608-0007 with a DELIBERATELY WHITESPACE-PADDED MONo, plus one same-MONo row carrying a
 -- DIFFERENT ReasonName that the reason filter must exclude.
+-- `Number` is NOT NULL live and mirrors the line's RowOrder here.
 ;WITH SeedFlowDtl AS (
     SELECT * FROM (VALUES
-        (9001, 1, N'RM-2001', CAST(8500   AS DECIMAL(18,2)), N'MO-2609-0001',    N'เบิกวัตถุดิบ : ใบสั่งผลิต'),
-        (9001, 2, N'RM-2002', CAST(1224   AS DECIMAL(18,2)), N'MO-2609-0001',    N'เบิกวัตถุดิบ : ใบสั่งผลิต'),
-        (9001, 3, N'RM-2003', CAST(10200  AS DECIMAL(18,2)), N'MO-2609-0001',    N'เบิกวัตถุดิบ : ใบสั่งผลิต'),
-        (9001, 4, N'PK-3001', CAST(2550   AS DECIMAL(18,2)), N'MO-2609-0001',    N'เบิกวัตถุดิบ : ใบสั่งผลิต'),
+        (9001, 1, N'RM-2001', CAST(8500   AS DECIMAL(18,2)), N'KG',  N'MO-2609-0001',    N'เบิกวัตถุดิบ : ใบสั่งผลิต'),
+        (9001, 2, N'RM-2002', CAST(1224   AS DECIMAL(18,2)), N'KG',  N'MO-2609-0001',    N'เบิกวัตถุดิบ : ใบสั่งผลิต'),
+        (9001, 3, N'RM-2003', CAST(10200  AS DECIMAL(18,2)), N'KG',  N'MO-2609-0001',    N'เบิกวัตถุดิบ : ใบสั่งผลิต'),
+        (9001, 4, N'PK-3001', CAST(2550   AS DECIMAL(18,2)), N'PCS', N'MO-2609-0001',    N'เบิกวัตถุดิบ : ใบสั่งผลิต'),
         -- Three ItemCodes deliberately ABSENT from InventoryItem: the LEFT JOIN must fall back to
-        -- the raw code instead of dropping the row.
-        (9001, 5, N'RM-9001', CAST(17     AS DECIMAL(18,2)), N'MO-2609-0001',    N'เบิกวัตถุดิบ : ใบสั่งผลิต'),
-        (9001, 6, N'RM-9002', CAST(0.03   AS DECIMAL(18,2)), N'MO-2609-0001',    N'เบิกวัตถุดิบ : ใบสั่งผลิต'),
-        (9001, 7, N'RM-9003', CAST(1700   AS DECIMAL(18,2)), N'MO-2609-0001',    N'เบิกวัตถุดิบ : ใบสั่งผลิต'),
+        -- the raw code instead of dropping the row. RM-9003 additionally carries NO MainUnits, so
+        -- it is the only row that walks `material-issues.sql`'s unit COALESCE all the way to its
+        -- terminal N'-' — line unit, then item-master unit, then '-'. Keep one such row.
+        (9001, 5, N'RM-9001', CAST(17     AS DECIMAL(18,2)), N'BAG', N'MO-2609-0001',    N'เบิกวัตถุดิบ : ใบสั่งผลิต'),
+        (9001, 6, N'RM-9002', CAST(0.03   AS DECIMAL(18,2)), N'TON', N'MO-2609-0001',    N'เบิกวัตถุดิบ : ใบสั่งผลิต'),
+        (9001, 7, N'RM-9003', CAST(1700   AS DECIMAL(18,2)), NULL,   N'MO-2609-0001',    N'เบิกวัตถุดิบ : ใบสั่งผลิต'),
         -- Same MO, a NON-production reason: must NOT appear in the drilldown.
-        (9003, 1, N'RM-2001', CAST(999    AS DECIMAL(18,2)), N'MO-2609-0001',    N'ปรับปรุงสต๊อคออก'),
+        (9003, 1, N'RM-2001', CAST(999    AS DECIMAL(18,2)), N'KG',  N'MO-2609-0001',    N'ปรับปรุงสต๊อคออก'),
         -- Whitespace-padded MONo — the TRIM-guard regression case.
-        (9002, 1, N'RM-2002', CAST(140    AS DECIMAL(18,2)), N'  MO-2608-0007 ', N'เบิกวัตถุดิบ : ใบสั่งผลิต'),
-        (9002, 2, N'PK-3001', CAST(300    AS DECIMAL(18,2)), N' MO-2608-0007  ', N'เบิกวัตถุดิบ : ใบสั่งผลิต')
-    ) AS v (TransactionNo, Roworder, ItemCode, Qty, MONo, ReasonName)
+        (9002, 1, N'RM-2002', CAST(140    AS DECIMAL(18,2)), N'KG',  N'  MO-2608-0007 ', N'เบิกวัตถุดิบ : ใบสั่งผลิต'),
+        (9002, 2, N'PK-3001', CAST(300    AS DECIMAL(18,2)), N'PCS', N' MO-2608-0007  ', N'เบิกวัตถุดิบ : ใบสั่งผลิต')
+    ) AS v (TransactionNo, RowOrder, ItemCode, MainQuantity, MainUnits, MONo, ReasonName)
 )
-INSERT INTO dbo.InventoryFlowDtl (TransactionNo, Roworder, ItemCode, Qty, MONo, SONo, ReasonName)
-SELECT s.TransactionNo, s.Roworder, s.ItemCode, s.Qty, s.MONo, NULL, s.ReasonName
+INSERT INTO dbo.InventoryFlowDtl
+    (RowOrder, TransactionNo, Number, ItemCode, MainQuantity, MainUnits, MONo, SONo, ReasonName)
+SELECT s.RowOrder, s.TransactionNo, s.RowOrder, s.ItemCode, s.MainQuantity, s.MainUnits, s.MONo,
+       NULL, s.ReasonName
 FROM SeedFlowDtl AS s
 WHERE NOT EXISTS (
     SELECT 1 FROM dbo.InventoryFlowDtl AS t
-    WHERE t.TransactionNo = s.TransactionNo AND t.Roworder = s.Roworder
+    WHERE t.TransactionNo = s.TransactionNo AND t.RowOrder = s.RowOrder
 );
 GO
 
 SELECT
-    (SELECT COUNT(*) FROM dbo.tbl_MoHdr)                          AS MoHdrRows,
+    (SELECT COUNT(*) FROM dbo.tbl_MoHdr)                            AS MoHdrRows,
     (SELECT COUNT(*) FROM dbo.tbl_MoHdr WHERE ISNULL(IsCancel,0)=0) AS MoHdrLiveRows,
-    (SELECT COUNT(*) FROM dbo.tbl_BatchOrder)                     AS BatchOrderRows,
-    (SELECT COUNT(*) FROM dbo.InventoryFlowHdr)                   AS FlowHdrRows,
-    (SELECT COUNT(*) FROM dbo.InventoryFlowDtl)                   AS FlowDtlRows;
+    (SELECT COUNT(*) FROM dbo.tbl_BatchOrder)                       AS BatchOrderRows,
+    (SELECT COUNT(*) FROM dbo.InventoryFlowHdr)                     AS FlowHdrRows,
+    (SELECT COUNT(*) FROM dbo.InventoryFlowDtl)                     AS FlowDtlRows;
 GO

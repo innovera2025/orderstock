@@ -1,6 +1,7 @@
 -- ============================================================================================
 -- ERP-SHAPED FIXTURE SEED — LOCAL SANDBOX ONLY
--- erp-dashboards Phase 1, base/shared rows for dbo.InventoryItem.
+-- Base/shared rows for dbo.InventoryItem — the universal item master every ERP dashboard domain
+-- joins against (Sales, Purchase, Production).
 --
 -- *** NEVER RUN THIS AGAINST db_TCL OR ANY CUSTOMER SERVER. ***
 -- This script WRITES rows. It is a disposable local dev/test fixture for the `erp_fixture`
@@ -8,15 +9,23 @@
 -- NOT executed through the application's read-only guard (`guardedQuery`) — it is a human/CI
 -- setup step run directly against the sandbox with sqlcmd, never through app code.
 --
--- Apply (after 00-schema.sql, sandbox container running):
+-- NO DDL LIVES HERE: dbo.InventoryItem is created live-shaped (all 102 live columns) by
+-- `db/erp-fixture/00-schema.sql`. This seed populates only the 5 columns the dashboards read;
+-- every other live column stays NULL, which is a legitimate fixture state, not a shape change.
+--
+-- Apply (AFTER 00-schema.sql, sandbox container running):
 --   docker exec -i orderstock-sql /opt/mssql-tools18/bin/sqlcmd \
---     -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -C -i /dev/stdin < db/erp-fixture/01-seed.sql
+--     -S localhost -U sa -P "$MSSQL_SA_PASSWORD" -C -b -i /dev/stdin < db/erp-fixture/01-seed.sql
 --
 -- Idempotent: rows are inserted only when the (Roworder, ItemCode) key is absent, so re-running
 -- neither duplicates nor overwrites.
 -- ============================================================================================
 
 USE erp_fixture;
+GO
+
+IF OBJECT_ID('dbo.InventoryItem') IS NULL
+    THROW 51000, 'Apply db/erp-fixture/00-schema.sql first — this seed creates no tables.', 1;
 GO
 
 -- 10 rows: a mix of ItemGRP='F' (finished goods) and non-'F' (raw material), several distinct
@@ -47,4 +56,40 @@ WHERE NOT EXISTS (
 GO
 
 SELECT COUNT(*) AS InventoryItemRowCount FROM dbo.InventoryItem;
+GO
+
+-- -------------------------------------------------------------------------------------------
+-- dbo.tbl_ItemGroup — the ERP's own product-category master (ICCode -> Thai Description).
+--
+-- WHY IT IS HERE (defect fix, 23-09-26): the Sales category pie used to label ItemGRP codes from a
+-- hardcoded map in the app, which only covered the codes this fixture happened to use. The live
+-- ERP has 23 group rows, so its real code `W` fell through to the raw fallback and rendered as
+-- "หมวด W" for the customer. The label now comes from this table via a LEFT JOIN, and the CODE
+-- stays the filter/URL identity.
+--
+-- ROWS ARE COPIED FROM THE LIVE `dbo.tbl_ItemGroup` (RowOrder/ICCode/Description verbatim) for the
+-- 'Item'-side groups; the 'Asset'-side groups are omitted as unused by any dashboard query. A
+-- fixture may hold FEWER ROWS than production; it may not hold a different shape.
+--
+-- 'P' IS DELIBERATELY ABSENT. The item seed above carries ItemGRP='P' rows, and no such code
+-- exists in the live group master — so the fixture reproduces BOTH paths on purpose: a code that
+-- resolves to an ERP label (F/R/W) and a code that does not and must fall back to "หมวด P".
+;WITH SeedGroups AS (
+    SELECT * FROM (VALUES
+        (1, N'R',  N'วัตถุดิบหลัก',       N'Item'),
+        (2, N'F',  N'สินค้าสำเร็จรูป',     N'Item'),
+        (3, N'S',  N'สินค้าบริการ',        N'Item'),
+        (4, N'W',  N'สินค้าระหว่างผลิต',   N'Item'),
+        (5, N'T',  N'วัสดุสิ้นเปลือง',      N'Item')
+    ) AS v (RowOrder, ICCode, Description, AssetOrItem)
+)
+INSERT INTO dbo.tbl_ItemGroup (RowOrder, ICCode, Description, AssetOrItem)
+SELECT s.RowOrder, s.ICCode, s.Description, s.AssetOrItem
+FROM SeedGroups AS s
+WHERE NOT EXISTS (
+    SELECT 1 FROM dbo.tbl_ItemGroup AS t WHERE t.RowOrder = s.RowOrder
+);
+GO
+
+SELECT COUNT(*) AS ItemGroupRowCount FROM dbo.tbl_ItemGroup;
 GO

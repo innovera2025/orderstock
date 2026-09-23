@@ -66,10 +66,22 @@ describe.skipIf(!erpConfigured)("AC8 — MO to raw-material-issue drilldown (Hyb
 
   it("keeps a line whose ItemCode is absent from InventoryItem (defensive LEFT JOIN)", async () => {
     const { value: rows } = await getMaterialIssuesForMo(F.nullLotQtyMo.moNumber);
-    const orphan = rows.find((r) => r.ItemCode.startsWith("RM-9"));
-    expect(orphan, "an orphan ItemCode row must not be dropped by the join").toBeDefined();
-    expect(orphan!.ItemName).toBe(orphan!.ItemCode); // falls back to the raw code
-    expect(orphan!.MainUnits).toBe("-");
+    const orphans = rows.filter((r) => r.ItemCode.startsWith("RM-9"));
+    expect(orphans.length, "orphan ItemCode rows must not be dropped by the join").toBeGreaterThan(
+      0,
+    );
+    for (const orphan of orphans) expect(orphan.ItemName).toBe(orphan.ItemCode); // raw-code fallback
+  });
+
+  it("resolves the unit from the issue LINE first, and only falls back to '-' when it has none", () => {
+    // `InventoryFlowDtl.MainUnits` is a real live column and records the unit the movement was
+    // actually booked in, so it outranks the item master. The fallback chain is
+    // line unit -> item-master unit -> '-'. Both ends are seeded on orphan ItemCodes (no item
+    // master row at all), which isolates the chain from the join.
+    return getMaterialIssuesForMo(F.nullLotQtyMo.moNumber).then(({ value: rows }) => {
+      expect(rows.find((r) => r.ItemCode === "RM-9001")!.MainUnits).toBe("BAG");
+      expect(rows.find((r) => r.ItemCode === "RM-9003")!.MainUnits).toBe("-");
+    });
   });
 
   it("an unknown MO number returns [] rather than throwing", async () => {

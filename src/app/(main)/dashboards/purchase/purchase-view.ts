@@ -11,6 +11,7 @@
 // in the DOM to reveal. Each strip point below carries a comment naming AC9 so a later refactor
 // cannot quietly turn it into a hide.
 
+import { erpFlag, erpFlagOrNull } from "@/lib/erp-flags";
 import {
   computeOutstanding,
   derivePoStatus,
@@ -105,16 +106,18 @@ export function buildPoViews(
       date: isoDate(header.VoucherDate),
       supplierCode: (header.SupplierCode ?? "").trim() || "-",
       status: derivePoStatus({
-        isCancel: header.IsCancel === true,
+        // Every one of these columns is TINYINT on the live server, so the driver hands back
+        // NUMBERS. `=== true` was always false against real data — see `src/lib/erp-flags.ts`.
+        isCancel: erpFlag(header.IsCancel),
         // NULL must stay NULL here: `derivePoStatus` applies the ERP's ISNULL(IsClosed,0) semantic
         // itself, and coercing it to false earlier would hide that decision from its own unit test.
-        isClosed: header.IsClosed ?? null,
-        isComplete: header.IsComplete === true,
-        isRecPo: header.IsRecPo === true,
-        isApproved: header.IsApproved === true,
-        isCheck: header.IsCheck === true,
+        isClosed: erpFlagOrNull(header.IsClosed),
+        isComplete: erpFlag(header.IsComplete),
+        isRecPo: erpFlag(header.IsRecPo),
+        isApproved: erpFlag(header.IsApproved),
+        isCheck: erpFlag(header.IsCheck),
       }),
-      cancelled: header.IsCancel === true,
+      cancelled: erpFlag(header.IsCancel),
       lineCount: lineViews.length,
       lines: lineViews,
       unitTotals: quantitiesByUnit(

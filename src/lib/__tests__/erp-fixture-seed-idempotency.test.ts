@@ -5,16 +5,21 @@ import { resolve } from "node:path";
 
 // erp-dashboards Phase 5, Step A0.3 — the fixture-seed ORDER-INDEPENDENCE regression gate.
 //
-// THE BUG THIS PINS DOWN: `purchase-seed.sql` and `production-seed.sql` both seed the SHARED
-// `dbo.InventoryFlowHdr` / `dbo.InventoryFlowDtl` tables, and the live db_TCL table genuinely
-// carries BOTH column families — `VoucherNo`/`InOutDate`/`MainQuantity`/`Approved` (used by
-// `db/erp-queries/purchase/po-received.sql`, copied from the ERP's own `sp_Popending`) AND
-// `DocuNo`/`TransactionDate`/`Qty`/`MONo` (used by
-// `db/erp-queries/production/material-issues.sql`). Whichever seed runs FIRST creates the table
-// with only its own columns. Before this phase, only `purchase-seed.sql` topped the other family
-// up with `IF COL_LENGTH(...) IS NULL ALTER TABLE ... ADD`, so purchase-then-production failed
-// with "Invalid column name 'DocuNo'". Both files now carry symmetric guards and converge on the
-// live column UNION regardless of order — which is exactly what this gate re-proves.
+// SCHEMA-CONFORMANCE CONTRACT (23-09-26 rebuild): the fixture's table SHAPES are no longer this
+// file's — or any seed file's — business. Every ERP table is created ONCE by
+// `db/erp-fixture/00-schema.sql`, which is GENERATED from `db/erp-schema/live-manifest_23-09-26.json`
+// (captured from `sys.columns` on live db_TCL, metadata only). A fixture may hold FEWER ROWS than
+// production; it may not hold a DIFFERENT SHAPE.
+//
+// THE BUG CLASS THIS GATE PINS DOWN: `purchase-seed.sql` and `production-seed.sql` both seed the
+// SHARED `dbo.InventoryFlowHdr` / `dbo.InventoryFlowDtl` tables. They each used to CREATE those
+// tables with their own narrower shape and then patch the other domain's columns back on with
+// `IF COL_LENGTH(...) IS NULL ALTER TABLE ... ADD`, so whichever seed ran FIRST decided the schema
+// — and the patch-up columns `DocuNo`/`WarehouseCode` did not exist in production at all (as
+// `TransactionDate`/`Qty` did not, and `material-issues.sql` read those, so the drilldown compiled
+// locally and failed on db_TCL). Both files now create nothing; the assertions below re-prove that
+// the shared tables carry the LIVE column union and that both domains' rows land regardless of the
+// order the seeds are applied in.
 //
 // HOW: both orders are applied to THROWAWAY databases (never `erp_fixture` itself, and never
 // anything outside the local `orderstock-sql` sandbox container), then dropped. Each order is
@@ -33,6 +38,7 @@ const SQLCMD = "/opt/mssql-tools18/bin/sqlcmd";
 const SEED_FILES = {
   schema: "db/erp-fixture/00-schema.sql",
   base: "db/erp-fixture/01-seed.sql",
+  sales: "db/erp-fixture/sales-seed.sql",
   purchase: "db/erp-fixture/purchase-seed.sql",
   production: "db/erp-fixture/production-seed.sql",
 } as const;
@@ -105,7 +111,10 @@ afterAll(() => {
 });
 
 /** Apply base schema + base seed + the two domain seeds in the given order. */
-function applyAll(database: string, order: readonly ("purchase" | "production")[]): void {
+function applyAll(
+  database: string,
+  order: readonly ("sales" | "purchase" | "production")[],
+): void {
   runSql(retarget(SEED_FILES.schema, database));
   runSql(retarget(SEED_FILES.base, database));
   for (const domain of order) runSql(retarget(SEED_FILES[domain], database));
@@ -113,8 +122,16 @@ function applyAll(database: string, order: readonly ("purchase" | "production")[
 
 describe.skipIf(!sandboxUp)("erp_fixture seeds are order-independent and idempotent", () => {
   const ORDERS = [
-    { name: "purchase-then-production", database: "erp_fixture_idem_pp", order: ["purchase", "production"] },
-    { name: "production-then-purchase", database: "erp_fixture_idem_rp", order: ["production", "purchase"] },
+    {
+      name: "sales-purchase-production",
+      database: "erp_fixture_idem_pp",
+      order: ["sales", "purchase", "production"],
+    },
+    {
+      name: "production-purchase-sales",
+      database: "erp_fixture_idem_rp",
+      order: ["production", "purchase", "sales"],
+    },
   ] as const;
 
   for (const { name, database, order } of ORDERS) {
@@ -137,18 +154,18 @@ describe.skipIf(!sandboxUp)("erp_fixture seeds are order-independent and idempot
           "ORDER BY c.name;\nGO\n",
       );
 
-      // Purchase's family (sp_Popending) AND Production's family must BOTH be present, whichever
-      // seed created the table.
+      // Purchase's family (sp_Popending: VoucherNo/InOutDate/MainQuantity/Approved/PONo) AND
+      // Production's family (MainUnits/MONo/ReasonName) must BOTH be present regardless of order.
+      // Every name below is a REAL live db_TCL column — check any addition against
+      // db/erp-schema/live-manifest_23-09-26.json first. `DocuNo` and `WarehouseCode` used to be
+      // asserted here and were fixture inventions; they are deliberately gone.
       for (const column of [
         "VoucherNo",
         "InOutDate",
         "MainQuantity",
         "Approved",
-        "PoNo",
-        "DocuNo",
-        "TransactionDate",
-        "WarehouseCode",
-        "Qty",
+        "PONo",
+        "MainUnits",
         "MONo",
         "ReasonName",
       ]) {
@@ -160,7 +177,7 @@ describe.skipIf(!sandboxUp)("erp_fixture seeds are order-independent and idempot
     it(`seeds both domains' rows regardless of order (${name})`, () => {
       const result = runSql(
         `USE ${database};\nSET NOCOUNT ON;\n` +
-          "SELECT 'poNo=' + CAST(COUNT(*) AS NVARCHAR(20)) FROM dbo.InventoryFlowDtl WHERE PoNo IS NOT NULL;\n" +
+          "SELECT 'poNo=' + CAST(COUNT(*) AS NVARCHAR(20)) FROM dbo.InventoryFlowDtl WHERE PONo IS NOT NULL;\n" +
           "SELECT 'moNo=' + CAST(COUNT(*) AS NVARCHAR(20)) FROM dbo.InventoryFlowDtl WHERE MONo IS NOT NULL;\nGO\n",
       );
       const poNo = Number(result.match(/poNo=(\d+)/)?.[1] ?? 0);

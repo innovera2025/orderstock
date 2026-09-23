@@ -23,7 +23,6 @@ Item AS (
 Hdr AS (
     SELECT h.TransactionNo, h.DoNo, h.Dodate, h.CustCode, h.CustName,
            CASE
-               WHEN h.IsCancel = 1 THEN 'cancelled'
                WHEN h.IsClosed = 1 THEN 'closed'
                WHEN h.IsApproved = 1 AND h.IsCheck = 1 THEN 'checked'
                WHEN h.IsApproved = 1 THEN 'approved'

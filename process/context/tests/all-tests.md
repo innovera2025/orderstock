@@ -1,7 +1,7 @@
 ---
 name: context:all-tests
-description: Testing entrypoint for orderstock — Vitest 3.2.6 (523 tests/32 files with the ERP fixture wired; 490 passed/33 self-skipped without it) and Playwright E2E (145 passed/7 skipped, incl. mobile + tablet projects, plus the erp-dashboards Sales/Purchase/Production/export/degraded-mode suites) both real and wired, sandbox SQL Server constraint, plus the standing procedure for running ERP-env-dependent gates
-keywords: tests, testing, vitest, playwright, e2e, unit, integration, verification, coverage, sandbox, sql server, health check, build, lint, storage state, fixtures, totals, be-date, order-save, mobile, mobile viewport, mobile project, tablet, tablet project, sidebar drawer, clean-state, print page count, pdf page count, one-page print, print footer, roster, location, shop location, per-location, buildLocationRoster, locations, location management, locations.test, managed list, shop location filter, location filter, searchParam filter, shops.spec, orders filter gate, purchase dashboard, production dashboard, purchase-status, purchase-received, purchase-dual-basis, production-status-derivation, production-plan-only-empty-state, production-material-issue-drilldown, dashboards-purchase, dashboards-production, credential materialization, erp_fixture env block
+description: Testing entrypoint for orderstock — Vitest 3.2.6 (667 passed/1 todo/36 files with the ERP fixture wired; 633 passed/34 self-skipped without it) and Playwright E2E (145 passed/7 skipped, incl. mobile + tablet projects, plus the erp-dashboards Sales/Purchase/Production/export/degraded-mode suites) both real and wired, sandbox SQL Server constraint, the live-schema conformance gates, plus the standing procedure for running ERP-env-dependent gates
+keywords: tests, testing, vitest, playwright, e2e, unit, integration, verification, coverage, sandbox, sql server, health check, build, lint, storage state, fixtures, totals, be-date, order-save, mobile, mobile viewport, mobile project, tablet, tablet project, sidebar drawer, clean-state, print page count, pdf page count, one-page print, print footer, roster, location, shop location, per-location, buildLocationRoster, locations, location management, locations.test, managed list, shop location filter, location filter, searchParam filter, shops.spec, orders filter gate, purchase dashboard, production dashboard, purchase-status, purchase-received, purchase-dual-basis, production-status-derivation, production-plan-only-empty-state, production-material-issue-drilldown, dashboards-purchase, dashboards-production, credential materialization, erp_fixture env block, live manifest, live-manifest, schema conformance, schema drift, invalid column name, erp-sql-columns, erp-query-columns, erp-flags, tinyint flag, IsCancel, column reference gate, vacuous gate
 related: [context:all-database, context:all-auth]
 metadata:
   read_when: the task involves testing, verification, or test debugging
@@ -9,7 +9,11 @@ metadata:
 
 # orderstock - All Tests
 
-Last updated: 2026-07-19 (`per-location-shop-numbering` plan ✅ VERIFIED, archived — added +8 unit
+Last updated: 2026-09-23 (live-schema conformance gates added — see
+"## Live-schema conformance gates" at the bottom of this file. Current regression counts:
+**Vitest 667 passed / 0 failed / 1 todo across 36 files with the ERP fixture wired** (633 passed /
+34 self-skipped without it), **Playwright 145 passed / 7 skipped**. Prior: 2026-07-19
+(`per-location-shop-numbering` plan ✅ VERIFIED, archived — added +8 unit
 tests to `roster.test.ts` (two new describe blocks: `perLocationDisplayNo`
 grouping/numbering/null-bucket, `sortShopsForDisplay` ordering/null-last) + 1 new gate extending
 the EXISTING `e2e/shops.spec.ts` (filtered `/shops?location=` shows
@@ -477,3 +481,96 @@ a customer deployment** — it is listed as a "must not be set" item in the roll
   This is USER-RUN by charter, not a code shortfall.
 - Spreadsheet-rendering fidelity of the exported CSVs (Thai glyphs in a real Excel/Google Sheets
   session) is untestable headless — a human open-in-Excel check is the only closing action.
+
+---
+
+## Live-schema conformance gates
+
+Added 23-09-26, in response to a production defect: every ERP dashboard page rendered
+"ไม่สามารถเชื่อมต่อระบบ ERP ได้ในขณะนี้" against the live `db_TCL` while `/api/health/erp` reported
+healthy and the ENTIRE local suite was green.
+
+### What went wrong, and why no test caught it
+
+The queries were not logically wrong. They named things that do not exist in production:
+
+| Referenced | Reality on `db_TCL` |
+|---|---|
+| `dbo.tbl_DOhdr.IsCancel` | no such column (real flags: `IsApproved`/`IsClosed`/`IsComplete`/`IsCheck`/`IsAcc`, each with a paired `*By`/`*Date`) |
+| `dbo.InventoryFlowDtl.Qty` | the quantity column is `MainQuantity` |
+| `dbo.InventoryFlowHdr.TransactionDate` | the flow date is `InOutDate` |
+| flag columns treated as SQL `BIT` | every flag is `TINYINT`, so the `mssql` driver returns a **number** |
+
+Root cause: the local `erp_fixture` sandbox had been hand-built from a PROSE data dictionary rather
+than from the live column list. The fixture therefore contained the same invented columns and the
+same wrong types, so query and fixture agreed with each other and both disagreed with production.
+**A suite that only ever compares code against a fixture cannot detect that the fixture itself is
+the fiction.**
+
+### The mechanism
+
+`db/erp-schema/live-manifest_23-09-26.json` is the new anchor: a metadata-only capture (name, type,
+nullability — no rows, no counts, no customer data) read from `sys.columns`/`sys.types` on the live
+server for all 11 tables the dashboards touch, 809 columns. `db/erp-schema/README.md` documents how
+to re-capture it. Everything below compares against that file, never against the fixture.
+
+| Gate | File | Proves |
+|---|---|---|
+| Fixture DDL ↔ live | `src/lib/__tests__/erp-fixture-schema-conformance.test.ts` (16 tests) | every `CREATE TABLE` in `00-schema.sql` matches the manifest column-for-column (name, order, type, nullability); no seed file contains `CREATE TABLE`/`ALTER TABLE` |
+| Query SQL ↔ live | `src/lib/__tests__/erp-query-schema-conformance.test.ts` (106 tests) | every column every `db/erp-queries/**/*.sql` file reads exists on the live table |
+| Flag coercion | `src/lib/__tests__/erp-flags.test.ts` (13 tests) | TINYINT `1`/`0` (what the driver really returns) derive PO and MO status correctly; `=== true` on a flag can never come back |
+
+All three are pure text/JSON analysis — **no database, no Docker, no network** — so they run in
+every environment and cannot self-skip into uselessness.
+
+### How the query gate works (and why it is not vacuous)
+
+Two cooperating halves, in `src/lib/erp-sql-columns.ts` (analyser) and
+`src/lib/erp-query-columns.ts` (declared contracts):
+
+1. **Automatic, zero-maintenance:** the analyser strips comments and string literals, resolves
+   `FROM/JOIN dbo.X alias` bindings, and checks every QUALIFIED reference (`h.IsClosed`) against the
+   manifest. Comment stripping is load-bearing — several queries legitimately *document* the removed
+   bad columns in their headers.
+2. **Declared, for the unresolvable rest:** an UNQUALIFIED read inside a CTE
+   (`SELECT ItemCode ... FROM dbo.InventoryItem`) cannot be attributed by regex, because `ItemCode`
+   is a real column on several of these tables. Rather than guess, each query file declares its
+   column contract in `ERP_QUERY_COLUMNS`.
+
+The declaration is checked from **both** sides, plus an anti-padding check, so it cannot be used to
+launder a bad column:
+
+- every declared column must exist in the manifest (the list cannot invent);
+- every column the SQL reads must be declared (the list cannot omit);
+- every declared column must appear as an identifier in its query file (the list cannot be padded
+  with real-but-unused column names until the first check passes by construction);
+- an unresolved alias, or one alias bound to two tables in a file, is a hard FAILURE — the analyser
+  never silently drops a reference it did not understand.
+
+Anti-vacuity, verified by deliberate mutation on 23-09-26 (each reverted immediately after):
+
+| Mutation | Result |
+|---|---|
+| re-add `h.IsCancel` to `do-headers.sql` | 2 arms fail, naming `h.IsCancel -> dbo.tbl_DOhdr.IsCancel` |
+| re-add it **and** declare it in `ERP_QUERY_COLUMNS` (whitewash attempt) | still 2 failures — the automatic arm is independent of the declaration |
+| drop a real column (`IsCheck`) from a declaration | fails: "declares every column the SQL reads" |
+| pad a declaration with a real-but-unused column (`tbl_DOhdr.DueDate`) | fails: "declares nothing the file never mentions" |
+
+### Rules going forward
+
+- **Editing a query?** Update its `ERP_QUERY_COLUMNS` entry in the same edit.
+- **A column is not in the manifest?** It does not exist in production, whatever the data dictionary
+  says. Re-capture the manifest before trusting a new name.
+- **Reading a flag column?** Use `erpFlag()` / `erpFlagOrNull()` from `src/lib/erp-flags.ts`. Never
+  compare an ERP flag with `=== true` — every one of them is TINYINT.
+- **Adding a table to a query?** Capture it into the manifest first; the gate fails on a table it
+  cannot describe rather than skipping it.
+- **Refreshed the manifest?** Regenerate the `CREATE TABLE` blocks in `00-schema.sql` from it
+  instead of hand-editing, then re-run both conformance gates.
+
+### Known gap
+
+The manifest is a point-in-time capture (23-09-26). If the customer's vendor alters `db_TCL`, the
+gates keep passing against the stale snapshot. There is no automated drift alarm — re-capturing is
+a deliberate, USER-RUN action. Write a NEW dated file rather than overwriting, so drift stays
+visible in git history.

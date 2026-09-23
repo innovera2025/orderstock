@@ -1,18 +1,21 @@
 ---
 name: context:all-database
-description: "Database context entrypoint for orderstock — Prisma 7 + SQL Server schema, SQL Server-specific pitfalls (no enums, one-NULL-per-UNIQUE, NoAction cascades), historical-fidelity snapshot pattern, seed/migration/export commands, and production-DB shared-ERP-database danger guardrails"
-keywords: database, prisma, schema, sql server, mssql, migration, migrate, seed, enum, cascade, correction cascade, snapshot, printOrder, export, vendor sql, zod, tsx, dotenv-expand, resolveDatabaseUrl, connection string, db_TCL, production database, shared ERP, migrate reset, danger, guardrails, location, shop location, roster, buildLocationRoster, displayNo, rosterOrder, locations, managed location list, appsetting, location management, rename cascade, transaction
+description: "Database context entrypoint for orderstock — Prisma 7 + SQL Server schema, SQL Server-specific pitfalls (no enums, one-NULL-per-UNIQUE, NoAction cascades), historical-fidelity snapshot pattern, seed/migration/export commands, production-DB shared-ERP-database danger guardrails, and the live ERP schema manifest + conformance gates that keep dashboard SQL honest"
+keywords: database, prisma, schema, sql server, mssql, migration, migrate, seed, enum, cascade, correction cascade, snapshot, printOrder, export, vendor sql, zod, tsx, dotenv-expand, resolveDatabaseUrl, connection string, db_TCL, production database, shared ERP, migrate reset, danger, guardrails, location, shop location, roster, buildLocationRoster, displayNo, rosterOrder, locations, managed location list, appsetting, location management, rename cascade, transaction, live manifest, live-manifest, sys.columns, schema conformance, schema drift, invalid column name, IsCancel, tinyint flag, erp-flags, erp-sql-columns, erp-query-columns, erp_fixture DDL, generated DDL
 related: [context:all-tests]
-date: 15-07-26
+date: 23-09-26
 ---
 
-Last updated: 15-07-26 (`location-management` plan ✅ VERIFIED AT CODE LEVEL — pending commit:
+Last updated: 23-09-26 (live ERP schema manifest + conformance gates added — see
+"## Live ERP Schema Manifest and Conformance Gates" at the bottom of this file. `db/erp-fixture/00-schema.sql`
+is now GENERATED from `db/erp-schema/live-manifest_23-09-26.json` and holds ALL the DDL; the seed
+files carry rows only. Prior: 15-07-26 (`location-management` plan ✅ VERIFIED AT CODE LEVEL — pending commit:
 managed `/locations` list stored as ONE JSON `AppSetting` row (`key: "locations"`, ZERO schema
 change), atomic rename cascade to `Shop.location`, delete guard extended to soft-deleted shops;
 prior: `shop-location-roster` plan ✅ VERIFIED AT CODE LEVEL and archived: `Shop`
 gains `location`, per-location roster via `src/lib/roster.ts` `buildLocationRoster`, new db_TCL
 delivery ALTER script; prior: `ordersheet-soft-delete` plan VERIFIED — `OrderSheet` gains `active`
-soft-delete column)
+soft-delete column))
 
 # Database Context
 
@@ -555,7 +558,8 @@ must never crash non-ERP pages.
   probe STILL RUNS and still reports what it found; with the switch on it logs exactly ONE
   credential-free warning per pool creation (never per query) naming the granted permissions and
   pointing at `db/create-erp-readonly-login.sql`. `/api/health/erp` surfaces the same state as
-  `readOnlyLogin: false` + a short `warning`, so ops can see it without reading logs.
+  `readOnlyLogin: false` / `loginCheck: "write-capable"` + a short `warning`, so ops can see it
+  without reading logs.
 - **What it costs:** the DATABASE-LEVEL enforcement layer (a login that physically cannot write) is
   gone while the switch is on. Layers 1, 2, 3 and 5 — normalizer, SELECT-only denylist, single
   `guardedQuery` choke point with parameterized requests, no-write-method compile guard,
@@ -566,14 +570,28 @@ must never crash non-ERP pages.
   "The switch works" is never sufficient for production sign-off.
 - **Code:** `allowsWriteCapableLogin` / `runBootProbeWithOptIn` / `erpReadOnlyLoginState` in
   `src/lib/erp/pool.ts`; proven by `src/lib/__tests__/erp-pool-write-capable-switch.test.ts`
-  (fail-closed by default, warn-once + `readOnlyLogin:false`, silent + `readOnlyLogin:true` on a
-  read-only login, and a negative assertion that the warning leaks no credential).
+  (fail-closed by default, warn-once + `loginCheck:"write-capable"`, silent +
+  `loginCheck:"read-only"` on a read-only login, and a negative assertion that the warning leaks no
+  credential).
+- **Three-state login check (fixed 2026-09-23):** the probe state is `readOnlyLogin: boolean | null`
+  plus `loginCheck: "not-probed" | "read-only" | "write-capable"`. The initial/reset state is
+  `not-probed`, NOT "read-only" — an unprobed login is UNKNOWN, and reporting the safe answer for an
+  unknown truth is the wrong direction for a security signal. `/api/health/erp` now awaits
+  `getErpPool()` (where the probe runs) BEFORE reading the state; previously it read first, so the
+  FIRST request after a container start reported `readOnlyLogin: true` on a write-capable login and
+  only the second request told the truth. Regression gate:
+  `src/lib/__tests__/erp-health-login-state.test.ts`.
 
 ### `erp_fixture` — the local ERP-shaped fixture database
 
-`db/erp-fixture/00-schema.sql` + `01-seed.sql` create an `erp_fixture` database with
-`dbo.InventoryItem` (`Roworder`, `ItemCode`, `Description`, `MainUnits`, `ItemGRP`) and 10 seeded
-rows (mixed `ItemGRP`, several units, one NULL `MainUnits` row on purpose). Both scripts are
+`db/erp-fixture/00-schema.sql` + `01-seed.sql` create the `erp_fixture` database. **As of
+23-09-26 the DDL split changed:** `00-schema.sql` now holds the `CREATE TABLE` for ALL 11 ERP tables,
+each one GENERATED from `db/erp-schema/live-manifest_23-09-26.json` (same columns, same order, same
+types, same nullability as the live server), and every seed file carries ROWS ONLY — no DDL at all.
+Previously each domain seed created its own tables from a prose data dictionary, which is what let
+the fixture drift into a shape production does not have (see "## Live ERP Schema Manifest and
+Conformance Gates" below). `01-seed.sql` seeds `dbo.InventoryItem` with 10 rows (mixed `ItemGRP`,
+several units, one NULL `MainUnits` row on purpose). Both scripts are
 **LOCAL SANDBOX ONLY** — they run against the `orderstock-sql` container and must NEVER be run
 against `db_TCL`. They live outside `prisma/migrations` on purpose: `erp_fixture` is a separate
 database from the Prisma-managed `orderstock` sandbox DB, and SQL Server hosts both in the same
@@ -767,7 +785,7 @@ level.
   used with it. Go-live requires: (1) the DBA runs `db/create-erp-readonly-login.sql` on `db_TCL`,
   (2) `ERP_DATABASE_URL` on the production host repoints to that scoped login, (3)
   `ERP_ALLOW_WRITE_CAPABLE_LOGIN` is REMOVED from the production `.env` entirely, (4) restart, (5)
-  confirm `/api/health/erp` reports `readOnlyLogin: true`. Procedure documented in
+  confirm `/api/health/erp` reports `loginCheck: "read-only"`. Procedure documented in
   `docs/deployment-guide-docker.md` §12.3. **`ERP_TEST_FORCE_DOWN` must also never be set on a
   production host** — it is test-only (see `tests/all-tests.md`).
 - **Fixture seed order-independence — see the Phase 3/4 union note above.** Phase 5's own
@@ -780,3 +798,75 @@ level.
   CSS-hiding, no client-derivable flag), a role-diffed byte comparison of the real CSV export
   output, and a rendered-HTML STAFF/ADMIN check across every dashboard + drilldown. Production
   correctly has NO `canSeeMoney` gate at all (no money data in scope, by design — not a gap).
+
+---
+
+## Live ERP Schema Manifest and Conformance Gates (added 23-09-26)
+
+**Read this before writing or editing ANY ERP query.** It exists because of a production outage.
+
+### The defect
+
+On 23-09-26 every ERP dashboard page rendered "ไม่สามารถเชื่อมต่อระบบ ERP ได้ในขณะนี้" against the live
+`db_TCL`, while `/api/health/erp` reported healthy and the whole local suite was green. The queries
+referenced columns that DO NOT EXIST in production, so SQL Server rejected them outright:
+
+| Referenced | Reality on `db_TCL` |
+|---|---|
+| `dbo.tbl_DOhdr.IsCancel` | **no such column.** The real flags are `IsApproved`, `IsClosed`, `IsComplete`, `IsCheck`, `IsAcc` (each with a paired `*By`/`*Date`) plus `Revised`. None of them means "cancelled" — `Revised` is 0 on all 83 live headers, so the cancelled branch was DROPPED rather than re-pointed at a guess. |
+| `dbo.InventoryFlowDtl.Qty` | the quantity column is `MainQuantity` |
+| `dbo.InventoryFlowHdr.TransactionDate` | the flow date is `InOutDate` (when stock moved), not `EntryDate` (when it was typed) |
+| `dbo.tbl_Dodtl.MainUnits` | the line table's unit column is `Units`; its item code is `Itemcode` (lowercase `c`) |
+| flag columns assumed to be `BIT` | **every ERP flag is `TINYINT`**, so the `mssql` driver returns a NUMBER — see the TINYINT trap below |
+
+### Root cause (the important part)
+
+The local `erp_fixture` sandbox was hand-built from a PROSE data dictionary, not from the live column
+list. It therefore contained the same invented columns and the same wrong types. Query and fixture
+agreed with each other and both disagreed with production. **Comparing code against a fixture can
+never reveal that the fixture itself is the fiction.** Every future ERP schema decision must be
+grounded in a capture from the live server, never in a document describing it.
+
+### The anchor: `db/erp-schema/live-manifest_23-09-26.json`
+
+A metadata-only capture read from `sys.columns` + `sys.types` on the live `db_TCL` — 809 columns
+across the 11 tables the dashboards touch. Each entry is `{name, type, nullable}`.
+
+- **No row data, no counts, no customer-identifying content** was read or stored. The capture queries
+  hit only system catalog views, never a business table, through the read-only probe.
+- Not a full DDL dump — no keys, indexes, defaults, or foreign keys. Capture those the same way
+  (system catalog views, metadata only) if ever needed rather than widening this file's scope.
+- `db/erp-schema/README.md` holds the exact refresh queries and the guardrails.
+- **Refreshing:** write a NEW dated file (`live-manifest_<dd-mm-yy>.json`), never overwrite, so drift
+  stays visible in git history. Then REGENERATE the `CREATE TABLE` blocks in
+  `db/erp-fixture/00-schema.sql` from it instead of hand-editing them, and re-run both gates.
+
+### The gates (all DB-free; see `tests/all-tests.md` for the full mechanism)
+
+| Gate | Holds |
+|---|---|
+| `src/lib/__tests__/erp-fixture-schema-conformance.test.ts` (16 tests) | `00-schema.sql` matches the manifest column-for-column; no seed file contains `CREATE TABLE`/`ALTER TABLE` |
+| `src/lib/__tests__/erp-query-schema-conformance.test.ts` (106 tests) | every column every `db/erp-queries/**/*.sql` reads exists live; each query's declared contract in `src/lib/erp-query-columns.ts` can neither invent, omit, nor pad |
+| `src/lib/__tests__/erp-flags.test.ts` (13 tests) | TINYINT `1`/`0` derive PO and MO status correctly |
+
+A fixture may hold FEWER ROWS than production. It may not hold a DIFFERENT SHAPE.
+
+### The TINYINT flag trap
+
+Not one flag column in this ERP is a SQL `BIT`. `IsCancel`, `IsClosed`, `IsApproved`, `IsCheck`,
+`IsComplete`, `IsRecPo`, `Approved` — all `TINYINT`. The `mssql` driver maps TINYINT to a JavaScript
+**number**, so `header.IsRecPo === true` is silently false for every live row, with no error
+anywhere. The purchase dashboard did exactly that: no PO could derive Received, Closed, Completed,
+Checked or Cancelled. It passed locally only because the old fixture declared those columns `BIT`.
+
+**Rule:** read every ERP flag through `erpFlag()` / `erpFlagOrNull()` in `src/lib/erp-flags.ts`.
+`erpFlag` implements `ISNULL(flag,0) = 1` (matching the SQL comparison, so a stray TINYINT 2 is not
+promoted); `erpFlagOrNull` preserves NULL for `PurchaseOrderHdr.IsClosed`, where NULL means OPEN and
+must fall through rather than short-circuit to "Closed". Never compare a flag with `=== true`.
+
+### Known gap
+
+The manifest is a point-in-time snapshot. If the customer's vendor alters `db_TCL`, the gates keep
+passing against the stale capture — there is no automated drift alarm, and adding one would mean
+querying the live production server on a schedule, which the charter forbids. Re-capturing is a
+deliberate, USER-RUN action.

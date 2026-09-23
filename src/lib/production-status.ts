@@ -5,6 +5,8 @@
 // the never-sum-across-units rule and the plan-only honesty guarantee are unit-testable without
 // a SQL Server, exactly as `sales-basis-core.ts` does for Phase 2.
 
+import { erpFlag } from "./erp-flags";
+
 /** The one string the "ผลิตจริง" column is allowed to render — SPEC AC7. */
 export const ACTUAL_PRODUCED_EMPTY_TEXT = "ยังไม่มีข้อมูลผลิตจริง";
 
@@ -29,19 +31,21 @@ export const MO_STATUSES: ReadonlyArray<{
   { key: "cancelled", label: "ยกเลิก", tone: "danger" },
 ];
 
-/** Raw MO flags as they arrive from `tbl_MoHdr` (BIT columns; NULL is possible). */
+/** Raw MO flags as they arrive from `tbl_MoHdr` (TINYINT columns, so NUMBERS; NULL is possible). */
 export interface MoStatusFlags {
   approved?: boolean | number | null;
   isClosed?: boolean | number | null;
   isCancel?: boolean | number | null;
 }
 
-/** `ISNULL(flag, 0)` in TypeScript: NULL/undefined means "not set", i.e. false. */
-function flag(value: boolean | number | null | undefined): boolean {
-  if (value === true) return true;
-  if (typeof value === "number") return value === 1;
-  return false;
-}
+/**
+ * `ISNULL(flag, 0)` in TypeScript: NULL/undefined means "not set", i.e. false.
+ *
+ * Aliased to the shared `erpFlag` so MO status and PO status cannot drift apart — tolerating
+ * TINYINT here while purchase compared `=== true` is exactly how the 23-09-26 flag bug survived in
+ * one dashboard and stayed hidden in the other.
+ */
+const flag = erpFlag;
 
 /**
  * Derive one MO's status.

@@ -248,6 +248,13 @@ export function binScopeNote(bins: readonly TimeBin[], kind: SalesPeriod, from: 
 
 // ---------------------------------------------------------------------------------------------
 // Delivery status — "สถานะการส่งมอบ", NEVER "สถานะ SO" (the SalesOrder module is unused).
+//
+// NO "cancelled"/ยกเลิก ENTRY, on purpose (schema-conformance fix 23-09-26): `dbo.tbl_DOhdr` has no
+// cancel column on the live ERP, so the SQL CASE can never emit that key. The real flags are
+// IsApproved / IsClosed / IsComplete / IsCheck / IsAcc / Revised, and none of them means cancelled
+// (`Revised` is 0 on all 83 live headers and was not repurposed). See do-headers.sql for the full
+// decision + evidence. `salesStatusLabel()` still renders an unknown key as itself, so if the ERP
+// ever starts emitting one it surfaces rather than being silently swallowed.
 // ---------------------------------------------------------------------------------------------
 
 export type SalesStatusTone = "neutral" | "accent" | "brand" | "success" | "danger";
@@ -261,7 +268,6 @@ export const SALES_STATUSES: ReadonlyArray<{
   { key: "approved", label: "อนุมัติแล้ว", tone: "accent" },
   { key: "checked", label: "อนุมัติและตรวจแล้ว", tone: "brand" },
   { key: "closed", label: "ปิดแล้ว", tone: "success" },
-  { key: "cancelled", label: "ยกเลิก", tone: "danger" },
 ];
 
 /** Unknown keys render as themselves rather than throwing — an unseen ERP flag combination shows up. */

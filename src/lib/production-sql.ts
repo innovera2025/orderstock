@@ -117,12 +117,28 @@ export const MATERIAL_ISSUES_SQL = `-- erp-dashboards Phase 4 — Production: ra
 --
 -- EMPTY CASE IS NORMAL: most MOs have zero linked issues (7 detail rows across 218 header rows in
 -- the real data). The caller renders a Thai empty state, never an error.
+--
+-- COLUMN NAMES (schema-conformance fix 23-09-26, verified against db/erp-schema/live-manifest):
+--   * \`d.Qty\` DOES NOT EXIST on \`InventoryFlowDtl\`. The real quantity column is \`MainQuantity\`
+--     (decimal(18,2)) — the same column \`po-received.sql\` already sums on this table. Aliased back
+--     to \`Qty\` so the \`MaterialIssueRow\` shape is unchanged. Populated on all 7 live issue rows.
+--   * \`h.TransactionDate\` DOES NOT EXIST on \`InventoryFlowHdr\`. The flow date is \`InOutDate\`
+--     (datetime) — when stock actually moved, which is the business meaning wanted here; \`EntryDate\`
+--     (when the record was typed) was NOT used. Live check: \`h.InOutDate = d.InOutDate\` on all 7
+--     rows, and both fall on the same day as EntryDate, so the choice is unambiguous. Aliased back
+--     to \`TransactionDate\` to keep the row shape.
+--   * THE UNIT NOW COMES FROM THE LINE, not the item master. \`MainQuantity\` is expressed in the
+--     line's OWN \`MainUnits\`; live check found \`d.MainUnits\` DISAGREES with the canonical
+--     \`InventoryItem.MainUnits\` on 6 of the 7 rows (4 distinct line units). Labelling a line
+--     quantity with the item-master unit was therefore mislabelling it across units — exactly what
+--     the charter's never-sum-across-units rule exists to prevent. The item-master unit is kept
+--     only as a fallback for a line whose own unit is blank.
 SELECT
     d.ItemCode,
     COALESCE(i.Description, d.ItemCode) AS ItemName,
-    d.Qty,
-    COALESCE(i.MainUnits, N'-') AS MainUnits,
-    h.TransactionDate,
+    d.MainQuantity AS Qty,
+    COALESCE(NULLIF(LTRIM(RTRIM(d.MainUnits)), ''), NULLIF(LTRIM(RTRIM(i.MainUnits)), ''), N'-') AS MainUnits,
+    h.InOutDate AS TransactionDate,
     d.MONo
 FROM dbo.InventoryFlowDtl d
 JOIN dbo.InventoryFlowHdr h ON h.TransactionNo = d.TransactionNo
@@ -137,7 +153,7 @@ LEFT JOIN (
 ) i ON i.ItemCode = d.ItemCode
 WHERE LTRIM(RTRIM(d.MONo)) = LTRIM(RTRIM(@moNumBer))
   AND d.ReasonName = N'เบิกวัตถุดิบ : ใบสั่งผลิต'
-ORDER BY h.TransactionDate ASC, d.ItemCode ASC
+ORDER BY h.InOutDate ASC, d.ItemCode ASC
 `;
 
 /** Every embedded query paired with its on-disk source, for the drift gate. */
