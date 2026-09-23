@@ -280,26 +280,63 @@ export function salesStatusTone(key: string): SalesStatusTone {
 }
 
 // ---------------------------------------------------------------------------------------------
-// Product categories — read straight off `InventoryItem.ItemGRP`.
+// Product categories — CODE from `InventoryItem.ItemGRP`, LABEL from the ERP's own
+// `dbo.tbl_ItemGroup` (ICCode -> Description).
 // ---------------------------------------------------------------------------------------------
 
 /**
- * ItemGRP code → Thai label. INNOVATE decision (22-09-26): the category pie groups directly by
- * `InventoryItem.ItemGRP`, exactly as the approved mockup does — there is deliberately NO
- * `tbl_ItemGroup` / `tbl_CATEGORY` join, whose path is untraced and not needed here.
+ * The category label lookup, keyed by the raw ItemGRP CODE.
  *
- * If EXECUTE or production discovers additional live `ItemGRP` codes, EXTEND this map rather than
- * falling back further; any unmapped code already renders as "หมวด {code}" instead of being lost.
+ * NOT HARDCODED ANY MORE (defect fix, 23-09-26). The previous app-side map only knew F/R/P, so the
+ * live code `W` rendered on the customer's pie as the raw fallback "หมวด W" — and `P` was not even
+ * a real live code (the live "ระหว่างผลิต" group is `W`). Labels now come from `tbl_ItemGroup` via
+ * the LEFT JOIN in `do-lines.sql`, so a group the customer renames or adds in the ERP shows up
+ * without a code change here.
+ *
+ * The CODE remains the identity everywhere else: `?cat=` URL state, the SQL filter, and the slice
+ * key all use the code, never the label. A label is display-only and may be missing.
  */
-export const CATEGORY_LABELS: Readonly<Record<string, string>> = {
-  F: "สินค้าสำเร็จรูป",
-  R: "วัตถุดิบ",
-  P: "งานระหว่างผลิต",
-  "-": "ไม่ระบุหมวด",
-};
+export type CategoryLabels = ReadonlyMap<string, string>;
 
-export function categoryLabel(key: string): string {
-  return CATEGORY_LABELS[key] ?? `หมวด ${key}`;
+/** Blank/missing ItemGRP collapses to this key in the SQL (`COALESCE(NULLIF(...), '-')`). */
+export const CATEGORY_UNSPECIFIED_KEY = "-";
+const CATEGORY_UNSPECIFIED_LABEL = "ไม่ระบุหมวด";
+
+/** The minimum shape `buildCategoryLabels` needs from a DO line row. */
+export interface CategoryLabelSource {
+  CategoryKey: string;
+  CategoryLabel?: string | null;
+}
+
+/**
+ * Collect the ERP's own labels out of the rows a query returned. PURE — no DB access.
+ *
+ * Rows for the same code always carry the same label (both come from the one group master), so
+ * first-wins is enough; blank labels are skipped so they cannot shadow a good one.
+ */
+export function buildCategoryLabels(rows: readonly CategoryLabelSource[]): CategoryLabels {
+  const labels = new Map<string, string>();
+  for (const row of rows) {
+    const key = (row.CategoryKey ?? "").trim();
+    const label = (row.CategoryLabel ?? "").trim();
+    if (!key || !label || labels.has(key)) continue;
+    labels.set(key, label);
+  }
+  return labels;
+}
+
+/**
+ * Display label for a category code.
+ *
+ * Order: the ERP's own label -> "ไม่ระบุหมวด" for the blank-group key -> "หมวด {code}". The last
+ * fallback is deliberate: an unresolvable code stays VISIBLE as itself rather than being dropped
+ * or silently merged into another slice.
+ */
+export function categoryLabel(key: string, labels?: CategoryLabels): string {
+  const fromErp = labels?.get(key);
+  if (fromErp) return fromErp;
+  if (key === CATEGORY_UNSPECIFIED_KEY) return CATEGORY_UNSPECIFIED_LABEL;
+  return `หมวด ${key}`;
 }
 
 // ---------------------------------------------------------------------------------------------

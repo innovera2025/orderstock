@@ -218,7 +218,7 @@ For most substantial tasks:
 |---|---|
 | `process/context/all-context.md` | any substantial planning, research, review, or implementation task |
 | `process/context/auth/all-auth.md` | implementing or reviewing any authenticated route, server action, session/role logic, or auth-related test |
-| `process/context/database/all-database.md` | Database context entrypoint for orderstock — Prisma 7 + SQL Server schema, SQL Server-specific pitfalls (no enums, one-NULL-per-UNIQUE, NoAction cascades), historical-fidelity snapshot pattern, seed/migration/export commands, and production-DB shared-ERP-database danger guardrails |
+| `process/context/database/all-database.md` | Database context entrypoint for orderstock — Prisma 7 + SQL Server schema, SQL Server-specific pitfalls (no enums, one-NULL-per-UNIQUE, NoAction cascades), historical-fidelity snapshot pattern, seed/migration/export commands, production-DB shared-ERP-database danger guardrails, and the live ERP schema manifest + conformance gates that keep dashboard SQL honest |
 | `process/context/planning/all-planning.md` | creating or calibrating an implementation plan |
 | `process/context/tests/all-tests.md` | the task involves testing, verification, or test debugging |
 | `process/context/uxui/all-uxui.md` | any UI/token/component/shell/theme work |
@@ -228,9 +228,9 @@ For most substantial tasks:
 | Group | Entry point | Scope |
 |---|---|---|
 | `auth/` | `process/context/auth/all-auth.md` | Auth context entrypoint for orderstock — next-auth v5 split-config architecture, requireAuth server-side choke-point contract, session policy, lockout, admin user management, and E2E fixtures |
-| `database/` | `process/context/database/all-database.md` | Database context entrypoint for orderstock — Prisma 7 + SQL Server schema, SQL Server-specific pitfalls (no enums, one-NULL-per-UNIQUE, NoAction cascades), historical-fidelity snapshot pattern, seed/migration/export commands, and production-DB shared-ERP-database danger guardrails |
+| `database/` | `process/context/database/all-database.md` | Database context entrypoint for orderstock — Prisma 7 + SQL Server schema, SQL Server-specific pitfalls (no enums, one-NULL-per-UNIQUE, NoAction cascades), historical-fidelity snapshot pattern, seed/migration/export commands, production-DB shared-ERP-database danger guardrails, and the live ERP schema manifest + conformance gates that keep dashboard SQL honest |
 | `planning/` | `process/context/planning/all-planning.md` | Planning context entrypoint for orderstock — plan-shape calibration (SIMPLE vs COMPLEX), planning conventions, and example plan references |
-| `tests/` | `process/context/tests/all-tests.md` | Testing entrypoint for orderstock — Vitest 3.2.6 (523 tests/32 files with the ERP fixture wired; 490 passed/33 self-skipped without it) and Playwright E2E (145 passed/7 skipped, incl. mobile + tablet projects, plus the erp-dashboards Sales/Purchase/Production/export/degraded-mode suites) both real and wired, sandbox SQL Server constraint, plus the standing procedure for running ERP-env-dependent gates |
+| `tests/` | `process/context/tests/all-tests.md` | Testing entrypoint for orderstock — Vitest 3.2.6 (667 passed/1 todo/36 files with the ERP fixture wired; 633 passed/34 self-skipped without it) and Playwright E2E (145 passed/7 skipped, incl. mobile + tablet projects, plus the erp-dashboards Sales/Purchase/Production/export/degraded-mode suites) both real and wired, sandbox SQL Server constraint, the live-schema conformance gates, plus the standing procedure for running ERP-env-dependent gates |
 | `uxui/` | `process/context/uxui/all-uxui.md` | UI/UX context entrypoint for orderstock — pguard Design System tokens, semantic-alias contract, shared src/components/ui/* primitives, sidebar+topbar shell, dark mode, and print-font behavior |
 <!-- /GENERATED:routing -->
 

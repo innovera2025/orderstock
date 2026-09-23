@@ -98,6 +98,8 @@ export interface DoLineRow {
   ItemName: string;
   Unit: string;
   CategoryKey: string;
+  /** The ERP's own `tbl_ItemGroup.Description`; NULL when the code has no group row. */
+  CategoryLabel: string | null;
   Qty: number;
   Saleprice: number;
   Amount: number;
