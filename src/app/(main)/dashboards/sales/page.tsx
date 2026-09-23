@@ -110,6 +110,39 @@ export default async function SalesDashboardPage({
   const showInvoiceSection = isSummary || state.view.startsWith("invoice-");
   const showDeliverySection = isSummary || state.view.startsWith("delivery-");
 
+  // ---- ERP data range (page-level, UNFILTERED and VIEW-INDEPENDENT) ---------------------------
+  // Both reads run HERE, outside the two section blocks, because the ช่วงข้อมูล banner describes the
+  // ERP itself — not the current date filter, and not the section the user drilled into. Nesting
+  // them inside the sections made a single-section view (e.g. `?view=delivery-documents`) report
+  // only one document type, which read as "the ERP holds no invoices".
+  // Each read degrades to `null` INDEPENDENTLY and can never throw the page or a section:
+  // `PilotBanner`/`dataRangeText` already render "range not known" honestly when a range is absent,
+  // so a failure flows through as an omission, never as an invented value.
+  const [invoiceRangeSettled, deliveryRangeSettled] = await Promise.allSettled([
+    fetchInvoiceDateRange(),
+    fetchDoDateRange(),
+  ]);
+  if (invoiceRangeSettled.status === "rejected") {
+    // Never log the connection string or any row content — just the failure itself.
+    console.error(
+      "[dashboards/sales] invoice date-range read failed; the banner omits that range.",
+      invoiceRangeSettled.reason instanceof Error
+        ? invoiceRangeSettled.reason.message
+        : invoiceRangeSettled.reason,
+    );
+  }
+  if (deliveryRangeSettled.status === "rejected") {
+    console.error(
+      "[dashboards/sales] delivery date-range read failed; the banner omits that range.",
+      deliveryRangeSettled.reason instanceof Error
+        ? deliveryRangeSettled.reason.message
+        : deliveryRangeSettled.reason,
+    );
+  }
+  const invoiceRange = invoiceRangeSettled.status === "fulfilled" ? invoiceRangeSettled.value : null;
+  const deliveryRange =
+    deliveryRangeSettled.status === "fulfilled" ? deliveryRangeSettled.value : null;
+
   // ---- INVOICE section (primary) --------------------------------------------------------------
   // Its OWN try/catch: a cold-cache invoice failure must not blank the delivery section.
   type InvoiceData = {
@@ -117,17 +150,14 @@ export default async function SalesDashboardPage({
     lines: InvoiceLineRow[];
     products: Awaited<ReturnType<typeof fetchInvoiceByProduct>>["value"] | null;
     customers: Awaited<ReturnType<typeof fetchInvoiceByCustomer>>["value"] | null;
-    dateRange: Awaited<ReturnType<typeof fetchInvoiceDateRange>>["value"];
     stale: boolean;
   };
   let invoice: InvoiceData | null = null;
   if (showInvoiceSection) {
     try {
-      const [headers, lines, dateRange] = await Promise.all([
+      const [headers, lines] = await Promise.all([
         fetchInvoiceHeaders(filters),
         fetchInvoiceLines(filters),
-        // UNFILTERED on purpose: the ช่วงข้อมูล notice reports what the ERP holds.
-        fetchInvoiceDateRange(),
       ]);
       let products = null;
       let customers = null;
@@ -144,11 +174,10 @@ export default async function SalesDashboardPage({
         lines: lines.value,
         products: products?.value ?? null,
         customers: customers?.value ?? null,
-        dateRange: dateRange.value,
         stale:
           headers.stale ||
           lines.stale ||
-          dateRange.stale ||
+          (invoiceRange?.stale ?? false) ||
           (products?.stale ?? false) ||
           (customers?.stale ?? false),
       };
@@ -169,7 +198,6 @@ export default async function SalesDashboardPage({
     catLines: DoLineRow[];
     products: Awaited<ReturnType<typeof fetchDoByProduct>>["value"] | null;
     customers: Awaited<ReturnType<typeof fetchDoByCustomer>>["value"] | null;
-    dateRange: Awaited<ReturnType<typeof fetchDoDateRange>>["value"];
     stale: boolean;
   };
   let delivery: DeliveryData | null = null;
@@ -177,12 +205,11 @@ export default async function SalesDashboardPage({
     try {
       // CROSS-FILTER SEMANTICS: the donut and pie each run with their OWN dimension excluded, so a
       // selected slice never collapses its own chart to 100%.
-      const [headers, lines, statusHeaders, catLines, dateRange] = await Promise.all([
+      const [headers, lines, statusHeaders, catLines] = await Promise.all([
         fetchDoHeaders(filters),
         fetchDoLines(filters),
         fetchDoHeaders(filters, { skipStatus: true }),
         fetchDoLines(filters, { skipCat: true }),
-        fetchDoDateRange(),
       ]);
       let products = null;
       let customers = null;
@@ -198,13 +225,12 @@ export default async function SalesDashboardPage({
         catLines: catLines.value,
         products: products?.value ?? null,
         customers: customers?.value ?? null,
-        dateRange: dateRange.value,
         stale:
           headers.stale ||
           lines.stale ||
           statusHeaders.stale ||
           catLines.stale ||
-          dateRange.stale ||
+          (deliveryRange?.stale ?? false) ||
           (products?.stale ?? false) ||
           (customers?.stale ?? false),
       };
@@ -278,18 +304,23 @@ export default async function SalesDashboardPage({
     sort: null,
   });
 
-  // ONE page-level ช่วงข้อมูล banner, and it keeps reporting the DELIVERY range it always has.
-  // Two sections could each own a banner, but `PilotBanner` is shared by all three dashboards and
-  // every existing gate selects a single `data-testid="pilot-banner"` per page — rendering two
-  // would churn unrelated specs to say something this page can state more precisely anyway. The
-  // invoice basis gets its OWN range line inside its own section heading (below), so neither range
-  // is hidden and neither is mislabelled. The banner falls back to the invoice range only when the
-  // delivery section has no data at all.
-  const pilotRange = delivery
-    ? toErpDataRange(delivery.dateRange, "ใบส่งสินค้า")
-    : toErpDataRange(invoice!.dateRange, "ใบแจ้งหนี้ขาย");
-  const invoiceRangeText = invoice
-    ? dataRangeText(toErpDataRange(invoice.dateRange, "ใบแจ้งหนี้ขาย"))
+  // ONE page-level ช่วงข้อมูล banner — still one, because `PilotBanner` is shared by all three
+  // dashboards and every existing gate selects a single `data-testid="pilot-banner"` per page.
+  // It now states BOTH bases this page rests on, invoice first (the headline money) and delivery
+  // second (the fulfilment view), so the top line describes the page instead of only half of it.
+  // The invoice basis still carries its OWN range line inside its section heading (below).
+  //
+  // DELIBERATELY INDEPENDENT OF BOTH THE DATE FILTER AND THE CURRENT VIEW: the banner answers
+  // "what does the ERP hold?", so it must read the same whether the user narrowed the dates or
+  // drilled into a single section. Its two reads are hoisted above (both always run); a range is
+  // included here only when it was actually read, so a failed read omits that half instead of
+  // inventing a value or silently shrinking the banner to one document type.
+  const pilotRange = [
+    invoiceRange ? toErpDataRange(invoiceRange.value, "ใบแจ้งหนี้ขาย") : null,
+    deliveryRange ? toErpDataRange(deliveryRange.value, "ใบส่งสินค้า") : null,
+  ].filter((r) => r !== null);
+  const invoiceRangeText = invoiceRange
+    ? dataRangeText(toErpDataRange(invoiceRange.value, "ใบแจ้งหนี้ขาย"))
     : null;
 
   return (

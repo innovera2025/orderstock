@@ -72,6 +72,57 @@ describe("dataRangeText — the three honest states", () => {
   });
 });
 
+// SEVERAL RANGES (23-09-26). /dashboards/sales leads with invoice money but its one banner used to
+// report the DELIVERY range only, so the top line described half the page. The banner now takes an
+// array: one span covering everything, then each count in the order given (invoice first).
+describe("dataRangeText — several ranges in ONE sentence", () => {
+  const invoice = toErpDataRange(
+    row({ DocCount: 4, FirstDate: "2026-08-14", LastDate: "2026-09-20" }),
+    "ใบแจ้งหนี้ขาย",
+  );
+  const delivery = toErpDataRange(
+    row({ DocCount: 84, FirstDate: "2026-08-20", LastDate: "2026-09-22" }),
+    "ใบส่งสินค้า",
+  );
+
+  it("merges two ranges: earliest from, latest to, counts in the order given", () => {
+    expect(dataRangeText([invoice, delivery])).toBe(
+      "ข้อมูลในระบบ ERP มีตั้งแต่ 14/8/69 ถึง 22/9/69 · ใบแจ้งหนี้ขาย 4 ใบ · ใบส่งสินค้า 84 ใบ",
+    );
+  });
+
+  it("a ONE-entry array reads exactly like the single value", () => {
+    expect(dataRangeText([delivery])).toBe(dataRangeText(delivery));
+  });
+
+  it("a zero-count entry contributes no count text (and no invented date)", () => {
+    const empty = toErpDataRange([], "ใบแจ้งหนี้ขาย");
+    expect(dataRangeText([empty, delivery])).toBe(
+      "ข้อมูลในระบบ ERP มีตั้งแต่ 20/8/69 ถึง 22/9/69 · ใบส่งสินค้า 84 ใบ",
+    );
+  });
+
+  it("an array where NOTHING is known collapses to the unknown text", () => {
+    expect(dataRangeText([])).toBe(DATA_RANGE_UNKNOWN_TEXT);
+    expect(dataRangeText([toErpDataRange([], "ใบแจ้งหนี้ขาย"), toErpDataRange([], "ใบส่งสินค้า")])).toBe(
+      DATA_RANGE_UNKNOWN_TEXT,
+    );
+  });
+
+  it("counts with no usable dates still omit the range", () => {
+    const a = toErpDataRange(row({ DocCount: 4 }), "ใบแจ้งหนี้ขาย");
+    const b = toErpDataRange(row({ DocCount: 84 }), "ใบส่งสินค้า");
+    expect(dataRangeText([a, b])).toBe("ข้อมูลในระบบ ERP มีใบแจ้งหนี้ขาย 4 ใบ · ใบส่งสินค้า 84 ใบ");
+  });
+
+  it("<PilotBanner /> accepts the array and keeps its testids", () => {
+    const html = renderToStaticMarkup(<PilotBanner range={[invoice, delivery]} />);
+    expect(html).toContain('data-testid="pilot-banner"');
+    expect(html).toContain('data-testid="pilot-banner-range"');
+    expect(html).toContain("ใบแจ้งหนี้ขาย 4 ใบ · ใบส่งสินค้า 84 ใบ");
+  });
+});
+
 describe("toErpDataRange — a Date object from mssql normalises like an ISO string", () => {
   it("accepts JS Dates and keeps the calendar day (no TZ drift)", () => {
     const range = toErpDataRange(

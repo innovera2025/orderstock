@@ -38,15 +38,33 @@ function beShort(iso: string): string {
  *   3. nothing known  -> "ยังไม่ทราบช่วงข้อมูลในระบบ ERP"
  *
  * A zero count with no dates is state 3: the ERP genuinely holds nothing to describe.
+ *
+ * SEVERAL RANGES (a page whose headline and its supporting section rest on different documents —
+ * /dashboards/sales leads with invoices and reports deliveries beside them): pass an array and the
+ * sentence states ONE span covering them all, then each document count in the order given:
+ *   "ข้อมูลในระบบ ERP มีตั้งแต่ 14/8/69 ถึง 22/9/69 · ใบแจ้งหนี้ขาย 4 ใบ · ใบส่งสินค้า 84 ใบ"
+ * A single-entry array reads exactly like the single value. The HONESTY RULE is unchanged: the span
+ * only ever spans dates the ERP really returned, and a zero count contributes no text.
  */
-export function dataRangeText(range?: ErpDataRange | null): string {
-  if (!range) return DATA_RANGE_UNKNOWN_TEXT;
+export function dataRangeText(
+  range?: ErpDataRange | readonly ErpDataRange[] | null,
+): string {
+  const ranges = (Array.isArray(range) ? range : range ? [range] : []).filter(
+    Boolean,
+  ) as ErpDataRange[];
+  if (ranges.length === 0) return DATA_RANGE_UNKNOWN_TEXT;
 
-  const countText =
-    range.count > 0 ? `${range.docLabel} ${range.count.toLocaleString("en-US")} ใบ` : "";
+  const countText = ranges
+    .filter((r) => r.count > 0)
+    .map((r) => `${r.docLabel} ${r.count.toLocaleString("en-US")} ใบ`)
+    .join(" · ");
 
-  if (range.from && range.to) {
-    const span = `ข้อมูลในระบบ ERP มีตั้งแต่ ${beShort(range.from)} ถึง ${beShort(range.to)}`;
+  // ISO `yyyy-mm-dd` sorts lexically, so plain min/max over the strings is the real calendar span.
+  const dated = ranges.filter((r) => r.from && r.to);
+  if (dated.length > 0) {
+    const from = dated.reduce((a, r) => (r.from! < a ? r.from! : a), dated[0].from!);
+    const to = dated.reduce((a, r) => (r.to! > a ? r.to! : a), dated[0].to!);
+    const span = `ข้อมูลในระบบ ERP มีตั้งแต่ ${beShort(from)} ถึง ${beShort(to)}`;
     return countText ? `${span} · ${countText}` : span;
   }
 
@@ -57,8 +75,11 @@ export function PilotBanner({
   range,
   className = "",
 }: {
-  /** The dashboard's real ERP data range. Omit it when the range genuinely is not known. */
-  range?: ErpDataRange | null;
+  /**
+   * The dashboard's real ERP data range — or several, when the page rests on more than one kind of
+   * document. Omit it when the range genuinely is not known.
+   */
+  range?: ErpDataRange | readonly ErpDataRange[] | null;
   className?: string;
 }) {
   return (

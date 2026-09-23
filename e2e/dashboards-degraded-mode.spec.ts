@@ -85,14 +85,19 @@ test.describe("AC16 — data-range banner on all three dashboards", () => {
   // document dates and row counts, in Buddhist Era — a hardcoded or filter-derived range would
   // fail here.
   //
-  //   sales      tbl_DOhdr           14 rows, 2026-08-03 .. 2026-09-22 -> 3/8/69 .. 22/9/69
+  //   sales      SalesInvoiceHdr      3 rows, 2026-08-31 .. 2026-09-20 -> 31/8/69 .. 20/9/69
+  //              + tbl_DOhdr         14 rows, 2026-08-03 .. 2026-09-22 ->  3/8/69 .. 22/9/69
+  //              the span is the UNION of both (earliest 3/8/69, latest 22/9/69) and the counts
+  //              follow in render order, invoice first, because the headline figure is now
+  //              invoice-based
   //   purchase   PurchaseOrderHdr     5 rows, 2026-08-14 .. 2026-09-11 -> 14/8/69 .. 11/9/69
   //   production tbl_MoHdr           12 rows, 2026-08-20 .. 2026-09-08 -> 20/8/69 .. 8/9/69
   //
   // The counts include rows the dashboards themselves filter out (cancelled POs/MOs): the notice
   // reports what the ERP HOLDS, which is exactly the point of the change.
   const EXPECTED_RANGE_TEXT: Record<string, string> = {
-    sales: "ข้อมูลในระบบ ERP มีตั้งแต่ 3/8/69 ถึง 22/9/69 · ใบส่งสินค้า 14 ใบ",
+    sales:
+      "ข้อมูลในระบบ ERP มีตั้งแต่ 3/8/69 ถึง 22/9/69 · ใบแจ้งหนี้ขาย 3 ใบ · ใบส่งสินค้า 14 ใบ",
     purchase: "ข้อมูลในระบบ ERP มีตั้งแต่ 14/8/69 ถึง 11/9/69 · ใบสั่งซื้อ 5 ใบ",
     production: "ข้อมูลในระบบ ERP มีตั้งแต่ 20/8/69 ถึง 8/9/69 · ใบสั่งผลิต 12 ใบ",
   };
